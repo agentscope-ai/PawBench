@@ -164,11 +164,19 @@ class PawBenchBackend(BenchmarkBackend):
         loader = TaskLoader(tasks_dir)
         tasks = loader.load_all_tasks()
         if task_filter:
-            tasks = [
-                t for t in tasks
-                if t.task_id in task_filter
-                or any(t.task_id.startswith(f) for f in task_filter)
-            ]
+            def _matches(t: Any, filters: list[str]) -> bool:
+                file_stem = t.file_path.stem if t.file_path else ""
+                for f in filters:
+                    if t.task_id == f:
+                        return True
+                    if t.task_id.startswith(f):
+                        return True
+                    # Also match by filename stem (e.g. "--tasks T053" matches
+                    # T053_pinchbench_blog.md regardless of the `id:` front-matter value)
+                    if file_stem == f or file_stem.startswith(f):
+                        return True
+                return False
+            tasks = [t for t in tasks if _matches(t, task_filter)]
         return tasks
 
     def run_and_grade(

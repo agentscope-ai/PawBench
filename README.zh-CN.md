@@ -75,12 +75,18 @@ EOF
 
 ### 运行评测
 
+首次运行前，先构建默认的 Docker harness 镜像：
+
+```bash
+docker build -f docker/Dockerfile.pawbench-qwenpaw -t qwenclawbench-qwenpaw:latest .
+```
+
 ```bash
 # Smoke test：用默认 qwenpaw harness 跑一个 PawBench v1.0 任务
-python run_bench.py --tasks T001 --model openai/gpt-4o
+python run_bench.py --tasks T053 --model dashscope/qwen3.6-plus
 
 # 切换 Harness
-python run_bench.py --agents openclaw --tasks T001 --model dashscope/qwen3.6-plus
+python run_bench.py --agents openclaw --tasks T053 --model dashscope/qwen3.6-plus
 
 # 在指定任务集上横向对比多个 Harness
 python run_bench.py \
@@ -90,7 +96,7 @@ python run_bench.py \
 
 # 顺序评测多个模型
 python run_bench.py \
-  --model openai/gpt-4o \
+  --model dashscope/qwen3.6-plus \
   --model anthropic/claude-sonnet-4-6
 ```
 

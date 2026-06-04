@@ -75,12 +75,18 @@ For OpenAI-compatible or custom providers, set `OPENAI_API_KEY` / `OPENAI_BASE_U
 
 ### Run Evaluation
 
+Before the first run, build the default Docker harness image:
+
+```bash
+docker build -f docker/Dockerfile.pawbench-qwenpaw -t qwenclawbench-qwenpaw:latest .
+```
+
 ```bash
 # Smoke test: run one PawBench v1.0 task with the default qwenpaw harness
-python run_bench.py --tasks T001 --model openai/gpt-4o
+python run_bench.py --tasks T053 --model dashscope/qwen3.6-plus
 
 # Pick a different harness
-python run_bench.py --agents openclaw --tasks T001 --model dashscope/qwen3.6-plus
+python run_bench.py --agents openclaw --tasks T053 --model dashscope/qwen3.6-plus
 
 # Compare harnesses on a task subset
 python run_bench.py \
@@ -90,7 +96,7 @@ python run_bench.py \
 
 # Sequentially evaluate multiple models
 python run_bench.py \
-  --model openai/gpt-4o \
+  --model dashscope/qwen3.6-plus \
   --model anthropic/claude-sonnet-4-6
 ```
 
