@@ -2,28 +2,29 @@
   "run": "pawbench-4models-opusjudge-20260529",
   "model": "claude-opus-4.6",
   "harness": "hermes",
-  "overall": 0.7844,
+  "overall": 0.764,
   "automated": 0.8263,
   "judge": 0.9077,
-  "tasks": 150,
+  "tasks": 154,
   "tasks_total": 150,
   "tasks_errored": 2,
+  "tasks_missing": 4,
   "missing_metadata": 0,
   "updated": "2026-05-29",
   "by_complexity": {
     "L1": 0.7336,
-    "L3": 0.7697,
-    "L2": 0.864
+    "L3": 0.7492,
+    "L2": 0.8342
   },
   "by_environment": {
-    "closed": 0.7944,
-    "open": 0.7192
+    "closed": 0.7765,
+    "open": 0.685
   },
   "by_scenario": {
     "Automation_Platform/Agent": 0.924,
     "Office_Productivity/Calendar": 0.6957,
     "Software_Engineering/Code": 0.5293,
-    "Office_Productivity/Document": 0.8971,
+    "Office_Productivity/Document": 0.8156,
     "Content_Creation/Design": 0.9335,
     "Automation_Platform/Scheduling": 0.7108,
     "Safety_Alignment/Prompt_Injection": 0.6729,
@@ -35,11 +36,11 @@
     "Data_Analytics/Visualization": 0.9359,
     "Knowledge/QA": 0.8156,
     "Office_Productivity/Email": 0.9245,
-    "Office_Productivity/Expense": 1.0,
+    "Office_Productivity/Expense": 0.6667,
     "Information_Retrieval/Knowledge_Base": 0.9542,
-    "Office_Productivity/Task_Management": 0.9553,
+    "Office_Productivity/Task_Management": 0.8188,
     "Content_Creation/Writing": 0.9867,
-    "Safety_Alignment/Data_Protection": 0.8497,
+    "Safety_Alignment/Data_Protection": 0.7553,
     "Software_Engineering/Database": 0.8967,
     "Office_Productivity/Meeting": 0.9855,
     "Information_Retrieval/Social_Platform": 0.825,
@@ -56,10 +57,10 @@
   },
   "by_scenario_top": {
     "Automation_Platform": 0.8279,
-    "Office_Productivity": 0.9062,
+    "Office_Productivity": 0.8239,
     "Software_Engineering": 0.6017,
     "Content_Creation": 0.9395,
-    "Safety_Alignment": 0.7924,
+    "Safety_Alignment": 0.7528,
     "Information_Retrieval": 0.8118,
     "Manufacturing_Engineering": 0.6055,
     "Data_Analytics": 0.7626,
@@ -68,23 +69,23 @@
     "Legal": 1.0
   },
   "by_modality": {
-    "text": 0.7691,
+    "text": 0.7451,
     "multimodal": 0.8572
   },
   "by_capability": {
-    "Tool_Use": 0.7897,
-    "Logic_Reasoning": 0.7733,
-    "Planning": 0.7389,
-    "Self_Verification": 0.7205,
+    "Tool_Use": 0.769,
+    "Logic_Reasoning": 0.7478,
+    "Planning": 0.7078,
+    "Self_Verification": 0.6969,
     "Code_Manipulation": 0.6697,
-    "Math_Computation": 0.6916,
+    "Math_Computation": 0.6531,
     "Skill_Use": 0.5929
   },
   "by_source": {
     "qwenpawbench": 0.8945,
     "wildclawbench": 0.7241,
     "skillsbench": 0.5134,
-    "claweval": 0.925,
+    "claweval": 0.8589,
     "qwenclawbench": 0.6095,
     "pinchbench": 0.7895
   },
@@ -106,11 +107,11 @@
     "multimodal": 0.9042,
     "communication": 0.9253,
     "productivity": 1.0,
-    "finance": 1.0,
+    "finance": 0.6667,
     "knowledge": 1.0,
-    "operations": 0.9586,
+    "operations": 0.6847,
     "content": 0.9333,
-    "safety": 0.9872,
+    "safety": 0.7897,
     "workflow": 0.961,
     "file_ops": 1.0,
     "organization": 0.923,
@@ -147,7 +148,7 @@
     "Data_Analytics": 0.3675
   },
   "by_grading": {
-    "hybrid": 0.7835,
+    "hybrid": 0.7582,
     "automated": 0.753,
     "llm_judge": 0.8233
   },

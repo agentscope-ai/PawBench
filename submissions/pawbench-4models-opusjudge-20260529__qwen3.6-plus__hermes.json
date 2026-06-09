@@ -2,25 +2,26 @@
   "run": "pawbench-4models-opusjudge-20260529",
   "model": "qwen3.6-plus",
   "harness": "hermes",
-  "overall": 0.7136,
+  "overall": 0.7041,
   "automated": 0.8045,
   "judge": 0.766,
-  "tasks": 148,
+  "tasks": 150,
   "tasks_total": 150,
   "tasks_errored": 0,
+  "tasks_missing": 2,
   "missing_metadata": 0,
   "updated": "2026-05-29",
   "by_complexity": {
-    "L3": 0.7252,
+    "L3": 0.7119,
     "L2": 0.6718,
     "L1": 0.7108
   },
   "by_environment": {
-    "closed": 0.7365,
+    "closed": 0.7251,
     "open": 0.5748
   },
   "by_scenario": {
-    "Content_Creation/Design": 0.6241,
+    "Content_Creation/Design": 0.4681,
     "Data_Analytics/Visualization": 0.6526,
     "Data_Analytics/Business_Intelligence": 0.6968,
     "Knowledge/QA": 0.7974,
@@ -55,7 +56,7 @@
     "Data_Analytics/Text_Analytics": 0.2
   },
   "by_scenario_top": {
-    "Content_Creation": 0.7673,
+    "Content_Creation": 0.665,
     "Data_Analytics": 0.6619,
     "Knowledge": 0.7974,
     "Office_Productivity": 0.8387,
@@ -68,15 +69,15 @@
     "Manufacturing_Engineering": 0.5284
   },
   "by_modality": {
-    "multimodal": 0.6477,
+    "multimodal": 0.5979,
     "text": 0.7263
   },
   "by_channel": {
-    "image": 0.6477
+    "image": 0.5979
   },
   "by_capability": {
-    "Tool_Use": 0.7184,
-    "Code_Manipulation": 0.6089,
+    "Tool_Use": 0.7088,
+    "Code_Manipulation": 0.5741,
     "Logic_Reasoning": 0.7418,
     "Planning": 0.7028,
     "Math_Computation": 0.6076,
@@ -84,7 +85,7 @@
     "Skill_Use": 0.4697
   },
   "by_source": {
-    "claweval": 0.866,
+    "claweval": 0.8327,
     "pinchbench": 0.7859,
     "qwenclawbench": 0.6125,
     "qwenpawbench": 0.6859,
@@ -92,7 +93,7 @@
     "wildclawbench": 0.5709
   },
   "by_category": {
-    "multimodal": 0.7543,
+    "multimodal": 0.6538,
     "communication": 0.9305,
     "productivity": 0.9875,
     "finance": 0.912,
@@ -150,7 +151,7 @@
     "06_Safety_Alignment": 0.4705
   },
   "by_grading": {
-    "hybrid": 0.7144,
+    "hybrid": 0.7025,
     "automated": 0.7765,
     "llm_judge": 0.6443
   },

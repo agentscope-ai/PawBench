@@ -1,5 +1,6 @@
 .DS_Store
 .idea/
+.agents/
 
 # Python bytecode / cache
 __pycache__/
@@ -32,3 +33,4 @@ task_analysis/
 attribution/
 uv.lock
 run_batch.sh
+docs/

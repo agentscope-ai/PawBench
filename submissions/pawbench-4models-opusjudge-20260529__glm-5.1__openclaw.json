@@ -8,6 +8,7 @@
   "tasks": 150,
   "tasks_total": 150,
   "tasks_errored": 0,
+  "tasks_missing": 0,
   "missing_metadata": 0,
   "updated": "2026-05-29",
   "by_complexity": {

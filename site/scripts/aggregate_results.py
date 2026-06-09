@@ -172,9 +172,9 @@ def _record_task(
     errored = 0
     missing_meta = 0
 
-    if grading_type == "error" or status == "error":
+    if grading_type in ("error", "missing") or status in ("error", "missing"):
         errored = 1
-        score = 0.0  # ensure error tasks count as 0 toward all means
+        score = 0.0  # ensure error/missing tasks count as 0 toward all means
     else:
         a, j = score_partition(grading_type, score, breakdown)
         if a is not None:
@@ -467,6 +467,39 @@ def aggregate_pair(
     if not per_task_score:
         return None
 
+    # Fill missing tasks with score=0 so the denominator is always the full
+    # task set, preventing harness crashes from inflating the mean.
+    seen_tids: set[str] = set()
+    if metrics_files:
+        for mp in metrics_files:
+            seen_tids.add(mp.parent.parent.name.split("_", 1)[0])
+    elif summary_file is not None:
+        try:
+            sd = json.loads(summary_file.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            sd = {}
+        name_to_tid = _build_task_name_index(task_meta)
+        slug_to_tid = _build_task_slug_index(task_meta)
+        for r in sd.get("results") or []:
+            resolved = _resolve_t_id_from_hermes_result(r, name_to_tid, slug_to_tid)
+            if resolved:
+                seen_tids.add(resolved)
+
+    missing_tids = set(task_meta.keys()) - seen_tids
+    for t_id in missing_tids:
+        _record_task(
+            t_id=t_id,
+            score=0.0,
+            grading_type="missing",
+            breakdown={},
+            status="missing",
+            task_meta=task_meta,
+            per_task_score=per_task_score,
+            automated_scores=automated_scores,
+            judge_scores=judge_scores,
+            buckets=buckets,
+        )
+
     # Compute slice means
     by_dims = {dim: {k: safe_mean(v) for k, v in d.items()} for dim, d in buckets.items()}
 
@@ -480,6 +513,7 @@ def aggregate_pair(
         "tasks": len(per_task_score),
         "tasks_total": len(task_meta) or len(per_task_score),
         "tasks_errored": errored,
+        "tasks_missing": len(missing_tids),
         "missing_metadata": missing_meta,
         "_raw_model_dir": model_dir.name,
         "_raw_harness_dir": harness_dir.name,

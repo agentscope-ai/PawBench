@@ -2,25 +2,26 @@
   "run": "pawbench-4models-opusjudge-20260529",
   "model": "kimi-k2.6",
   "harness": "hermes",
-  "overall": 0.6771,
+  "overall": 0.6636,
   "automated": 0.7869,
   "judge": 0.7027,
-  "tasks": 147,
+  "tasks": 150,
   "tasks_total": 150,
   "tasks_errored": 0,
+  "tasks_missing": 3,
   "missing_metadata": 0,
   "updated": "2026-05-29",
   "by_complexity": {
-    "L3": 0.6794,
+    "L3": 0.6607,
     "L2": 0.6371,
     "L1": 0.7538
   },
   "by_environment": {
-    "closed": 0.6982,
+    "closed": 0.682,
     "open": 0.5505
   },
   "by_scenario": {
-    "Content_Creation/Design": 0.5861,
+    "Content_Creation/Design": 0.4396,
     "Data_Analytics/Visualization": 0.577,
     "Data_Analytics/Business_Intelligence": 0.7358,
     "Knowledge/QA": 0.9263,
@@ -33,7 +34,7 @@
     "Office_Productivity/Document": 0.7962,
     "Safety_Alignment/Data_Protection": 0.6572,
     "Safety_Alignment/Prompt_Injection": 0.622,
-    "Software_Engineering/Code": 0.5836,
+    "Software_Engineering/Code": 0.5492,
     "Software_Engineering/Database": 0.98,
     "Office_Productivity/Meeting": 0.8788,
     "Software_Engineering/DevOps": 0.836,
@@ -55,44 +56,44 @@
     "Data_Analytics/Text_Analytics": 0.2
   },
   "by_scenario_top": {
-    "Content_Creation": 0.7352,
+    "Content_Creation": 0.6372,
     "Data_Analytics": 0.6796,
     "Knowledge": 0.9263,
     "Office_Productivity": 0.8294,
     "Information_Retrieval": 0.5039,
     "Safety_Alignment": 0.6492,
-    "Software_Engineering": 0.6553,
+    "Software_Engineering": 0.6291,
     "Legal": 0.95,
     "Finance_Investment": 0.2149,
     "Automation_Platform": 0.5476,
     "Manufacturing_Engineering": 0.6269
   },
   "by_modality": {
-    "multimodal": 0.6573,
-    "text": 0.681
+    "multimodal": 0.6067,
+    "text": 0.6755
   },
   "by_channel": {
-    "image": 0.6573
+    "image": 0.6067
   },
   "by_capability": {
-    "Code_Manipulation": 0.5694,
-    "Tool_Use": 0.6818,
-    "Logic_Reasoning": 0.7133,
-    "Planning": 0.6348,
-    "Math_Computation": 0.6531,
+    "Code_Manipulation": 0.5206,
+    "Tool_Use": 0.668,
+    "Logic_Reasoning": 0.7053,
+    "Planning": 0.6278,
+    "Math_Computation": 0.6339,
     "Self_Verification": 0.6465,
-    "Skill_Use": 0.4494
+    "Skill_Use": 0.423
   },
   "by_source": {
-    "claweval": 0.8659,
+    "claweval": 0.8326,
     "pinchbench": 0.7432,
     "qwenclawbench": 0.5328,
     "qwenpawbench": 0.5755,
-    "skillsbench": 0.3937,
+    "skillsbench": 0.3674,
     "wildclawbench": 0.6104
   },
   "by_category": {
-    "multimodal": 0.7712,
+    "multimodal": 0.6684,
     "communication": 0.9044,
     "productivity": 0.9625,
     "finance": 0.8322,
@@ -139,7 +140,7 @@
     "Screenshot_Task": 0.375,
     "Education_Knowledge": 0.78,
     "Manufacturing_Engineering": 0.6269,
-    "Software_Engineering": 0.2608,
+    "Software_Engineering": 0.2173,
     "Healthcare": 0.2833,
     "Office_Productivity": 0.2,
     "Data_Analytics": 0.2947,
@@ -150,7 +151,7 @@
     "06_Safety_Alignment": 0.5875
   },
   "by_grading": {
-    "hybrid": 0.6609,
+    "hybrid": 0.6444,
     "automated": 0.8876,
     "llm_judge": 0.593
   },
@@ -165,7 +166,7 @@
     "Meeting": 0.964,
     "Document": 0.55,
     "QA": 0.9444,
-    "Code": 0.4619,
+    "Code": 0.4041,
     "DevOps": 1.0,
     "Web Research": 0.1233,
     "Meeting Transcript Analysis": 0.8743,
