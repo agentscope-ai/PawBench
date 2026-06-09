@@ -52,8 +52,8 @@
     "Information_Retrieval/Social_Platform": 0.225,
     "Safety_Alignment/Harmful_Content": 0.975,
     "Manufacturing_Engineering/Quality_Control": 0.4207,
-    "Data_Analytics/Text_Analytics": 0.0,
-    "Finance_Investment/Stock": 0.0
+    "Finance_Investment/Stock": 0.0,
+    "Data_Analytics/Text_Analytics": 0.0
   },
   "by_scenario_top": {
     "Content_Creation": 0.4114,
@@ -203,7 +203,7 @@
     "Learning/Concept_Explanation": 0.885,
     "Quality_Control": 0.4207,
     "Business_Intelligence": 0.3895,
-    "Text_Analytics": 0.0,
-    "Clinical_Data_Harmonization": 0.0
+    "Clinical_Data_Harmonization": 0.0,
+    "Text_Analytics": 0.0
   }
 }

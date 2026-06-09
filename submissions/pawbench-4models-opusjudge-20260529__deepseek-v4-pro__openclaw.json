@@ -147,8 +147,8 @@
     "03_Social_Interaction": 0.9405,
     "05_Creative_Synthesis": 0.0,
     "06_Safety_Alignment": 0.6216,
-    "Screenshot_Task": 0.0,
-    "Information Retrieval": 0.0
+    "Information Retrieval": 0.0,
+    "Screenshot_Task": 0.0
   },
   "by_grading": {
     "hybrid": 0.7514,
@@ -203,7 +203,7 @@
     "Clinical_Data_Harmonization": 0.906,
     "Text_Analytics": 0.2,
     "Business_Intelligence": 0.3895,
-    "Dashboard/Admin_Panel": 0.0,
-    "Academic": 0.0
+    "Academic": 0.0,
+    "Dashboard/Admin_Panel": 0.0
   }
 }

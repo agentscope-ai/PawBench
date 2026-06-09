@@ -469,23 +469,19 @@ def aggregate_pair(
 
     # Fill missing tasks with score=0 so the denominator is always the full
     # task set, preventing harness crashes from inflating the mean.
-    seen_tids: set[str] = set()
-    if metrics_files:
-        for mp in metrics_files:
-            seen_tids.add(mp.parent.parent.name.split("_", 1)[0])
-    elif summary_file is not None:
-        try:
-            sd = json.loads(summary_file.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            sd = {}
-        name_to_tid = _build_task_name_index(task_meta)
-        slug_to_tid = _build_task_slug_index(task_meta)
-        for r in sd.get("results") or []:
-            resolved = _resolve_t_id_from_hermes_result(r, name_to_tid, slug_to_tid)
-            if resolved:
-                seen_tids.add(resolved)
+    tasks_recorded = len(per_task_score)
+    total_expected = len(task_meta)
+    missing_count = max(0, total_expected - tasks_recorded)
 
-    missing_tids = set(task_meta.keys()) - seen_tids
+    # For per-task dirs we can identify exactly which tasks are missing.
+    missing_tids: set[str] = set()
+    if metrics_files and missing_count > 0:
+        seen_tids = {mp.parent.parent.name.split("_", 1)[0] for mp in metrics_files}
+        missing_tids = set(task_meta.keys()) - seen_tids
+    elif not metrics_files and missing_count > 0:
+        # Summary format: task_name resolution can have collisions (duplicate
+        # names across zh/en variants), so fall back to count-based fill.
+        missing_tids = set(f"_missing_{i}" for i in range(missing_count))
     for t_id in missing_tids:
         _record_task(
             t_id=t_id,
