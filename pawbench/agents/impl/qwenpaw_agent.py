@@ -318,6 +318,14 @@ try:
 except Exception:
     pass  # monkey-patch is optional; skip if qwenpaw internals changed
 
+# ── monkey-patch: allow custom base_url for builtin OpenAI provider ─────────
+try:
+    import qwenpaw.providers.provider_manager as _qw_provider_manager
+
+    _qw_provider_manager.PROVIDER_OPENAI.freeze_url = False
+except Exception:
+    pass  # monkey-patch is optional; skip if qwenpaw internals changed
+
 # ── start qwenpaw app ──────────────────────────────────────────────────────
 sys.argv = ["qwenpaw", "app", "--host", "127.0.0.1", "--port", "8088"]
 from qwenpaw.__main__ import cli  # noqa: E402
