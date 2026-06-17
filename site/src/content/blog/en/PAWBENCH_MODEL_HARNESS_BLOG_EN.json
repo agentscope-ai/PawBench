@@ -1,0 +1,8 @@
+{
+  "title": "PawBench v1.0: Measuring General-Purpose Agents Reproducibly",
+  "description": "Does the same model perform differently inside different agent harnesses? PawBench puts both model capability and harness quality into the same evaluation matrix so you can see how they jointly determine real-task outcomes.",
+  "locale": "en",
+  "pubDate": "2026-06-10",
+  "author": "PawBench team",
+  "tags": ["harness", "model", "benchmark", "agent"]
+}

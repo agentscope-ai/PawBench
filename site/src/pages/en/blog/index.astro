@@ -5,7 +5,10 @@ import { getCollection } from 'astro:content';
 
 const locale: Locale = 'en';
 
-const posts = (await getCollection('blog'))
+const posts = [
+  ...(await getCollection('blog')),
+  ...(await getCollection('blogHtml')),
+]
   .filter((p) => p.data.locale === locale && !p.data.draft)
   .sort((a, b) => +b.data.pubDate - +a.data.pubDate);
 
@@ -14,7 +17,7 @@ const dateFmt = new Intl.DateTimeFormat('en-US', {
 });
 
 function slugFor(id: string): string {
-  return id.replace(/^(zh|en)\//, '');
+  return id.replace(/^(zh|en)\//, '').replace(/\.html$/, '');
 }
 ---
 

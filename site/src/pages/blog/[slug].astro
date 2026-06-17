@@ -4,16 +4,36 @@ import { type Locale, t, localizedPath } from '@/i18n';
 import { getCollection, render } from 'astro:content';
 
 export async function getStaticPaths() {
-  const posts = (await getCollection('blog')).filter((p) => p.data.locale === 'zh' && !p.data.draft);
-  return posts.map((p) => ({
-    params: { slug: p.id.replace(/^(zh|en)\//, '') },
+  const allPosts = [
+    ...(await getCollection('blog')),
+    ...(await getCollection('blogHtml')),
+  ].filter((p) => p.data.locale === 'zh' && !p.data.draft);
+  return allPosts.map((p) => ({
+    params: { slug: p.id.replace(/^(zh|en)\//, '').replace(/\.html$/, '') },
     props:  { post: p },
   }));
 }
 
 const { post } = Astro.props;
 const locale: Locale = 'zh';
-const { Content } = await render(post);
+
+const isHtml = post.id.endsWith('.html');
+let Content: any;
+let htmlContent = '';
+
+if (isHtml) {
+  const raw = post.body ?? '';
+  const headMatch = raw.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+  const headStyles = headMatch
+    ? [...headMatch[1].matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)]
+        .map((m) => `<style>${m[1]}</style>`)
+        .join('\n')
+    : '';
+  const bodyMatch = raw.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  htmlContent = headStyles + (bodyMatch ? bodyMatch[1] : raw);
+} else {
+  ({ Content } = await render(post));
+}
 
 const dateFmt = new Intl.DateTimeFormat('zh-CN', {
   year: 'numeric', month: 'short', day: 'numeric',
@@ -21,19 +41,47 @@ const dateFmt = new Intl.DateTimeFormat('zh-CN', {
 ---
 
 <Base locale={locale} title={post.data.title} description={post.data.description}>
-  <article class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-12 space-y-6">
-    <a href={localizedPath(locale, '/blog')} class="text-sm text-brand-700 dark:text-brand-300 hover:underline inline-flex items-center gap-1">
-      ← {t(locale, 'blog.title')}
-    </a>
-    <header class="space-y-2">
-      <div class="text-xs text-slate-500">
-        {dateFmt.format(post.data.pubDate)} · {post.data.author}
+  {isHtml ? (
+    <div class="html-post-wrapper">
+      <div class="html-post-nav">
+        <a href={localizedPath(locale, '/blog')} class="back-link">← {t(locale, 'blog.title')}</a>
       </div>
-      <h1 class="text-3xl font-bold text-slate-900 dark:text-white">{post.data.title}</h1>
-      <p class="text-base text-slate-600 dark:text-slate-300">{post.data.description}</p>
-    </header>
-    <div class="prose prose-slate dark:prose-invert max-w-none">
-      <Content />
+      <Fragment set:html={htmlContent} />
     </div>
-  </article>
+    <style>
+      .html-post-wrapper {
+        position: relative;
+      }
+      .html-post-nav {
+        position: absolute;
+        top: 16px;
+        left: max(16px, calc((100vw - 1040px) / 2));
+        z-index: 10;
+      }
+      .back-link {
+        font-size: 0.875rem;
+        color: var(--accent, #1db6a3);
+        text-decoration: none;
+      }
+      .back-link:hover {
+        text-decoration: underline;
+      }
+    </style>
+  ) : (
+    <article class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-12 space-y-6">
+      <a href={localizedPath(locale, '/blog')} class="text-sm text-brand-700 dark:text-brand-300 hover:underline inline-flex items-center gap-1">
+        ← {t(locale, 'blog.title')}
+      </a>
+      <header class="space-y-2">
+        <div class="text-xs text-slate-500">
+          {dateFmt.format(post.data.pubDate)} · {post.data.author}
+        </div>
+        <h1 class="text-3xl font-bold text-slate-900 dark:text-white">{post.data.title}</h1>
+        <p class="text-base text-slate-600 dark:text-slate-300">{post.data.description}</p>
+      </header>
+      <div class="prose prose-slate dark:prose-invert max-w-none">
+        <Content />
+      </div>
+    </article>
+  )}
 </Base>

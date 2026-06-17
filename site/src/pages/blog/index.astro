@@ -5,17 +5,19 @@ import { getCollection } from 'astro:content';
 
 const locale: Locale = 'zh';
 
-const posts = (await getCollection('blog'))
+const posts = [
+  ...(await getCollection('blog')),
+  ...(await getCollection('blogHtml')),
+]
   .filter((p) => p.data.locale === locale && !p.data.draft)
   .sort((a, b) => +b.data.pubDate - +a.data.pubDate);
 
-const dateFmt = new Intl.DateTimeFormat(locale === 'zh' ? 'zh-CN' : 'en-US', {
+const dateFmt = new Intl.DateTimeFormat('zh-CN', {
   year: 'numeric', month: 'short', day: 'numeric',
 });
 
 function slugFor(id: string): string {
-  // glob loader id is e.g. "zh/introducing-pawbench"; the slug is the basename.
-  return id.replace(/^(zh|en)\//, '');
+  return id.replace(/^(zh|en)\//, '').replace(/\.html$/, '');
 }
 ---
 

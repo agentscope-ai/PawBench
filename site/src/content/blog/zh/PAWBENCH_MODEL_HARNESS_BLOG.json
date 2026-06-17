@@ -1,0 +1,8 @@
+{
+  "title": "PawBench v1.0：给通用智能体一把可复现的尺",
+  "description": "同一个模型，放进不同的 Agent 运行框架里，表现会差多少？PawBench 把模型能力和 Harness 能力放到同一张评测表里，帮你看清两者如何协同影响真实任务表现。",
+  "locale": "zh",
+  "pubDate": "2026-06-10",
+  "author": "PawBench team",
+  "tags": ["harness", "model", "benchmark", "agent"]
+}
