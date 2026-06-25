@@ -151,6 +151,16 @@ def _events_from_session_dir(sessions_dir: Path) -> "list[dict[str, Any]]":
     if not sessions_dir.is_dir():
         return []
 
+    # ── 0a. codex stream-json log ─────────────────────────────────────────────
+    events = _codex_stream_events(sessions_dir)
+    if events:
+        return events
+
+    # ── 0b. claude-code stream-json log ──────────────────────────────────────
+    events = _claude_code_stream_events(sessions_dir)
+    if events:
+        return events
+
     # ── 1. openclaw trajectory JSONL (highest fidelity) ──────────────────────
     events = _trajectory_jsonl_events(sessions_dir)
     if events:
@@ -172,6 +182,12 @@ def _events_from_session_dir(sessions_dir: Path) -> "list[dict[str, Any]]":
             data = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError, ValueError):
             continue
+
+        # mini-swe-agent trajectory: {"trajectory_format": "mini-swe-agent-*",
+        #   "messages": [...OpenAI-chat format...], "info": {...}}
+        events = _mini_swe_trajectory_events(data)
+        if events:
+            return events
 
         events = _qwenpaw_native_events(data)
         if events:
@@ -392,6 +408,317 @@ def _openclaw_snapshot_to_events(
                     "message": {
                         "role": "toolResult",
                         "content": [{"type": "text", "text": text}],
+                    },
+                })
+
+    return events
+
+
+# ── mini-swe-agent trajectory format ─────────────────────────────────────────
+
+def _mini_swe_trajectory_events(
+    session_data: "dict[str, Any]",
+) -> "list[dict[str, Any]]":
+    """Parse mini-swe-agent trajectory into OpenClaw transcript events.
+
+    Format: ``{"trajectory_format": "mini-swe-agent-*", "messages": [...],
+    "info": {...}}``
+
+    Messages use OpenAI Chat format (role/content/tool_calls/reasoning_content).
+    ``reasoning_content`` is preserved as a ``[thinking]`` text block.
+    """
+    if not isinstance(session_data, dict):
+        return []
+    traj_format = session_data.get("trajectory_format", "")
+    # Detect by explicit format tag or by structural fingerprint
+    if not (
+        isinstance(traj_format, str) and traj_format.startswith("mini-swe")
+    ) and not (
+        "messages" in session_data
+        and "info" in session_data
+        and "agent" not in session_data
+        and isinstance(session_data.get("messages"), list)
+    ):
+        return []
+    msgs = session_data.get("messages")
+    if not isinstance(msgs, list) or not msgs:
+        return []
+
+    events: list[dict[str, Any]] = []
+    for m in msgs:
+        if not isinstance(m, dict):
+            continue
+        role = m.get("role")
+
+        if role == "user":
+            text = _flatten_content(m.get("content"))
+            if text:
+                events.append({
+                    "type": "message",
+                    "message": {
+                        "role": "user",
+                        "content": [{"type": "text", "text": text}],
+                    },
+                })
+
+        elif role == "assistant":
+            content_items: list[dict[str, Any]] = []
+            reasoning = m.get("reasoning_content")
+            if isinstance(reasoning, str) and reasoning.strip():
+                content_items.append(
+                    {"type": "text", "text": f"[thinking]\n{reasoning.strip()}"}
+                )
+            text = _flatten_content(m.get("content"))
+            if text:
+                content_items.append({"type": "text", "text": text})
+            for tc in m.get("tool_calls") or []:
+                norm = _normalize_tool_call(tc)
+                if norm is not None:
+                    name, args = norm
+                    content_items.append(
+                        {"type": "toolCall", "name": name, "arguments": args}
+                    )
+            if content_items:
+                events.append({
+                    "type": "message",
+                    "message": {"role": "assistant", "content": content_items},
+                })
+
+        elif role in ("tool", "function"):
+            text = _flatten_content(m.get("content"))
+            if text:
+                events.append({
+                    "type": "message",
+                    "message": {
+                        "role": "toolResult",
+                        "content": [{"type": "text", "text": text}],
+                    },
+                })
+
+    return events
+
+
+# ── codex stream-json format ─────────────────────────────────────────────────
+
+def _codex_stream_events(
+    sessions_dir: Path,
+) -> "list[dict[str, Any]]":
+    """Parse a codex stream-json log file into OpenClaw transcript events.
+
+    Codex writes newline-delimited JSON (one object per line) to codex.txt.
+    Relevant event types:
+    * ``item.completed`` with ``item.type == "reasoning"``   → thinking block
+    * ``item.completed`` with ``item.type == "agent_message"`` → assistant text
+    * ``item.completed`` with ``item.type == "command_execution"`` → tool call+result
+    * ``turn.completed`` with ``usage``                       → token usage
+    """
+    log_file = sessions_dir / "codex.txt"
+    if not log_file.is_file():
+        return []
+
+    raw_lines: list[dict] = []
+    try:
+        for line in log_file.read_text(encoding="utf-8", errors="replace").splitlines():
+            line = line.strip()
+            if not line.startswith("{"):
+                continue
+            try:
+                raw_lines.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+    except OSError:
+        return []
+
+    if not raw_lines:
+        return []
+
+    events: list[dict[str, Any]] = []
+    accumulated_usage: dict[str, int] = {}
+
+    for ev in raw_lines:
+        etype = ev.get("type", "")
+
+        if etype == "item.completed":
+            item = ev.get("item") or {}
+            itype = item.get("type", "")
+
+            if itype == "reasoning":
+                text = (item.get("text") or "").strip()
+                if text:
+                    events.append({
+                        "type": "message",
+                        "message": {
+                            "role": "assistant",
+                            "content": [{"type": "text", "text": f"[thinking]\n{text}"}],
+                        },
+                    })
+
+            elif itype == "agent_message":
+                text = (item.get("text") or "").strip()
+                if text:
+                    events.append({
+                        "type": "message",
+                        "message": {
+                            "role": "assistant",
+                            "content": [{"type": "text", "text": text}],
+                        },
+                    })
+
+            elif itype == "command_execution":
+                cmd = (item.get("command") or "").strip()
+                output = (item.get("aggregated_output") or "").strip()
+                exit_code = item.get("exit_code")
+                if cmd:
+                    events.append({
+                        "type": "message",
+                        "message": {
+                            "role": "assistant",
+                            "content": [{
+                                "type": "toolCall",
+                                "name": "shell",
+                                "arguments": {"command": cmd},
+                            }],
+                        },
+                    })
+                    result_text = output or f"exit_code={exit_code}"
+                    if result_text:
+                        events.append({
+                            "type": "message",
+                            "message": {
+                                "role": "toolResult",
+                                "content": [{"type": "text", "text": result_text}],
+                            },
+                        })
+
+        elif etype == "turn.completed":
+            usage_raw = ev.get("usage") or {}
+            # codex uses input_tokens / output_tokens
+            prompt = (
+                usage_raw.get("input_tokens") or
+                usage_raw.get("prompt_tokens") or
+                0
+            )
+            completion = (
+                usage_raw.get("output_tokens") or
+                usage_raw.get("completion_tokens") or
+                0
+            )
+            try:
+                accumulated_usage["prompt_tokens"] = (
+                    accumulated_usage.get("prompt_tokens", 0) + int(prompt)
+                )
+                accumulated_usage["completion_tokens"] = (
+                    accumulated_usage.get("completion_tokens", 0) + int(completion)
+                )
+            except (TypeError, ValueError):
+                pass
+
+    if not events:
+        return []
+
+    _add_usage_to_last_assistant(events, accumulated_usage)
+    return events
+
+
+# ── claude-code stream-json format ───────────────────────────────────────────
+
+def _claude_code_stream_events(
+    sessions_dir: Path,
+) -> "list[dict[str, Any]]":
+    """Parse a claude-code stream-json log file into OpenClaw transcript events.
+
+    Claude Code writes a stream-json file (one JSON object per line) with
+    event types: ``system``, ``assistant``, ``tool_use``, ``tool_result``,
+    ``result``.  The ``assistant`` event embeds a standard Anthropic
+    ``message`` object whose ``content`` is a list of text / tool_use blocks.
+    """
+    log_file = sessions_dir / "claude-code.txt"
+    if not log_file.is_file():
+        return []
+
+    raw_events: list[dict] = []
+    try:
+        for line in log_file.read_text(encoding="utf-8", errors="replace").splitlines():
+            line = line.strip()
+            if not line.startswith("{"):
+                continue
+            try:
+                raw_events.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+    except OSError:
+        return []
+
+    if not raw_events:
+        return []
+
+    events: list[dict[str, Any]] = []
+    pending_tool_use_id: str | None = None
+
+    for ev in raw_events:
+        etype = ev.get("type", "")
+
+        # ── assistant turn (may contain text + tool_use blocks) ───────────────
+        if etype == "assistant":
+            msg = ev.get("message") or {}
+            content_blocks = msg.get("content") or []
+            if isinstance(content_blocks, str):
+                content_blocks = [{"type": "text", "text": content_blocks}]
+
+            assistant_content: list[dict[str, Any]] = []
+            for block in content_blocks:
+                btype = block.get("type", "")
+                if btype == "text":
+                    text = (block.get("text") or "").strip()
+                    if text:
+                        assistant_content.append({"type": "text", "text": text})
+                elif btype == "thinking":
+                    text = (block.get("thinking") or "").strip()
+                    if text:
+                        assistant_content.append(
+                            {"type": "text", "text": f"[thinking]\n{text}"}
+                        )
+                elif btype == "tool_use":
+                    name = block.get("name", "")
+                    args = block.get("input") or {}
+                    pending_tool_use_id = block.get("id")
+                    if name:
+                        assistant_content.append(
+                            {"type": "toolCall", "name": name, "arguments": args}
+                        )
+
+            if assistant_content:
+                events.append({
+                    "type": "message",
+                    "message": {"role": "assistant", "content": assistant_content},
+                })
+
+        # ── tool result ───────────────────────────────────────────────────────
+        elif etype == "tool_result":
+            content = ev.get("content") or []
+            if isinstance(content, str):
+                text = content.strip()
+            else:
+                text = _flatten_content(content)
+            if text:
+                events.append({
+                    "type": "message",
+                    "message": {
+                        "role": "toolResult",
+                        "content": [{"type": "text", "text": text}],
+                    },
+                })
+
+        # ── user message (task prompt) ────────────────────────────────────────
+        elif etype == "user":
+            content = ev.get("message", {}).get("content") or ev.get("content") or ""
+            text = _flatten_content(content) if not isinstance(content, str) else content
+            if text.strip():
+                events.append({
+                    "type": "message",
+                    "message": {
+                        "role": "user",
+                        "content": [{"type": "text", "text": text.strip()}],
                     },
                 })
 

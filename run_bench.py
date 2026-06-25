@@ -18,6 +18,14 @@ Quick start
   # Compare all three agents on the same tasks:
   python run_bench.py --agents qwenpaw openclaw hermes --model dashscope/qwen3.6-plus --tasks T002_email_triage
 
+  # Run a Harbor agent (harbor-framework must be installed; use pawbench-base image):
+  python run_bench.py --agents harbor:hermes  --model anthropic/claude-sonnet-4-5
+  python run_bench.py --agents harbor:codex   --model openai/o3
+  python run_bench.py --agents harbor:aider   --model anthropic/claude-opus-4-5
+
+  # Compare a built-in agent against its Harbor counterpart:
+  python run_bench.py --agents hermes harbor:hermes --model anthropic/claude-sonnet-4-5
+
   # Run a specific subset of tasks:
   python run_bench.py --model openai/gpt-4o --tasks T001 T002
 
@@ -103,13 +111,16 @@ def parse_args() -> argparse.Namespace:
     run_grp.add_argument(
         "--agents",
         nargs="+",
-        choices=["qwenpaw", "openclaw", "hermes"],
         default=None,
+        metavar="AGENT",
         help=(
-            "Agent(s) to use. Can be specified multiple times to run all agents sequentially. "
-            "'qwenpaw' (default, qwenclawbench-qwenpaw:latest), "
-            "'openclaw' (openclaw-pawbench:latest), "
-            "'hermes' (hermes-qwenclawbench:latest)."
+            "Agent(s) to use. Built-in: qwenpaw (default), openclaw, hermes. "
+            "Harbor agents: harbor:<name> — runs any Harbor BaseInstalledAgent "
+            "inside the pawbench-base Docker image (requires Python 3.12 + harbor-framework). "
+            "Examples: harbor:hermes, harbor:codex, harbor:aider, harbor:claude-code, "
+            "harbor:gemini-cli, harbor:goose, harbor:qwen-code, harbor:openhands, "
+            "harbor:swe-agent, harbor:nemo-agent. "
+            "Multiple agents run sequentially: --agents qwenpaw harbor:hermes"
         ),
     )
     run_grp.add_argument(
@@ -173,7 +184,7 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         default=False,
         dest="skip_bootstrap",
-        help="[QwenPaw] Remove BOOTSTRAP.md from the task workspace before execution.",
+        help="[openclaw] Remove BOOTSTRAP.md / SOUL.md from the task workspace before execution.",
     )
 
     model_grp = p.add_argument_group("Model & API configuration")
@@ -321,6 +332,7 @@ def _default_base_url_for_model(model: str | None) -> str:
     ``ModelConfigManager`` (e.g. Anthropic, Gemini, DashScope) instead of
     always falling back to ``OPENAI_BASE_URL``.
     """
+    _OPENAI_DEFAULT = "https://api.openai.com/v1"
     if model:
         try:
             from pawbench.llm.model_config import ModelConfigManager, ProviderType
@@ -328,13 +340,25 @@ def _default_base_url_for_model(model: str | None) -> str:
             if cfg.provider == ProviderType.CUSTOM:
                 return (
                     os.environ.get("CUSTOM_BASE_URL")
-                    or os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
+                    or os.environ.get("OPENAI_BASE_URL", _OPENAI_DEFAULT)
                 )
-            if cfg.base_url:
+            if cfg.provider == ProviderType.ANTHROPIC:
+                # Prefer ANTHROPIC_BASE_URL from env (e.g. a relay/proxy) over the
+                # hardcoded api.anthropic.com default so that proxy setups work
+                # without passing --base-url on every invocation.
+                return (
+                    os.environ.get("ANTHROPIC_BASE_URL")
+                    or cfg.base_url
+                )
+            if cfg.base_url and cfg.base_url != _OPENAI_DEFAULT:
+                # Use the provider-specific URL only when it's not the generic
+                # OpenAI default.  When it IS the default, prefer $OPENAI_BASE_URL
+                # so DashScope-compatible endpoints (openai/qwen*) work correctly
+                # without requiring --base-url on every invocation.
                 return cfg.base_url
         except Exception:
             pass
-    return os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
+    return os.environ.get("OPENAI_BASE_URL", _OPENAI_DEFAULT)
 
 
 def _default_api_key_for_model(model: str | None) -> str | None:
@@ -342,6 +366,8 @@ def _default_api_key_for_model(model: str | None) -> str | None:
 
     For ``custom`` provider models the ``CUSTOM_API_KEY`` env var takes
     precedence, allowing a different key without ``--api-key`` every time.
+    For ``anthropic`` provider models, ``ANTHROPIC_API_KEY`` is preferred so
+    that proxy/relay configurations work without explicit ``--api-key``.
     """
     if model:
         try:
@@ -350,6 +376,11 @@ def _default_api_key_for_model(model: str | None) -> str | None:
             if cfg.provider == ProviderType.CUSTOM:
                 return (
                     os.environ.get("CUSTOM_API_KEY")
+                    or os.environ.get("OPENAI_API_KEY")
+                )
+            if cfg.provider == ProviderType.ANTHROPIC:
+                return (
+                    os.environ.get("ANTHROPIC_API_KEY")
                     or os.environ.get("OPENAI_API_KEY")
                 )
         except Exception:

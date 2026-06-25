@@ -9,3 +9,7 @@ AGENT_WORKSPACE = "/app/working/workspaces/default"
 QWENPAW_DEFAULT_IMAGE  = "qwenclawbench-qwenpaw:latest"   # docker/Dockerfile.pawbench-qwenpaw
 OPENCLAW_DEFAULT_IMAGE = "openclaw-pawbench:latest"       # examples/upstream/docker/Dockerfile.pawbench-openclaw
 HERMES_DEFAULT_IMAGE   = "hermes-qwenclawbench:latest"    # docker/Dockerfile.hermes
+
+# Base image for all Harbor-bridge agents (Python 3.12 + harbor-framework).
+# Build: docker build -f docker/Dockerfile.pawbench-base -t pawbench-base:latest .
+PAWBENCH_BASE_IMAGE    = "pawbench-base:latest"           # docker/Dockerfile.pawbench-base

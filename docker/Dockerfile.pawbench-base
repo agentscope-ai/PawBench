@@ -1,0 +1,114 @@
+FROM python:3.12-slim
+
+# ── Node.js version ────────────────────────────────────────────────────────────
+ARG NODE_MAJOR=20
+
+# ── System packages ────────────────────────────────────────────────────────────
+# Same tool set as Dockerfile.pawbench-qwenpaw minus the qwenpaw agent itself.
+# Harbor-ecosystem agents (codex, aider, qwen-code, ...) are installed at
+# runtime by each HarborBridgeAgent.install() call, keeping this image
+# agent-agnostic.
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip git curl wget ca-certificates gnupg \
+        build-essential libssl-dev \
+        jq sqlite3 \
+        # ── GUI / desktop (required for gui_*_zh tasks) ──────────────────────
+        xvfb \
+        xfce4 \
+        xfce4-terminal \
+        xfce4-taskmanager \
+        dbus \
+        dbus-x11 \
+        scrot \
+        fonts-wqy-zenhei \
+        fonts-wqy-microhei \
+        # ── Chromium + X11 ───────────────────────────────────────────────────
+        chromium \
+        chromium-sandbox \
+        libx11-xcb1 \
+        libxcomposite1 \
+        libxdamage1 \
+        libxext6 \
+        libxfixes3 \
+        libxi6 \
+        libxtst6 \
+        libnss3 \
+        libglib2.0-0 \
+        libdrm2 \
+        libgbm1 \
+        libasound2 \
+        fonts-liberation \
+    && \
+    sed -i 's/^CHROMIUM_FLAGS=""/CHROMIUM_FLAGS="--no-sandbox"/' /usr/bin/chromium 2>/dev/null || true && \
+    # ── Node.js 20 LTS via NodeSource ─────────────────────────────────────────
+    mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+        | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] \
+        https://deb.nodesource.com/node_${NODE_MAJOR}.x nodistro main" \
+        > /etc/apt/sources.list.d/nodesource.list && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+# ── Playwright: use system Chromium ──────────────────────────────────────────
+ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+ENV COPAW_RUNNING_IN_CONTAINER=1
+
+# ── Common Python task dependencies ──────────────────────────────────────────
+RUN pip install --no-cache-dir \
+    requests \
+    pyyaml \
+    urllib3 \
+    pandas \
+    numpy \
+    matplotlib \
+    Pillow \
+    scikit-learn \
+    python-docx \
+    yfinance \
+    certifi \
+    playwright
+
+# ── harbor-framework (Python 3.12 required) ───────────────────────────────────
+# Harbor is not on PyPI; install from the local clone (examples/harbor/).
+# The COPY below includes harbor/pyproject.toml and harbor/src/harbor/.
+# After install the temp copy is removed to keep the layer small.
+COPY harbor/ /tmp/harbor-src/
+RUN pip install --no-cache-dir /tmp/harbor-src && rm -rf /tmp/harbor-src
+
+# ── Standard workspace / log directories ─────────────────────────────────────
+# Harbor agents write logs to /logs/agent/; PawBench grader reads the workspace.
+RUN mkdir -p /app/working/workspaces/default/output \
+             /app/working/workspaces/default/sessions \
+             /logs/agent \
+             /logs/verifier
+
+# ── Pre-install Harbor agents ─────────────────────────────────────────────────
+# Bakes the listed Harbor agent CLIs into the image (reusing each agent's own
+# install() logic) so that HarborBridgeAgent.install() is a fast no-op at eval
+# time instead of downloading/installing per task.
+# Override the set with: --build-arg HARBOR_AGENTS="mini-swe aider hermes".
+ARG HARBOR_AGENTS="mini-swe aider hermes codex qwen-code"
+COPY docker/preinstall_harbor_agents.py /tmp/preinstall_harbor_agents.py
+RUN python3 /tmp/preinstall_harbor_agents.py ${HARBOR_AGENTS}
+
+# ── ossutil (task assets from OSS) ───────────────────────────────────────────
+RUN curl -fsSL https://gosspublic.alicdn.com/ossutil/1.7.18/ossutil64 \
+    -o /usr/local/bin/ossutil && chmod +x /usr/local/bin/ossutil
+
+# ── copawbench runner (grader + task loader) ──────────────────────────────────
+COPY pawbench/         /opt/copawbench/pawbench/
+COPY run_bench.py      /opt/copawbench/run_bench.py
+COPY requirements.txt  /opt/copawbench/requirements.txt
+RUN pip install --no-cache-dir -r /opt/copawbench/requirements.txt
+ENV PYTHONPATH=/opt/copawbench
+
+# ── Smoke-tests ───────────────────────────────────────────────────────────────
+RUN ossutil --version
+RUN python3 -c "import pawbench; print('pawbench-base OK')"
+RUN python3 -c "import harbor; print('harbor', harbor.__version__, 'OK')"
+RUN node --version && npm --version
+RUN python3 -c "import requests, yaml, pandas, numpy; print('Python deps OK')"

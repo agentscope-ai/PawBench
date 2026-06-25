@@ -250,7 +250,10 @@ class PawBenchBackend(BenchmarkBackend):
         )
 
         assets_dir = self.benchmark_path / "data" / dataset / "assets"
-        container_name = f"pawbench-{agent.name}-{task.task_id}-{uuid.uuid4().hex[:8]}"
+        # Docker container names may only contain [a-zA-Z0-9][a-zA-Z0-9_.-].
+        # Replace any disallowed character (e.g. ':' from "harbor:hermes") with '-'.
+        _safe_agent_name = re.sub(r"[^a-zA-Z0-9_.\-]", "-", agent.name)
+        container_name = f"pawbench-{_safe_agent_name}-{task.task_id}-{uuid.uuid4().hex[:8]}"
 
         # When PAWBENCH_ENV=local the benchmark is already running inside the
         # target container (e.g. AP cluster), so we must NOT spin up a nested
@@ -263,14 +266,30 @@ class PawBenchBackend(BenchmarkBackend):
             print(f"[backend] Using LocalEnvironment", flush=True)
         else:
             from pawbench.envs.docker import DockerEnvironment
+            # Base env vars forwarded to every container.
+            # Harbor bridge agents override/extend these via their own extra_env
+            # inside each docker exec call; these are just sane defaults.
+            container_env_vars: dict[str, str] = {
+                "OPENAI_API_KEY": api_key or "",
+                "OPENAI_BASE_URL": base_url or "",
+                "OPENAI_API_BASE": base_url or "",   # litellm 旧变量名，mini-swe 需要
+                "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY", api_key or ""),
+            }
+            # Forward provider-specific keys from the host environment so that
+            # Harbor agents (hermes, codex, …) can reach their LLMs.
+            for _env_key in (
+                "ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL",
+                "GOOGLE_API_KEY",
+                "OPENROUTER_API_KEY",
+                "KIMI_API_KEY", "GLM_API_KEY",
+            ):
+                _val = os.environ.get(_env_key)
+                if _val:
+                    container_env_vars[_env_key] = _val
             env = DockerEnvironment(
                 name=container_name,
                 image=docker_image,
-                environment_vars={
-                    "OPENAI_API_KEY": api_key,
-                    "OPENAI_BASE_URL": base_url,
-                    "DASHSCOPE_API_KEY": api_key,
-                },
+                environment_vars=container_env_vars,
             )
 
         t0 = time.time()
