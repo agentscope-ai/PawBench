@@ -2,25 +2,26 @@
   "run": "pawbench-4models-opusjudge-20260529",
   "model": "kimi-k2.6",
   "harness": "openclaw",
-  "overall": 0.6933,
+  "overall": 0.6656,
   "automated": 0.7925,
   "judge": 0.7088,
-  "tasks": 144,
+  "tasks": 150,
   "tasks_total": 150,
   "tasks_errored": 0,
+  "tasks_missing": 6,
   "missing_metadata": 0,
   "updated": "2026-05-29",
   "by_complexity": {
-    "L3": 0.6868,
+    "L3": 0.649,
     "L2": 0.7086,
     "L1": 0.7121
   },
   "by_environment": {
-    "closed": 0.6951,
+    "closed": 0.6628,
     "open": 0.6828
   },
   "by_scenario": {
-    "Content_Creation/Design": 0.5031,
+    "Content_Creation/Design": 0.4402,
     "Data_Analytics/Visualization": 0.9014,
     "Data_Analytics/Business_Intelligence": 0.6482,
     "Knowledge/QA": 0.9109,
@@ -32,8 +33,8 @@
     "Content_Creation/Writing": 0.9241,
     "Office_Productivity/Document": 0.7607,
     "Safety_Alignment/Data_Protection": 0.6966,
-    "Safety_Alignment/Prompt_Injection": 0.6362,
-    "Software_Engineering/Code": 0.637,
+    "Safety_Alignment/Prompt_Injection": 0.5567,
+    "Software_Engineering/Code": 0.5995,
     "Software_Engineering/Database": 0.98,
     "Office_Productivity/Meeting": 0.5519,
     "Software_Engineering/DevOps": 0.8266,
@@ -51,47 +52,48 @@
     "Finance_Investment/Quantitative_Trading": 0.0,
     "Information_Retrieval/Social_Platform": 0.12,
     "Safety_Alignment/Harmful_Content": 0.725,
-    "Manufacturing_Engineering/Quality_Control": 0.912
+    "Manufacturing_Engineering/Quality_Control": 0.5472,
+    "Data_Analytics/Text_Analytics": 0.0
   },
   "by_scenario_top": {
-    "Content_Creation": 0.6837,
-    "Data_Analytics": 0.6929,
+    "Content_Creation": 0.6381,
+    "Data_Analytics": 0.6544,
     "Knowledge": 0.9109,
     "Office_Productivity": 0.7531,
     "Information_Retrieval": 0.7387,
-    "Safety_Alignment": 0.6779,
-    "Software_Engineering": 0.6855,
+    "Safety_Alignment": 0.6422,
+    "Software_Engineering": 0.658,
     "Legal": 0.935,
     "Finance_Investment": 0.1109,
     "Automation_Platform": 0.5946,
-    "Manufacturing_Engineering": 0.912
+    "Manufacturing_Engineering": 0.5472
   },
   "by_modality": {
-    "multimodal": 0.6617,
-    "text": 0.7
+    "multimodal": 0.6362,
+    "text": 0.6718
   },
   "by_channel": {
-    "image": 0.6617
+    "image": 0.6362
   },
   "by_capability": {
-    "Tool_Use": 0.6982,
-    "Code_Manipulation": 0.5887,
-    "Logic_Reasoning": 0.677,
-    "Planning": 0.676,
-    "Math_Computation": 0.6191,
-    "Self_Verification": 0.6725,
-    "Skill_Use": 0.5233
+    "Tool_Use": 0.6701,
+    "Code_Manipulation": 0.5551,
+    "Logic_Reasoning": 0.6541,
+    "Planning": 0.6389,
+    "Math_Computation": 0.5645,
+    "Self_Verification": 0.6383,
+    "Skill_Use": 0.4001
   },
   "by_source": {
-    "claweval": 0.8335,
+    "claweval": 0.8175,
     "pinchbench": 0.7334,
-    "qwenclawbench": 0.5537,
+    "qwenclawbench": 0.5346,
     "qwenpawbench": 0.6606,
-    "skillsbench": 0.4607,
+    "skillsbench": 0.3378,
     "wildclawbench": 0.6021
   },
   "by_category": {
-    "multimodal": 0.7814,
+    "multimodal": 0.7293,
     "communication": 0.9238,
     "productivity": 0.8438,
     "finance": 0.7512,
@@ -125,7 +127,7 @@
     "Knowledge and Memory Management": 0.5766,
     "Data Analysis and Modeling": 0.2702,
     "Finance and Quantitative Trading": 0.3477,
-    "Security and Vulnerability Management": 0.6835,
+    "Security and Vulnerability Management": 0.5859,
     "Research and Information Retrieval": 0.7229,
     "memory": 0.3333,
     "copaw-cron": 0.9187,
@@ -137,11 +139,11 @@
     "Safety_Compliance": 0.625,
     "Screenshot_Task": 0.3,
     "Education_Knowledge": 0.935,
-    "Manufacturing_Engineering": 0.912,
-    "Software_Engineering": 0.3084,
+    "Manufacturing_Engineering": 0.5472,
+    "Software_Engineering": 0.257,
     "Healthcare": 0.2,
     "Office_Productivity": 0.2,
-    "Data_Analytics": 0.3895,
+    "Data_Analytics": 0.1947,
     "01_Productivity_Flow": 0.0,
     "02_Code_Intelligence": 1.0,
     "03_Social_Interaction": 0.8904,
@@ -149,7 +151,7 @@
     "06_Safety_Alignment": 0.5875
   },
   "by_grading": {
-    "hybrid": 0.6686,
+    "hybrid": 0.6352,
     "automated": 0.8859,
     "llm_judge": 0.6887
   },
@@ -164,7 +166,7 @@
     "Meeting": 0.964,
     "Document": 0.55,
     "QA": 0.9444,
-    "Code": 0.4921,
+    "Code": 0.4306,
     "DevOps": 1.0,
     "Web Research": 0.75,
     "Meeting Transcript Analysis": 0.4287,
@@ -180,7 +182,7 @@
     "Quality Auditing and Diagnosis": 0.2295,
     "Text Parsing": 0.5583,
     "Trading Strategy and Backtesting": 0.5215,
-    "Security Detection and Hardening": 0.3464,
+    "Security Detection and Hardening": 0.2309,
     "Privacy Compliance and Auditing": 0.7442,
     "Identity Authentication and Access Control": 0.92,
     "Reminders and Scheduled Tasks": 0.569,
@@ -199,8 +201,9 @@
     "Dashboard/Admin_Panel": 0.3,
     "Market/Industry_Report": 0.96,
     "Learning/Concept_Explanation": 0.935,
-    "Quality_Control": 0.912,
+    "Quality_Control": 0.5472,
     "Clinical_Data_Harmonization": 0.2,
-    "Business_Intelligence": 0.3895
+    "Business_Intelligence": 0.3895,
+    "Text_Analytics": 0.0
   }
 }

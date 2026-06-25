@@ -2,21 +2,22 @@
   "run": "pawbench-4models-opusjudge-20260529",
   "model": "qwen3.6-35b-a3b",
   "harness": "openclaw",
-  "overall": 0.6825,
+  "overall": 0.6779,
   "automated": 0.7758,
   "judge": 0.7081,
-  "tasks": 149,
+  "tasks": 150,
   "tasks_total": 150,
   "tasks_errored": 0,
+  "tasks_missing": 1,
   "missing_metadata": 0,
   "updated": "2026-05-29",
   "by_complexity": {
-    "L3": 0.6489,
+    "L3": 0.643,
     "L2": 0.7697,
     "L1": 0.7738
   },
   "by_environment": {
-    "closed": 0.6776,
+    "closed": 0.6723,
     "open": 0.7124
   },
   "by_scenario": {
@@ -51,11 +52,12 @@
     "Finance_Investment/Quantitative_Trading": 0.2,
     "Information_Retrieval/Social_Platform": 0.075,
     "Safety_Alignment/Harmful_Content": 0.932,
-    "Manufacturing_Engineering/Quality_Control": 0.3842
+    "Manufacturing_Engineering/Quality_Control": 0.3842,
+    "Data_Analytics/Text_Analytics": 0.0
   },
   "by_scenario_top": {
     "Content_Creation": 0.645,
-    "Data_Analytics": 0.7161,
+    "Data_Analytics": 0.6763,
     "Knowledge": 0.7583,
     "Office_Productivity": 0.8464,
     "Information_Retrieval": 0.7271,
@@ -68,26 +70,26 @@
   },
   "by_modality": {
     "multimodal": 0.5724,
-    "text": 0.7058
+    "text": 0.7001
   },
   "by_channel": {
     "image": 0.5724
   },
   "by_capability": {
-    "Tool_Use": 0.6871,
+    "Tool_Use": 0.6825,
     "Code_Manipulation": 0.4923,
     "Logic_Reasoning": 0.6627,
-    "Planning": 0.6578,
+    "Planning": 0.6505,
     "Math_Computation": 0.5836,
-    "Self_Verification": 0.5832,
-    "Skill_Use": 0.3849
+    "Self_Verification": 0.5733,
+    "Skill_Use": 0.3622
   },
   "by_source": {
     "claweval": 0.8011,
     "pinchbench": 0.7988,
     "qwenclawbench": 0.5229,
     "qwenpawbench": 0.7663,
-    "skillsbench": 0.3006,
+    "skillsbench": 0.2805,
     "wildclawbench": 0.6197
   },
   "by_category": {
@@ -141,7 +143,7 @@
     "Software_Engineering": 0.2495,
     "Healthcare": 0.2,
     "Office_Productivity": 0.2,
-    "Data_Analytics": 0.3895,
+    "Data_Analytics": 0.1947,
     "01_Productivity_Flow": 0.0,
     "02_Code_Intelligence": 1.0,
     "03_Social_Interaction": 0.9518,
@@ -149,7 +151,7 @@
     "06_Safety_Alignment": 0.5853
   },
   "by_grading": {
-    "hybrid": 0.6623,
+    "hybrid": 0.6568,
     "automated": 0.775,
     "llm_judge": 0.75
   },
@@ -201,6 +203,7 @@
     "Learning/Concept_Explanation": 0.91,
     "Quality_Control": 0.3842,
     "Clinical_Data_Harmonization": 0.2,
-    "Business_Intelligence": 0.3895
+    "Business_Intelligence": 0.3895,
+    "Text_Analytics": 0.0
   }
 }

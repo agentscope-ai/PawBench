@@ -2,21 +2,22 @@
   "run": "pawbench-4models-opusjudge-20260529",
   "model": "qwen3.6-max-preview",
   "harness": "hermes",
-  "overall": 0.6855,
+  "overall": 0.6809,
   "automated": 0.7675,
   "judge": 0.7756,
-  "tasks": 149,
+  "tasks": 150,
   "tasks_total": 150,
   "tasks_errored": 0,
+  "tasks_missing": 1,
   "missing_metadata": 0,
   "updated": "2026-05-29",
   "by_complexity": {
-    "L3": 0.6801,
+    "L3": 0.6739,
     "L2": 0.7235,
     "L1": 0.6418
   },
   "by_environment": {
-    "closed": 0.7053,
+    "closed": 0.6998,
     "open": 0.5646
   },
   "by_scenario": {
@@ -51,7 +52,7 @@
     "Finance_Investment/Quantitative_Trading": 0.67,
     "Information_Retrieval/Social_Platform": 0.125,
     "Safety_Alignment/Harmful_Content": 0.7333,
-    "Manufacturing_Engineering/Quality_Control": 0.4157,
+    "Manufacturing_Engineering/Quality_Control": 0.3326,
     "Data_Analytics/Text_Analytics": 0.2
   },
   "by_scenario_top": {
@@ -65,30 +66,30 @@
     "Legal": 1.0,
     "Finance_Investment": 0.4567,
     "Automation_Platform": 0.6452,
-    "Manufacturing_Engineering": 0.4157
+    "Manufacturing_Engineering": 0.3326
   },
   "by_modality": {
     "multimodal": 0.5806,
-    "text": 0.7076
+    "text": 0.7019
   },
   "by_channel": {
     "image": 0.5806
   },
   "by_capability": {
-    "Tool_Use": 0.6901,
+    "Tool_Use": 0.6855,
     "Code_Manipulation": 0.5635,
-    "Logic_Reasoning": 0.7257,
-    "Planning": 0.6886,
-    "Math_Computation": 0.6237,
+    "Logic_Reasoning": 0.7175,
+    "Planning": 0.681,
+    "Math_Computation": 0.6054,
     "Self_Verification": 0.6558,
-    "Skill_Use": 0.4174
+    "Skill_Use": 0.3928
   },
   "by_source": {
     "claweval": 0.8371,
     "pinchbench": 0.7253,
     "qwenclawbench": 0.5876,
     "qwenpawbench": 0.6554,
-    "skillsbench": 0.3442,
+    "skillsbench": 0.3212,
     "wildclawbench": 0.6304
   },
   "by_category": {
@@ -138,7 +139,7 @@
     "Safety_Compliance": 0.7294,
     "Screenshot_Task": 0.17,
     "Education_Knowledge": 0.91,
-    "Manufacturing_Engineering": 0.4157,
+    "Manufacturing_Engineering": 0.3326,
     "Software_Engineering": 0.3388,
     "Healthcare": 0.3333,
     "Office_Productivity": 0.2,
@@ -150,7 +151,7 @@
     "06_Safety_Alignment": 0.6295
   },
   "by_grading": {
-    "hybrid": 0.6861,
+    "hybrid": 0.6804,
     "automated": 0.7441,
     "llm_judge": 0.6217
   },
@@ -200,7 +201,7 @@
     "Dashboard/Admin_Panel": 0.17,
     "Market/Industry_Report": 0.91,
     "Learning/Concept_Explanation": 0.91,
-    "Quality_Control": 0.4157,
+    "Quality_Control": 0.3326,
     "Clinical_Data_Harmonization": 0.3333,
     "Text_Analytics": 0.2,
     "Business_Intelligence": 0.3895
