@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 # ── Pinned agent version ───────────────────────────────────────────────────────
 # Keep in sync with _DEFAULT_QWENPAW_VERSION in pawbench/agents/impl/qwenpaw_agent.py.
