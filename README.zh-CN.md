@@ -140,6 +140,65 @@ python run_bench.py \
 
 其他参数（`--no-results-version-path`、`--save-workspace`、`--save-docker-image` 等）见 `python run_bench.py --help`。
 
+#### 使用 Harbor Bridge 评测 Claude Code、Codex 等 Agent
+
+PawBench 通过 **Harbor Bridge** 支持评测任何 [Harbor](https://github.com/av/harbor) 兼容的 Agent，包括 Claude Code、OpenAI Codex CLI、Aider 等主流编程 Agent，使用相同的 150 道 PawBench 任务。
+
+**第一步：构建基础镜像**（已包含 `harbor-framework` 和所有系统依赖）：
+
+```bash
+docker build -f docker/Dockerfile.pawbench-base -t pawbench-base:latest .
+```
+
+**第二步：在 `.env` 中配置 API Key**（可从 `.env.example` 复制）：
+
+```bash
+# Claude Code 所需
+ANTHROPIC_API_KEY=sk-ant-...
+
+# Codex CLI 所需
+OPENAI_API_KEY=sk-...
+```
+
+**第三步：在 `--agents` 中使用 `harbor:` 前缀**：
+
+```bash
+# 评测 Claude Code（支持任意 Anthropic 模型）
+python run_bench.py \
+  --agents harbor:claude-code \
+  --model anthropic/claude-opus-4-5 \
+  --tasks T053
+
+# 评测 OpenAI Codex CLI
+python run_bench.py \
+  --agents harbor:codex \
+  --model openai/codex-mini \
+  --tasks T053
+
+# Claude Code vs Codex vs QwenPaw 三方横向对比
+python run_bench.py \
+  --agents harbor:claude-code harbor:codex qwenpaw \
+  --model anthropic/claude-opus-4-5 \
+  --tasks T002 T006 T053
+```
+
+**支持的 Harbor Agent 列表**（`harbor:<名称>` 格式均可使用）：
+
+| 名称 | Agent | 提供方 |
+| :--- | :--- | :--- |
+| `harbor:claude-code` | Claude Code CLI | Anthropic |
+| `harbor:codex` | Codex CLI | OpenAI |
+| `harbor:aider` | Aider | Paul Gauthier |
+| `harbor:gemini-cli` | Gemini CLI | Google |
+| `harbor:qwen-code` | Qwen Code CLI | 阿里巴巴 |
+| `harbor:goose` | Goose | Block |
+| `harbor:opencode` | OpenCode | — |
+| `harbor:openhands` | OpenHands | All-Hands-AI |
+| `harbor:swe-agent` | SWE-agent | Princeton NLP |
+| `harbor:cursor-cli` | Cursor CLI | Anysphere |
+| `harbor:kimi-cli` | Kimi CLI | Moonshot AI |
+| `harbor:copilot-cli` | GitHub Copilot CLI | GitHub |
+
 ### 查看排行榜
 
 站点包含 Model × Harness 矩阵、可排序榜单、切片分析器、任务库和单任务详情页。
@@ -182,11 +241,34 @@ v1.0 包含 **150 道任务**，来源包括 `claweval`、`qwenclawbench`、`pin
 
 ### Harness
 
+PawBench 支持两类 Harness：**内置 Harness**（随 PawBench 发布）和 **Harbor Bridge Agent**（接入任意 [Harbor](https://github.com/av/harbor) 兼容的编程 Agent）。
+
+**内置 Harness**
+
 | Harness | 链接 | 当前角色 |
 | :--- | :--- | :--- |
 | QwenPaw | [agentscope-ai/QwenPaw](https://github.com/agentscope-ai/QwenPaw) | 默认 PawBench Harness 和主要 baseline |
 | OpenClaw | [openclaw/openclaw](https://github.com/openclaw/openclaw) | 通用开源 Agent runtime |
 | Hermes | [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) | 社区 Agent Harness 对照组 |
+
+**Harbor Bridge Agent**（使用 `--agents harbor:<名称>`）
+
+Harbor Bridge 将 PawBench 与 [Harbor](https://github.com/av/harbor) 生态连接，把 Harbor 的 `exec()` / `upload_file()` 接口转换为对 PawBench 容器的 `docker exec` / `docker cp` 调用，让任何 Harbor 兼容 Agent 无需修改即可参与评测。使用前需先构建 `docker/Dockerfile.pawbench-base`。
+
+| 名称 | Agent | 提供方 |
+| :--- | :--- | :--- |
+| `harbor:claude-code` | Claude Code CLI | Anthropic |
+| `harbor:codex` | Codex CLI | OpenAI |
+| `harbor:aider` | Aider | Paul Gauthier |
+| `harbor:gemini-cli` | Gemini CLI | Google |
+| `harbor:qwen-code` | Qwen Code CLI | 阿里巴巴 |
+| `harbor:goose` | Goose | Block |
+| `harbor:opencode` | OpenCode | — |
+| `harbor:openhands` | OpenHands | All-Hands-AI |
+| `harbor:swe-agent` | SWE-agent | Princeton NLP |
+| `harbor:cursor-cli` | Cursor CLI | Anysphere |
+| `harbor:kimi-cli` | Kimi CLI | Moonshot AI |
+| `harbor:copilot-cli` | GitHub Copilot CLI | GitHub |
 
 在 PawBench 中，Harness 是一等评测对象。贡献新的 Harness 时，应尽量保持相同的任务 prompt、workspace contract、timeout 行为、transcript 格式和结果 schema，这样模型因素和 Harness 因素才能保持可比。
 
@@ -202,7 +284,8 @@ v1.0 包含 **150 道任务**，来源包括 `claweval`、`qwenclawbench`、`pin
 
 ## Roadmap
 
-- [ ] **Harness 覆盖：** 接入 Claude Code、Cursor Agent、CoPaw，以及更多社区脚手架。
+- [x] **Harness 覆盖：** 通过 Harbor Bridge 已支持 Claude Code、Codex CLI、Aider、Gemini CLI、Cursor CLI 等 10+ Agent（`--agents harbor:<名称>`）。
+- [ ] **Harness 覆盖：** 继续接入 CoPaw 等更多社区脚手架。
 - [ ] **数据集扩展：** 引入更多 open-environment、multimodal、skill-heavy、long-horizon 和真实 SaaS/API 任务。
 - [ ] **可控实验：** 围绕工具数量、workspace 感知、Skill 发现、Web 工具和产物级完成校验展开实验。
 - [ ] **诊断能力：** 改进 trace replay、workspace diff、失败归因和 slice-level regression report。

@@ -139,6 +139,65 @@ python run_bench.py \
 
 See `python run_bench.py --help` for all flags, including `--no-results-version-path`, `--save-workspace`, and `--save-docker-image`.
 
+#### Evaluating with Harbor Bridge Agents (Claude Code, Codex, and more)
+
+PawBench supports evaluating any [Harbor](https://github.com/av/harbor)-compatible agent harness via the **Harbor Bridge**. This lets you benchmark Claude Code, OpenAI Codex CLI, Aider, and many other coding agents on the same 150 PawBench tasks.
+
+**1. Build the base image** (includes `harbor-framework` and all system dependencies):
+
+```bash
+docker build -f docker/Dockerfile.pawbench-base -t pawbench-base:latest .
+```
+
+**2. Set your API keys** in `.env` (copy from `.env.example` if you haven't already):
+
+```bash
+# For Claude Code
+ANTHROPIC_API_KEY=sk-ant-...
+
+# For Codex CLI
+OPENAI_API_KEY=sk-...
+```
+
+**3. Run with the `harbor:` prefix** in `--agents`:
+
+```bash
+# Evaluate Claude Code (claude-opus-4-5 or any Anthropic model)
+python run_bench.py \
+  --agents harbor:claude-code \
+  --model anthropic/claude-opus-4-5 \
+  --tasks T053
+
+# Evaluate OpenAI Codex CLI
+python run_bench.py \
+  --agents harbor:codex \
+  --model openai/codex-mini \
+  --tasks T053
+
+# Side-by-side comparison: Claude Code vs Codex vs QwenPaw on the same tasks
+python run_bench.py \
+  --agents harbor:claude-code harbor:codex qwenpaw \
+  --model anthropic/claude-opus-4-5 \
+  --tasks T002 T006 T053
+```
+
+**Supported Harbor agents** (use any as `harbor:<name>`):
+
+| Name | Agent |
+| :--- | :--- |
+| `claude-code` | Anthropic Claude Code CLI |
+| `codex` | OpenAI Codex CLI |
+| `aider` | Aider (Paul Gauthier) |
+| `gemini-cli` | Google Gemini CLI |
+| `qwen-code` | Qwen Code CLI |
+| `goose` | Block Goose |
+| `opencode` | OpenCode |
+| `openhands` | OpenHands (All-Hands-AI) |
+| `swe-agent` | SWE-agent (Princeton NLP) |
+| `cursor-cli` | Cursor CLI |
+| `kimi-cli` | Kimi CLI |
+| `copilot-cli` | GitHub Copilot CLI |
+
 ### View the Leaderboard
 
 The website exposes the Model × Harness matrix, sortable leaderboard, slice analyzer, task library, and per-task pages.
@@ -181,11 +240,34 @@ Each task page on the site shows its prompt, expected behavior, grading criteria
 
 ### Harnesses
 
+PawBench supports two kinds of harnesses: **built-in harnesses** that ship with PawBench, and **Harbor Bridge agents** that wrap any [Harbor](https://github.com/av/harbor)-compatible coding agent.
+
+**Built-in harnesses**
+
 | Harness | Link | Current role |
 | :--- | :--- | :--- |
 | QwenPaw | [agentscope-ai/QwenPaw](https://github.com/agentscope-ai/QwenPaw) | Default PawBench harness and primary baseline |
 | OpenClaw | [openclaw/openclaw](https://github.com/openclaw/openclaw) | General-purpose open agent runtime |
 | Hermes | [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) | Alternative community agent harness |
+
+**Harbor Bridge agents** (use `--agents harbor:<name>`)
+
+Harbor Bridge connects PawBench to the broader [Harbor](https://github.com/av/harbor) ecosystem. It translates Harbor's `exec()` / `upload_file()` interface into `docker exec` / `docker cp` calls against the running PawBench container, so any Harbor-compatible agent can be benchmarked without modification. Requires building `docker/Dockerfile.pawbench-base` first.
+
+| Name | Agent | Provider |
+| :--- | :--- | :--- |
+| `harbor:claude-code` | Claude Code CLI | Anthropic |
+| `harbor:codex` | Codex CLI | OpenAI |
+| `harbor:aider` | Aider | Paul Gauthier |
+| `harbor:gemini-cli` | Gemini CLI | Google |
+| `harbor:qwen-code` | Qwen Code CLI | Alibaba |
+| `harbor:goose` | Goose | Block |
+| `harbor:opencode` | OpenCode | — |
+| `harbor:openhands` | OpenHands | All-Hands-AI |
+| `harbor:swe-agent` | SWE-agent | Princeton NLP |
+| `harbor:cursor-cli` | Cursor CLI | Anysphere |
+| `harbor:kimi-cli` | Kimi CLI | Moonshot AI |
+| `harbor:copilot-cli` | GitHub Copilot CLI | GitHub |
 
 Harnesses are treated as first-class benchmark subjects. A harness contribution should preserve the same task prompt, workspace contract, timeout behavior, transcript format, and result schema so model and harness effects remain comparable.
 
@@ -201,7 +283,8 @@ Runs can be sliced by source, scenario, capability, complexity, modality, enviro
 
 ## Roadmap
 
-- [ ] **Harness coverage:** add Claude Code, Cursor Agent, CoPaw, and more community scaffolds.
+- [x] **Harness coverage:** Claude Code, Codex CLI, Aider, Gemini CLI, Cursor CLI, and 10+ more agents via Harbor Bridge (`--agents harbor:<name>`).
+- [ ] **Harness coverage:** add CoPaw and additional community scaffolds.
 - [ ] **Dataset expansion:** add more open-environment, multimodal, skill-heavy, long-horizon, and real-world SaaS/API tasks.
 - [ ] **Controlled studies:** turn the current findings into experiments around tool count, workspace awareness, skill discovery, web tools, and artifact-level completion checks.
 - [ ] **Diagnostics:** improve trace replay, workspace diffs, failure attribution, and slice-level regression reports.
