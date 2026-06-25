@@ -2,22 +2,23 @@
   "run": "pawbench-4models-opusjudge-20260529",
   "model": "qwen3.6-27b",
   "harness": "openclaw",
-  "overall": 0.7343,
+  "overall": 0.7294,
   "automated": 0.8215,
   "judge": 0.7751,
-  "tasks": 149,
+  "tasks": 150,
   "tasks_total": 150,
   "tasks_errored": 0,
+  "tasks_missing": 1,
   "missing_metadata": 0,
   "updated": "2026-05-29",
   "by_complexity": {
     "L3": 0.7227,
     "L2": 0.7535,
-    "L1": 0.7985
+    "L1": 0.732
   },
   "by_environment": {
     "closed": 0.7407,
-    "open": 0.6926
+    "open": 0.6596
   },
   "by_scenario": {
     "Content_Creation/Design": 0.5738,
@@ -47,7 +48,7 @@
     "Automation_Platform/Scheduling": 0.6497,
     "Content_Creation/Social_Media": 0.6028,
     "Finance_Investment/Stock": 0.5016,
-    "Automation_Platform/Agent": 0.7281,
+    "Automation_Platform/Agent": 0.6553,
     "Finance_Investment/Quantitative_Trading": 0.112,
     "Information_Retrieval/Social_Platform": 0.075,
     "Safety_Alignment/Harmful_Content": 0.7583,
@@ -64,18 +65,18 @@
     "Software_Engineering": 0.6064,
     "Legal": 1.0,
     "Finance_Investment": 0.5379,
-    "Automation_Platform": 0.6882,
+    "Automation_Platform": 0.652,
     "Manufacturing_Engineering": 0.7785
   },
   "by_modality": {
-    "multimodal": 0.6502,
+    "multimodal": 0.6252,
     "text": 0.7512
   },
   "by_channel": {
-    "image": 0.6502
+    "image": 0.6252
   },
   "by_capability": {
-    "Tool_Use": 0.7392,
+    "Tool_Use": 0.7343,
     "Code_Manipulation": 0.5644,
     "Logic_Reasoning": 0.7381,
     "Planning": 0.7135,
@@ -87,7 +88,7 @@
     "claweval": 0.8765,
     "pinchbench": 0.8821,
     "qwenclawbench": 0.5485,
-    "qwenpawbench": 0.7366,
+    "qwenpawbench": 0.7015,
     "skillsbench": 0.4448,
     "wildclawbench": 0.6234
   },
@@ -146,12 +147,13 @@
     "02_Code_Intelligence": 1.0,
     "03_Social_Interaction": 0.9612,
     "05_Creative_Synthesis": 0.0,
-    "06_Safety_Alignment": 0.5875
+    "06_Safety_Alignment": 0.5875,
+    "gui": 0.0
   },
   "by_grading": {
     "hybrid": 0.7138,
     "automated": 0.918,
-    "llm_judge": 0.7129
+    "llm_judge": 0.6653
   },
   "by_subcategory": {
     "Writing": 0.943,

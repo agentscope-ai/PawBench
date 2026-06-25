@@ -2,26 +2,27 @@
   "run": "pawbench-4models-opusjudge-20260529",
   "model": "glm-5.1",
   "harness": "hermes",
-  "overall": 0.6675,
+  "overall": 0.6319,
   "automated": 0.753,
   "judge": 0.7134,
-  "tasks": 142,
+  "tasks": 150,
   "tasks_total": 150,
   "tasks_errored": 1,
+  "tasks_missing": 8,
   "missing_metadata": 0,
   "updated": "2026-05-29",
   "by_complexity": {
-    "L3": 0.629,
+    "L3": 0.5828,
     "L2": 0.7637,
     "L1": 0.7588
   },
   "by_environment": {
-    "closed": 0.6747,
+    "closed": 0.6329,
     "open": 0.6259
   },
   "by_scenario": {
-    "Content_Creation/Design": 0.0545,
-    "Data_Analytics/Visualization": 0.9198,
+    "Content_Creation/Design": 0.0205,
+    "Data_Analytics/Visualization": 0.6132,
     "Data_Analytics/Business_Intelligence": 0.7483,
     "Knowledge/QA": 0.6797,
     "Office_Productivity/Email": 0.9302,
@@ -50,48 +51,49 @@
     "Finance_Investment/Quantitative_Trading": 0.358,
     "Information_Retrieval/Social_Platform": 0.57,
     "Safety_Alignment/Harmful_Content": 0.6773,
-    "Manufacturing_Engineering/Quality_Control": 0.4544,
-    "Data_Analytics/Text_Analytics": 0.2
+    "Manufacturing_Engineering/Quality_Control": 0.3635,
+    "Data_Analytics/Text_Analytics": 0.2,
+    "Finance_Investment/Stock": 0.0
   },
   "by_scenario_top": {
-    "Content_Creation": 0.5653,
-    "Data_Analytics": 0.7362,
+    "Content_Creation": 0.3768,
+    "Data_Analytics": 0.6953,
     "Knowledge": 0.6797,
     "Office_Productivity": 0.7643,
     "Information_Retrieval": 0.6478,
     "Safety_Alignment": 0.5418,
     "Software_Engineering": 0.6392,
     "Legal": 1.0,
-    "Finance_Investment": 0.579,
+    "Finance_Investment": 0.386,
     "Automation_Platform": 0.7138,
-    "Manufacturing_Engineering": 0.4544
+    "Manufacturing_Engineering": 0.3635
   },
   "by_modality": {
-    "multimodal": 0.5792,
-    "text": 0.682
+    "multimodal": 0.4455,
+    "text": 0.671
   },
   "by_channel": {
-    "image": 0.5792
+    "image": 0.4455
   },
   "by_capability": {
-    "Code_Manipulation": 0.5108,
-    "Tool_Use": 0.6722,
-    "Planning": 0.6267,
-    "Math_Computation": 0.6449,
-    "Self_Verification": 0.6059,
-    "Logic_Reasoning": 0.661,
-    "Skill_Use": 0.3989
+    "Code_Manipulation": 0.4087,
+    "Tool_Use": 0.6361,
+    "Planning": 0.6129,
+    "Math_Computation": 0.607,
+    "Self_Verification": 0.5854,
+    "Logic_Reasoning": 0.6313,
+    "Skill_Use": 0.3755
   },
   "by_source": {
-    "claweval": 0.8556,
+    "claweval": 0.7568,
     "pinchbench": 0.6957,
-    "qwenclawbench": 0.4747,
+    "qwenclawbench": 0.4584,
     "qwenpawbench": 0.7325,
-    "skillsbench": 0.3272,
+    "skillsbench": 0.3054,
     "wildclawbench": 0.6169
   },
   "by_category": {
-    "multimodal": 0.6095,
+    "multimodal": 0.3657,
     "communication": 0.924,
     "productivity": 0.9875,
     "finance": 0.8509,
@@ -124,7 +126,7 @@
     "System Operations and Administration": 0.4368,
     "Knowledge and Memory Management": 0.5584,
     "Data Analysis and Modeling": 0.2635,
-    "Finance and Quantitative Trading": 0.6156,
+    "Finance and Quantitative Trading": 0.4104,
     "Security and Vulnerability Management": 0.248,
     "Research and Information Retrieval": 0.9407,
     "memory": 1.0,
@@ -137,7 +139,7 @@
     "Safety_Compliance": 0.6794,
     "Screenshot_Task": 0.455,
     "Education_Knowledge": 0.15,
-    "Manufacturing_Engineering": 0.4544,
+    "Manufacturing_Engineering": 0.3635,
     "Software_Engineering": 0.2804,
     "Healthcare": 0.2917,
     "Office_Productivity": 0.2,
@@ -149,7 +151,7 @@
     "06_Safety_Alignment": 0.5875
   },
   "by_grading": {
-    "hybrid": 0.645,
+    "hybrid": 0.602,
     "automated": 0.8935,
     "llm_judge": 0.6097
   },
@@ -179,7 +181,7 @@
     "Memory and Context Management": 0.3564,
     "Quality Auditing and Diagnosis": 0.2419,
     "Text Parsing": 0.525,
-    "Trading Strategy and Backtesting": 0.8731,
+    "Trading Strategy and Backtesting": 0.4366,
     "Security Detection and Hardening": 0.2452,
     "Privacy Compliance and Auditing": 0.0,
     "Identity Authentication and Access Control": 0.0,
@@ -199,7 +201,7 @@
     "Dashboard/Admin_Panel": 0.455,
     "Market/Industry_Report": 0.95,
     "Learning/Concept_Explanation": 0.15,
-    "Quality_Control": 0.4544,
+    "Quality_Control": 0.3635,
     "Clinical_Data_Harmonization": 0.2917,
     "Text_Analytics": 0.2,
     "Business_Intelligence": 0.3895
