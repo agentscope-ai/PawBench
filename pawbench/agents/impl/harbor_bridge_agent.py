@@ -400,7 +400,24 @@ class HarborBridgeAgent(ContainerAgent):
         ]
         import subprocess as _sp
         from pawbench.envs.docker import DockerEnvironment
-        if isinstance(environment, DockerEnvironment):
+        from pawbench.envs.local import LocalEnvironment
+        if isinstance(environment, LocalEnvironment):
+            # PAWBENCH_ENV=local: logs and workspace are on the same filesystem;
+            # copy known session/log files into sessions/ with plain shell cp so
+            # build_transcript_from_session() can read them.
+            sessions_dir = f"{AGENT_WORKSPACE}/sessions"
+            _sp.run(["mkdir", "-p", sessions_dir], capture_output=True)
+            for log_src in _LOG_SOURCES:
+                fname = Path(log_src).name
+                cp = _sp.run(
+                    ["bash", "-c",
+                     f"test -f {log_src} && cp {log_src} {sessions_dir}/{fname} "
+                     f"&& echo COPIED || echo SKIPPED"],
+                    capture_output=True, text=True,
+                )
+                if (cp.stdout or "").strip() == "COPIED":
+                    print(f"  [harbor] sessions/{fname} ← {log_src}", flush=True)
+        elif isinstance(environment, DockerEnvironment):
             container = environment.name
             # Ensure sessions/ exists before copying into it
             _sp.run(
