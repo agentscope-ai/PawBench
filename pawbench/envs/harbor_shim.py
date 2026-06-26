@@ -29,6 +29,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import shlex
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -101,6 +103,23 @@ class PawBenchEnvShim:
         self._docker_env = docker_env
         self.logger = (logger or _logger).getChild("harbor_shim")
 
+    # ── env-type detection ─────────────────────────────────────────────────────
+
+    def _is_local(self) -> bool:
+        """True when the wrapped environment runs commands in-process.
+
+        When ``PAWBENCH_ENV=local`` (e.g. inside an Agent-Platform Pod), the
+        backend uses ``LocalEnvironment`` instead of ``DockerEnvironment``.
+        In that case there is no child container and no ``docker`` binary, so
+        Harbor's exec/upload calls must be routed to the LocalEnvironment's
+        in-process subprocess implementation instead of ``docker exec``.
+        """
+        try:
+            from pawbench.envs.local import LocalEnvironment
+            return isinstance(self._docker_env, LocalEnvironment)
+        except Exception:  # noqa: BLE001
+            return False
+
     # ── core property ─────────────────────────────────────────────────────────
 
     @property
@@ -129,7 +148,35 @@ class PawBenchEnvShim:
         Translates to::
 
             docker exec [-u USER] [-w CWD] [-e K=V …] <container> bash -c <command>
+
+        In ``PAWBENCH_ENV=local`` mode the wrapped environment is a
+        ``LocalEnvironment`` (no child container); the command is run in-process
+        via ``LocalEnvironment.execute_command`` with the cwd / env folded into
+        the shell command, since there is no ``docker`` binary to exec into.
         """
+        # ── local (in-process) execution ───────────────────────────────────────
+        if self._is_local():
+            effective_cwd = cwd if cwd is not None else self.WORKSPACE_DIR
+            prefix = f"cd {shlex.quote(effective_cwd)} 2>/dev/null; "
+            if env:
+                prefix += "".join(
+                    f"export {k}={shlex.quote(str(v))}; " for k, v in env.items()
+                )
+            full_command = prefix + command
+            self.logger.debug("local exec: %s", command[:200])
+            try:
+                res = await self._docker_env.execute_command(
+                    full_command, timeout=timeout_sec
+                )
+                return ExecResult(
+                    return_code=int(res.get("returncode") or 0),
+                    stdout=res.get("stdout", "") or "",
+                    stderr=res.get("stderr", "") or "",
+                )
+            except Exception as exc:  # noqa: BLE001
+                self.logger.error("local exec error: %s", exc)
+                return ExecResult(return_code=-1, stdout="", stderr=str(exc))
+
         container = self._docker_env.name
         cmd: list[str] = ["docker", "exec"]
 
@@ -185,6 +232,13 @@ class PawBenchEnvShim:
         target_path: str,
     ) -> None:
         """Copy *source_path* from the host into the container at *target_path*."""
+        if self._is_local():
+            ok = await self._docker_env.copy_to(Path(source_path), target_path)
+            if not ok:
+                raise RuntimeError(
+                    f"upload_file (local) failed: {source_path} → {target_path}"
+                )
+            return
         container = self._docker_env.name
         cmd = ["docker", "cp", str(source_path), f"{container}:{target_path}"]
         result = subprocess.run(cmd, capture_output=True)
@@ -199,6 +253,13 @@ class PawBenchEnvShim:
         target_dir: str,
     ) -> None:
         """Copy *source_dir* from the host into the container at *target_dir*."""
+        if self._is_local():
+            dest = self._docker_env._resolve(target_dir)  # type: ignore[attr-defined]
+            try:
+                shutil.copytree(str(source_dir), str(dest), dirs_exist_ok=True)
+            except Exception as exc:  # noqa: BLE001
+                raise RuntimeError(f"upload_dir (local) failed: {exc}") from exc
+            return
         container = self._docker_env.name
         # docker cp copies the directory's *contents* when trailing slash is used.
         cmd = ["docker", "cp", f"{str(source_dir)}/.", f"{container}:{target_dir}"]
@@ -216,6 +277,13 @@ class PawBenchEnvShim:
         host_path: str | Path,
     ) -> None:
         """Copy *container_path* from the container to *host_path*."""
+        if self._is_local():
+            ok = await self._docker_env.copy_from(container_path, Path(host_path))
+            if not ok:
+                raise RuntimeError(
+                    f"download_file (local) failed: {container_path} → {host_path}"
+                )
+            return
         container = self._docker_env.name
         cmd = ["docker", "cp", f"{container}:{container_path}", str(host_path)]
         result = subprocess.run(cmd, capture_output=True)
