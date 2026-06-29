@@ -176,7 +176,15 @@ class LocalEnvironment(BaseEnvironment):
         env.setdefault("DISPLAY", ":99")
 
         try:
-            proc = await asyncio.create_subprocess_shell(
+            # Run via bash (not the default /bin/sh → dash on Debian) so that
+            # bash-only constructs work, most importantly sourcing nvm
+            # (``. ~/.nvm/nvm.sh``) which Harbor agents like codex use to put
+            # their nvm-installed CLI on PATH.  This mirrors the DockerEnvironment
+            # path in harbor_shim.py, which already execs ``bash -c <command>``.
+            bash_bin = shutil.which("bash") or "/bin/bash"
+            proc = await asyncio.create_subprocess_exec(
+                bash_bin,
+                "-c",
                 command,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
