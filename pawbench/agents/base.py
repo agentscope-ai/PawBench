@@ -85,6 +85,72 @@ class ContainerAgent(BaseAgent):
         """
         return instruction
 
+    async def _collect_workspace_artifact_text(
+        self,
+        environment: "BaseEnvironment",
+        workspace: str,
+        *,
+        pre_run_files: "set[str] | None" = None,
+        run_start_time: float = 0.0,
+        temp_script_path: str = "/tmp/_collect_artifacts.py",
+    ) -> str:
+        """Collect text content from new/modified workspace artifacts after run start.
+
+        Walks *workspace* inside the environment, reads text files that were
+        created or modified after *run_start_time* and are not listed in
+        *pre_run_files*, and returns their contents concatenated with headers.
+        Capped to 8 KiB per file and 32 KiB total to avoid overflowing the LLM
+        context window used for grading.
+        """
+        import json as _json
+
+        script = (
+            "import json, os\n"
+            f"workspace = {_json.dumps(workspace)}\n"
+            f"pre_run = set({_json.dumps(list(pre_run_files or []))})\n"
+            f"run_start = {run_start_time!r}\n"
+            "TEXT_SUFFIXES = {'.csv', '.json', '.md', '.txt', '.yaml', '.yml'}\n"
+            "MAX_FILE = 8192\n"
+            "MAX_TOTAL = 32768\n"
+            "parts = []\n"
+            "total = 0\n"
+            "done = False\n"
+            "for root, dirs, files in os.walk(workspace):\n"
+            "    if done:\n"
+            "        break\n"
+            "    dirs[:] = [d for d in dirs if d not in ('output', 'sessions')]\n"
+            "    for name in sorted(files):\n"
+            "        if not any(name.endswith(s) for s in TEXT_SUFFIXES):\n"
+            "            continue\n"
+            "        fpath = os.path.join(root, name)\n"
+            "        rel = os.path.relpath(fpath, workspace)\n"
+            "        if rel in pre_run:\n"
+            "            continue\n"
+            "        try:\n"
+            "            mtime = os.path.getmtime(fpath)\n"
+            "            if mtime < run_start:\n"
+            "                continue\n"
+            "            with open(fpath, 'r', errors='replace') as f:\n"
+            "                content = f.read(MAX_FILE)\n"
+            "            if not content.strip():\n"
+            "                continue\n"
+            "            block = f'### {rel}\\n{content}'\n"
+            "            if total + len(block) > MAX_TOTAL:\n"
+            "                done = True\n"
+            "                break\n"
+            "            parts.append(block)\n"
+            "            total += len(block)\n"
+            "        except Exception:\n"
+            "            pass\n"
+            "print('\\n\\n'.join(parts))\n"
+        )
+        await environment.write_file(temp_script_path, script)
+        result = await environment.execute_command(
+            f"python3 {temp_script_path}",
+            timeout=30,
+        )
+        return (result.get("stdout") or "").strip()
+
     # ── shared helpers ────────────────────────────────────────────────────────
 
     @staticmethod
