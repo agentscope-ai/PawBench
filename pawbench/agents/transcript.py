@@ -207,6 +207,120 @@ def _events_from_session_dir(sessions_dir: Path) -> "list[dict[str, Any]]":
                 _add_usage_to_last_assistant(translated, usage)
                 return translated
 
+    # ── last-resort raw-text fallback ─────────────────────────────────────────
+    # None of the structured parsers above recognised the session.  This happens
+    # when an agent's CLI emits a log format we don't model yet (e.g. a new
+    # claude-code / codex stream-json shape, or a plain-text trajectory).  Rather
+    # than hand the grader an empty transcript — which makes the LLM judge score
+    # everything 0 with "no transcript provided" — salvage whatever human-readable
+    # text the agent log contains so the judge can still evaluate the deliverable.
+    events = _raw_log_text_fallback(sessions_dir)
+    if events:
+        return events
+
+    return []
+
+
+# ── raw-text fallback (format-agnostic last resort) ──────────────────────────
+
+# Known per-agent session/log filenames, in rough preference order.  These are
+# the files post_run_collect copies into ``<workspace>/sessions/``.
+_RAW_LOG_NAMES = (
+    "claude-code.txt",
+    "codex.txt",
+    "mini-swe-agent.txt",
+    "aider.txt",
+    "hermes-session.jsonl",
+    "agent.txt",
+)
+
+# Field names that commonly carry human-readable model output across CLIs.
+_RAW_TEXT_KEYS = ("text", "result", "content", "message", "output", "thinking")
+
+
+def _strings_from_json_obj(obj: Any) -> "list[str]":
+    """Recursively pull human-readable string values from a parsed JSON object.
+
+    Only keys in ``_RAW_TEXT_KEYS`` are harvested so we don't dump ids / metadata.
+    """
+    out: list[str] = []
+
+    def _walk(node: Any) -> None:
+        if isinstance(node, dict):
+            for k, v in node.items():
+                if k in _RAW_TEXT_KEYS and isinstance(v, str):
+                    s = v.strip()
+                    if s:
+                        out.append(s)
+                else:
+                    _walk(v)
+        elif isinstance(node, list):
+            for item in node:
+                _walk(item)
+
+    _walk(obj)
+    return out
+
+
+def _raw_log_text_fallback(sessions_dir: Path) -> "list[dict[str, Any]]":
+    """Wrap the raw content of an agent log file into a single assistant message.
+
+    Fires only when every structured parser returned nothing.  Tries each known
+    log file in ``_RAW_LOG_NAMES``; for JSONL stream logs it extracts text-bearing
+    fields, otherwise it falls back to the raw (truncated) file text.  Returns an
+    empty list when no log file has any usable content.
+    """
+    if not sessions_dir.is_dir():
+        return []
+
+    for name in _RAW_LOG_NAMES:
+        path = sessions_dir / name
+        if not path.is_file():
+            continue
+        try:
+            raw = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        if not raw.strip():
+            continue
+
+        # Prefer text harvested from JSON lines (stream-json logs).
+        harvested: list[str] = []
+        any_json = False
+        for line in raw.splitlines():
+            line = line.strip()
+            if not line.startswith("{"):
+                continue
+            try:
+                obj = json.loads(line)
+            except (json.JSONDecodeError, ValueError):
+                continue
+            any_json = True
+            harvested.extend(_strings_from_json_obj(obj))
+
+        if harvested:
+            text = "\n".join(harvested)
+        elif any_json:
+            # JSON lines existed but carried no recognised text fields — skip this
+            # file and try the next (avoid dumping pure metadata at the judge).
+            continue
+        else:
+            text = raw
+
+        text = text.strip()
+        if not text:
+            continue
+        if len(text) > 40_000:
+            text = text[-40_000:]
+        return [{
+            "type": "message",
+            "message": {
+                "role": "assistant",
+                "content": [{"type": "text", "text": text}],
+                "usage": {},
+            },
+        }]
+
     return []
 
 
@@ -718,6 +832,21 @@ def _claude_code_stream_events(
                     "type": "message",
                     "message": {
                         "role": "user",
+                        "content": [{"type": "text", "text": text.strip()}],
+                    },
+                })
+
+        # ── final result (claude-code --print summary) ───────────────────────
+        # The terminal ``result`` event carries the assistant's final answer in
+        # its ``result`` field.  Capturing it ensures short runs (which may emit
+        # only system + result events) still produce a non-empty transcript.
+        elif etype == "result":
+            text = ev.get("result")
+            if isinstance(text, str) and text.strip():
+                events.append({
+                    "type": "message",
+                    "message": {
+                        "role": "assistant",
                         "content": [{"type": "text", "text": text.strip()}],
                     },
                 })
