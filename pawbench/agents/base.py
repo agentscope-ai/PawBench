@@ -77,6 +77,14 @@ class ContainerAgent(BaseAgent):
         from pawbench.agents.transcript import build_transcript_from_session
         return build_transcript_from_session(local_workspace, stdout)
 
+    def _bench_wrap_instruction(self, instruction: str) -> str:
+        """Optionally wrap the task instruction before passing to the agent CLI.
+
+        The default implementation returns the instruction unchanged.  Subclasses
+        may override to prepend workspace context, append grading hints, etc.
+        """
+        return instruction
+
     # ── shared helpers ────────────────────────────────────────────────────────
 
     @staticmethod
