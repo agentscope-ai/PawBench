@@ -91,7 +91,7 @@ RUN mkdir -p /app/working/workspaces/default/output \
 # install() logic) so that HarborBridgeAgent.install() is a fast no-op at eval
 # time instead of downloading/installing per task.
 # Override the set with: --build-arg HARBOR_AGENTS="mini-swe aider hermes".
-ARG HARBOR_AGENTS="mini-swe aider hermes codex qwen-code"
+ARG HARBOR_AGENTS="mini-swe aider hermes openclaw codex qwen-code qwenpaw"
 COPY docker/preinstall_harbor_agents.py /tmp/preinstall_harbor_agents.py
 RUN python3 /tmp/preinstall_harbor_agents.py ${HARBOR_AGENTS}
 

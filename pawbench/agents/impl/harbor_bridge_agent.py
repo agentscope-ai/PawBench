@@ -65,12 +65,14 @@ _logger = logging.getLogger(__name__)
 _REGISTRY: dict[str, tuple[str, str]] = {
     # name                  module path                                  class name
     "hermes":       ("harbor.agents.installed.hermes",        "Hermes"),
+    "openclaw":     ("harbor.agents.installed.openclaw",      "OpenClaw"),
     "aider":        ("harbor.agents.installed.aider",         "Aider"),
     "codex":        ("harbor.agents.installed.codex",         "Codex"),
     "claude-code":  ("harbor.agents.installed.claude_code",   "ClaudeCode"),
     "gemini-cli":   ("harbor.agents.installed.gemini_cli",    "GeminiCli"),
     "goose":        ("harbor.agents.installed.goose",         "Goose"),
     "qwen-code":    ("harbor.agents.installed.qwen_code",     "QwenCode"),
+    "qwenpaw":      ("harbor.agents.installed.qwenpaw",       "QwenPaw"),
     "opencode":     ("harbor.agents.installed.opencode",      "OpenCode"),
     "openhands":    ("harbor.agents.installed.openhands",     "OpenHands"),
     "openhands-sdk":("harbor.agents.installed.openhands_sdk", "OpenHandsSDK"),
@@ -88,6 +90,17 @@ _REGISTRY: dict[str, tuple[str, str]] = {
 
 # Public alias for introspection (e.g. CLI help).
 HARBOR_AGENT_REGISTRY: dict[str, tuple[str, str]] = _REGISTRY
+
+# Harbor agents whose ``run()`` reads ``model_name`` verbatim as a bare,
+# provider-specific model id (no "provider/" prefix expected). Everything
+# NOT in this set receives the full "provider/model" string as-is — that is
+# the convention the vast majority of Harbor agents (hermes, openclaw, aider,
+# codex, claude-code, gemini-cli, goose, opencode, ...) require internally.
+_BARE_MODEL_NAME_AGENTS: frozenset[str] = frozenset({"qwen-code"})
+
+# Harbor agents that declare a "thinking" CliFlag (currently only OpenClaw,
+# which defaults to "high" — unsupported by most non-reasoning models).
+_THINKING_FLAG_AGENTS: frozenset[str] = frozenset({"openclaw"})
 
 
 def _import_harbor_class(module_path: str, class_name: str) -> type:
@@ -138,6 +151,7 @@ class HarborBridgeAgent(ContainerAgent):
         api_key: str = "",
         base_url: str = "",
         version: str | None = None,
+        thinking_level: str | None = None,
         **kwargs: Any,
     ) -> None:
         if harbor_agent_name not in _REGISTRY:
@@ -154,6 +168,11 @@ class HarborBridgeAgent(ContainerAgent):
         self._api_key = api_key
         self._base_url = base_url
         self._version = version
+        # Only OpenClaw currently declares a "thinking" CliFlag (default
+        # "high"). Many non-reasoning models reject that level outright
+        # (e.g. "Thinking level 'high' is not supported for <model>. Use one
+        # of: off."), so forward --thinking through when the caller set one.
+        self._thinking_level = thinking_level
 
         # Instantiated lazily in install() so Docker image resolves first.
         self._harbor_agent: Any = None
@@ -192,25 +211,40 @@ class HarborBridgeAgent(ContainerAgent):
         extra_env = self._build_extra_env()
 
         # Instantiate the Harbor agent class.
-        # Strip the "provider/" prefix from the model name before passing to the
-        # harbor agent, because agents like qwen-code set OPENAI_MODEL directly
-        # from model_name and the DashScope / OpenAI API rejects "openai/model".
-        # The original self._model (with prefix) is still used by _build_extra_env
-        # above for provider detection.
-        bare_model_name = (
-            self._model.split("/", 1)[1] if "/" in self._model else self._model
+        #
+        # Most Harbor agents (hermes, openclaw, aider, gemini-cli, goose,
+        # codex, claude-code, opencode, ...) *require* the full
+        # "provider/model" string in ``model_name``: they parse the provider
+        # prefix themselves (``self.model_name.split("/", 1)``) to pick the
+        # right API-key env var / CLI flag, and several raise ValueError if
+        # no "/" is present. Passing the bare model name to them breaks
+        # every one of those agents.
+        #
+        # A small set of agents instead read ``model_name`` verbatim as a
+        # provider-specific model id (e.g. qwen-code sets
+        # ``OPENAI_MODEL=self.model_name`` directly, so a "openai/" or
+        # "dashscope/" prefix would be rejected by the API). Only strip the
+        # prefix for those.
+        resolved_model_name = (
+            self._model.split("/", 1)[1]
+            if self._harbor_agent_name in _BARE_MODEL_NAME_AGENTS and "/" in self._model
+            else self._model
         )
         module_path, class_name = _REGISTRY[self._harbor_agent_name]
         HarborAgentCls = _import_harbor_class(module_path, class_name)
+        ctor_kwargs: dict[str, Any] = {}
+        if self._harbor_agent_name in _THINKING_FLAG_AGENTS and self._thinking_level:
+            ctor_kwargs["thinking"] = self._thinking_level
         self._harbor_agent = HarborAgentCls(
             logs_dir=self._logs_dir,
-            model_name=bare_model_name,
+            model_name=resolved_model_name,
             version=self._version,
             extra_env=extra_env,
             logger=_logger.getChild(self._harbor_agent_name),
+            **ctor_kwargs,
         )
 
-        shim = PawBenchEnvShim(environment, logger=_logger)
+        shim = PawBenchEnvShim(environment, logger=_logger, logs_dir=self._logs_dir)
 
         # Skip (re-)installation if the agent was pre-installed into the image at
         # build time (see docker/preinstall_harbor_agents.py, which drops a
@@ -324,7 +358,7 @@ class HarborBridgeAgent(ContainerAgent):
         from pawbench.envs.harbor_shim import PawBenchEnvShim
 
         context = AgentContext()
-        shim = PawBenchEnvShim(environment, logger=_logger)
+        shim = PawBenchEnvShim(environment, logger=_logger, logs_dir=self._logs_dir)
 
         # Ensure Harbor's log directories exist inside the container before running.
         # Harbor agents pipe output via `tee /logs/agent/agent.txt`; a missing
@@ -361,6 +395,13 @@ class HarborBridgeAgent(ContainerAgent):
             )
             agent_exit_ok = False
 
+        # Some Harbor agents (e.g. OpenClaw) implement populate_context_post_run()
+        # by reading files back from self.logs_dir *on the host* (the mirror image
+        # of the host→container sync in PawBenchEnvShim — see its docstring). Pull
+        # the container's /logs/agent/ tree back onto the host first so token/cost
+        # accounting and trajectory extraction have something to read.
+        self._sync_logs_dir_from_container(environment)
+
         # populate_context_post_run is mandatory on BaseInstalledAgent.
         try:
             self._harbor_agent.populate_context_post_run(context)
@@ -376,6 +417,37 @@ class HarborBridgeAgent(ContainerAgent):
             "cost_usd":        context.cost_usd,
         }
 
+    def _sync_logs_dir_from_container(self, environment: BaseEnvironment) -> None:
+        """Best-effort pull of the container's ``/logs/agent`` tree onto the host.
+
+        Mirror image of ``PawBenchEnvShim._sync_logs_dir_to_container`` — see
+        that method's docstring for why this round-trip is needed at all.
+        """
+        if self._logs_dir is None:
+            return
+        import subprocess as _sp
+        from pawbench.envs.docker import DockerEnvironment
+        from pawbench.envs.local import LocalEnvironment
+        try:
+            if isinstance(environment, DockerEnvironment):
+                _sp.run(
+                    [
+                        "docker", "cp",
+                        f"{environment.name}:/logs/agent/.",
+                        str(self._logs_dir),
+                    ],
+                    capture_output=True,
+                )
+            elif isinstance(environment, LocalEnvironment):
+                import shutil as _shutil
+                src = Path("/logs/agent")
+                if src.is_dir():
+                    for item in src.iterdir():
+                        if item.is_file():
+                            _shutil.copy2(item, self._logs_dir / item.name)
+        except Exception:  # noqa: BLE001
+            _logger.debug("logs_dir sync from container failed (non-fatal)", exc_info=True)
+
     # ── post_run_collect ──────────────────────────────────────────────────────
 
     async def post_run_collect(self, environment: BaseEnvironment) -> None:
@@ -385,6 +457,9 @@ class HarborBridgeAgent(ContainerAgent):
         _LOG_SOURCES = [
             # hermes exports its session here
             "/logs/agent/hermes-session.jsonl",
+            # openclaw raw CLI transcript (captured via tee) and native session
+            "/logs/agent/openclaw.txt",
+            "/logs/agent/openclaw.session.jsonl",
             # aider session transcript (if any)
             "/logs/agent/aider.txt",
             # mini-swe-agent log (captured via tee)

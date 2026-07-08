@@ -16,6 +16,9 @@ from .grader import GradeResult, grade_task
 from .runner import BenchmarkRunner
 from .task_loader import Task, TaskLoader
 
+# HarborV2Backend is imported lazily via ``get_harbor_v2_backend`` to avoid
+# importing its (deferred) harbor dependencies at package import time.
+
 __all__ = [
     "BenchmarkBackend",
     "BenchmarkRunner",
@@ -25,4 +28,11 @@ __all__ = [
     "TaskLoader",
     "TaskResult",
     "grade_task",
+    "get_harbor_v2_backend",
 ]
+
+
+def get_harbor_v2_backend():
+    """Return the :class:`HarborV2Backend` class (imported on demand)."""
+    from .harbor_v2 import HarborV2Backend
+    return HarborV2Backend

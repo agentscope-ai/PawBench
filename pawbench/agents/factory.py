@@ -110,6 +110,7 @@ class AgentFactory:
                 "OPENAI_BASE_URL", ""
             ),
             version=agent_config.get("version"),
+            thinking_level=agent_config.get("thinking_level"),
         )
 
     @classmethod

@@ -99,9 +99,25 @@ class PawBenchEnvShim:
         self,
         docker_env: "DockerEnvironment",
         logger: logging.Logger | None = None,
+        logs_dir: Path | None = None,
+        container_logs_dir: str = "/logs/agent",
     ) -> None:
         self._docker_env = docker_env
         self.logger = (logger or _logger).getChild("harbor_shim")
+        # Some newer Harbor agents (e.g. OpenClaw) write config/instruction
+        # files to ``self.logs_dir`` on the *host* (a plain host tempdir; see
+        # HarborBridgeAgent.install()), then immediately run a container
+        # command that reads them back from ``/logs/agent/...``. Real Harbor
+        # Trials achieve this via a bind-mount of the trial's agent-logs dir
+        # into the container at ``/logs/agent``. PawBench's containers are
+        # started independently (before the Harbor agent is even
+        # instantiated) so no such mount exists — we approximate it by
+        # pushing ``logs_dir`` into the container via ``docker cp`` right
+        # before every ``exec()`` call, keeping the container's view in sync
+        # with whatever the harbor agent last wrote on the host.
+        self._logs_dir = Path(logs_dir) if logs_dir is not None else None
+        self._container_logs_dir = container_logs_dir
+        self._logs_dir_synced_once = False
 
     # ── env-type detection ─────────────────────────────────────────────────────
 
@@ -132,6 +148,53 @@ class PawBenchEnvShim:
         """Path to the workspace inside the container (harbour interface)."""
         return self.WORKSPACE_DIR
 
+    # ── logs_dir sync (see __init__ docstring comment) ────────────────────────
+
+    def _sync_logs_dir_to_container(self) -> None:
+        """Best-effort push of ``self._logs_dir`` (host) into the container.
+
+        No-op when no ``logs_dir`` was configured. Cheap enough to run before
+        every ``exec()`` call — the synced tree is just a handful of small
+        config/instruction text files, not task artifacts.
+        """
+        if self._logs_dir is None:
+            return
+        try:
+            if not self._logs_dir_synced_once:
+                subprocess.run(
+                    ["mkdir", "-p", str(self._logs_dir)],
+                    capture_output=True,
+                )
+                self._logs_dir_synced_once = True
+            container = self._docker_env.name
+            subprocess.run(
+                ["docker", "exec", container, "mkdir", "-p", self._container_logs_dir],
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "docker", "cp",
+                    f"{self._logs_dir}/.",
+                    f"{container}:{self._container_logs_dir}",
+                ],
+                capture_output=True,
+            )
+        except Exception:  # noqa: BLE001
+            self.logger.debug("logs_dir sync to container failed (non-fatal)", exc_info=True)
+
+    def _sync_logs_dir_to_local(self) -> None:
+        """Local-mode equivalent of :meth:`_sync_logs_dir_to_container`."""
+        if self._logs_dir is None:
+            return
+        try:
+            dest = self._docker_env._resolve(self._container_logs_dir)  # type: ignore[attr-defined]
+            dest.mkdir(parents=True, exist_ok=True)
+            for item in Path(self._logs_dir).iterdir():
+                if item.is_file():
+                    shutil.copy2(item, dest / item.name)
+        except Exception:  # noqa: BLE001
+            self.logger.debug("logs_dir sync to local env failed (non-fatal)", exc_info=True)
+
     # ── exec ─────────────────────────────────────────────────────────────────
 
     async def exec(
@@ -156,6 +219,7 @@ class PawBenchEnvShim:
         """
         # ── local (in-process) execution ───────────────────────────────────────
         if self._is_local():
+            self._sync_logs_dir_to_local()
             effective_cwd = cwd if cwd is not None else self.WORKSPACE_DIR
             prefix = f"cd {shlex.quote(effective_cwd)} 2>/dev/null; "
             if env:
@@ -176,6 +240,8 @@ class PawBenchEnvShim:
             except Exception as exc:  # noqa: BLE001
                 self.logger.error("local exec error: %s", exc)
                 return ExecResult(return_code=-1, stdout="", stderr=str(exc))
+
+        self._sync_logs_dir_to_container()
 
         container = self._docker_env.name
         cmd: list[str] = ["docker", "exec"]

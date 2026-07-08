@@ -34,12 +34,14 @@ _log = logging.getLogger("preinstall")
 
 _REGISTRY: dict[str, tuple[str, str]] = {
     "hermes":       ("harbor.agents.installed.hermes",         "Hermes"),
+    "openclaw":     ("harbor.agents.installed.openclaw",       "OpenClaw"),
     "aider":        ("harbor.agents.installed.aider",          "Aider"),
     "codex":        ("harbor.agents.installed.codex",          "Codex"),
     "claude-code":  ("harbor.agents.installed.claude_code",    "ClaudeCode"),
     "gemini-cli":   ("harbor.agents.installed.gemini_cli",     "GeminiCli"),
     "goose":        ("harbor.agents.installed.goose",          "Goose"),
     "qwen-code":    ("harbor.agents.installed.qwen_code",      "QwenCode"),
+    "qwenpaw":      ("harbor.agents.installed.qwenpaw",        "QwenPaw"),
     "opencode":     ("harbor.agents.installed.opencode",       "OpenCode"),
     "mini-swe":     ("harbor.agents.installed.mini_swe_agent", "MiniSweAgent"),
     "swe-agent":    ("harbor.agents.installed.swe_agent",      "SweAgent"),
@@ -84,8 +86,18 @@ class LocalBuildEnv:
         timeout_sec: int | None = None,
         user: str | int | None = None,  # ignored – build runs as root
     ) -> _ExecResult:
-        from harbor.agents.installed.base import NonZeroAgentExitCodeError
-
+        # NOTE: Real Harbor ``BaseEnvironment.exec()`` implementations (Docker,
+        # Modal, ...) never raise on a non-zero exit code — they just return the
+        # ``ExecResult`` and let the caller decide.  Raising on non-zero here
+        # would look correct at first glance (it matches the error surfaced by
+        # ``BaseInstalledAgent._exec()``, which wraps ``exec_as_root``/
+        # ``exec_as_agent``), but some agents' ``install()`` call
+        # ``environment.exec()`` *directly* to do a non-fatal existence/version
+        # probe (e.g. Codex's ``command -v codex`` check, expected to fail on a
+        # fresh image).  Raising unconditionally breaks that pattern.  Preserve
+        # the same contract as real environments; ``_exec()`` in
+        # ``BaseInstalledAgent`` already raises ``NonZeroAgentExitCodeError``
+        # itself when a command run via ``exec_as_root``/``exec_as_agent`` fails.
         run_env = dict(os.environ)
         if env:
             run_env.update(env)
@@ -99,13 +111,7 @@ class LocalBuildEnv:
             text=True,
             timeout=timeout_sec or 1800,
         )
-        result = _ExecResult(proc.returncode, proc.stdout, proc.stderr)
-        if proc.returncode != 0:
-            raise NonZeroAgentExitCodeError(
-                f"Command failed (exit {proc.returncode}): {command[:120]}\n"
-                f"stdout: {proc.stdout[-400:]}\nstderr: {proc.stderr[-400:]}"
-            )
-        return result
+        return _ExecResult(proc.returncode, proc.stdout, proc.stderr)
 
     async def upload_file(self, source_path, target_path: str) -> None:
         subprocess.run(["cp", "--", str(source_path), target_path], check=True)

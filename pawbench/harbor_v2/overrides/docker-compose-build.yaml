@@ -1,0 +1,13 @@
+services:
+  main:
+    build:
+      context: ${CONTEXT_DIR}
+      # Force build-time RUN steps onto the host network. In this sandbox the
+      # default buildkit/bridge network cannot reach github.com:443, so the uv
+      # installer (curl https://astral.sh/uv/.../install.sh | sh, used by both
+      # task environment images and the RewardKit verifier image) times out.
+      # The host network reaches github fine, so building over it unblocks the
+      # verifier image build without editing any dataset Dockerfile.
+      network: host
+    pull_policy: build
+    command: [ "sh", "-c", "sleep infinity" ]

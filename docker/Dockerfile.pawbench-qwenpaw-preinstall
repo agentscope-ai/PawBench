@@ -1,0 +1,29 @@
+# Thin derived image: pawbench-base + a pre-baked qwenpaw venv.
+#
+# Builds FROM the existing pawbench-base so we reuse its 8GB of system + Python
+# deps instead of rebuilding from scratch. Two steps:
+#   1. Refresh the in-image harbor-framework from the (updated) local source so
+#      that ``harbor.agents.installed.qwenpaw`` exists inside the image.
+#   2. Run the preinstall script for qwenpaw, which creates /opt/qwenpaw-venv
+#      (qwenpaw + pinned agent-client-protocol) and writes the .installed marker.
+#
+# Result tag: pawbench-base:qwenpaw  (does NOT overwrite pawbench-base:latest,
+# so a concurrent eval using :latest is unaffected).
+ARG BASE_IMAGE=pawbench-base:latest
+FROM ${BASE_IMAGE}
+
+# 1. Refresh harbor-framework with the local source (adds qwenpaw agent +
+#    AgentName.QWENPAW). --no-deps keeps the existing dependency set intact.
+COPY harbor/ /tmp/harbor-src/
+RUN pip install --no-cache-dir --force-reinstall --no-deps /tmp/harbor-src && \
+    rm -rf /tmp/harbor-src && \
+    python3 -c "import harbor.agents.installed.qwenpaw as q; print('qwenpaw agent import OK:', q.QwenPaw.name())"
+
+# 2. Bake the qwenpaw venv into the image (fast HarborBridgeAgent.install()
+#    no-op at eval time; also writes /installed-agent/qwenpaw.installed).
+COPY docker/preinstall_harbor_agents.py /tmp/preinstall_harbor_agents.py
+RUN python3 /tmp/preinstall_harbor_agents.py qwenpaw && \
+    rm -f /tmp/preinstall_harbor_agents.py
+
+# Smoke-test: venv present + qwenpaw importable + acp pinned to a compatible ver.
+RUN /opt/qwenpaw-venv/bin/python -c "import importlib.metadata as m; print('qwenpaw', m.version('qwenpaw')); import acp; assert hasattr(acp, 'SetSessionModelResponse'), 'acp too new'; print('acp', m.version('agent-client-protocol'), 'OK')"

@@ -171,6 +171,11 @@ def _events_from_session_dir(sessions_dir: Path) -> "list[dict[str, Any]]":
     if events:
         return events
 
+    # ── 1c. hermes native session JSONL (OpenAI-chat message format) ─────────
+    events = _hermes_session_jsonl_events(sessions_dir)
+    if events:
+        return events
+
     # ── 2 & 3. Session JSON (qwenpaw / openclaw-native / openai-chat) ─────────
     candidates = sorted(
         (p for p in sessions_dir.glob("*.json") if p.is_file()),
@@ -231,6 +236,7 @@ _RAW_LOG_NAMES = (
     "mini-swe-agent.txt",
     "aider.txt",
     "hermes-session.jsonl",
+    "openclaw.txt",
     "agent.txt",
 )
 
@@ -526,6 +532,70 @@ def _openclaw_snapshot_to_events(
                 })
 
     return events
+
+
+# ── hermes native session format ─────────────────────────────────────────────
+
+def _hermes_session_jsonl_events(sessions_dir: Path) -> "list[dict[str, Any]]":
+    """Extract transcript events from ``hermes-session.jsonl``.
+
+    Hermes CLI's session export is OpenAI-Chat-format messages (``role`` /
+    ``content`` / ``tool_calls`` / ``tool_call_id``), written either as one
+    JSON object per line or as a single line wrapping the whole conversation
+    in ``{"messages": [...]}`` — see harbor's own
+    ``Hermes._convert_hermes_session_to_atif()`` for the same two shapes.
+
+    Without this, ``hermes-session.jsonl`` falls through every structured
+    parser above (its lines don't carry a ``type`` field, and the file's
+    ``.jsonl`` extension means the ``*.json`` glob in step 2 never matches
+    it either) and lands in ``_raw_log_text_fallback()``, which collapses
+    the *entire* multi-turn conversation into a single assistant message —
+    tanking ``transcript_length`` to 1 and spuriously tripping the
+    SHORT_TRANSCRIPT anomaly check on every run regardless of how much the
+    agent actually did.
+    """
+    path = sessions_dir / "hermes-session.jsonl"
+    if not path.is_file():
+        return []
+    try:
+        raw = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+
+    messages: list[dict[str, Any]] = []
+    for line in raw.strip().splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            parsed = json.loads(line)
+        except (json.JSONDecodeError, ValueError):
+            continue
+        if isinstance(parsed, dict) and isinstance(parsed.get("messages"), list):
+            messages.extend(m for m in parsed["messages"] if isinstance(m, dict))
+        elif isinstance(parsed, dict) and parsed.get("role"):
+            messages.append(parsed)
+
+    if not messages:
+        return []
+
+    events = _openai_messages_to_events(messages)
+    if events:
+        usage = _hermes_total_usage(messages)
+        _add_usage_to_last_assistant(events, usage)
+    return events
+
+
+def _hermes_total_usage(messages: "list[dict[str, Any]]") -> "dict[str, int]":
+    """Accumulate token usage across every assistant message's ``usage`` field."""
+    accumulated: dict[str, int] = {}
+    for m in messages:
+        if not isinstance(m, dict) or m.get("role") != "assistant":
+            continue
+        usage = _normalize_usage_dict(m.get("usage"))
+        for k, v in usage.items():
+            accumulated[k] = accumulated.get(k, 0) + v
+    return accumulated
 
 
 # ── mini-swe-agent trajectory format ─────────────────────────────────────────

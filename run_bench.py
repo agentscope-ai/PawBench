@@ -103,7 +103,20 @@ def parse_args() -> argparse.Namespace:
         metavar="NAME",
         help=(
             "Dataset name inside <benchmark_path>/data/. "
-            "Default: pawbench-v1.0."
+            "Default: pawbench-v1.0 (pawbench backend) or Pawbenchv2_task_0706 "
+            "(harbor-v2 backend)."
+        ),
+    )
+    bench_grp.add_argument(
+        "--backend",
+        choices=("auto", "pawbench", "harbor-v2"),
+        default="auto",
+        help=(
+            "Execution backend. 'pawbench' = legacy Markdown tasks graded on the "
+            "host. 'harbor-v2' = Harbor-native task packages (task.toml + tests/) "
+            "run via Harbor's Trial runner (per-task Docker env + RewardKit "
+            "verifier). 'auto' (default) picks harbor-v2 when the dataset "
+            "directory contains Harbor task packages, else pawbench."
         ),
     )
 
@@ -320,6 +333,55 @@ def _run_timestamp() -> str:
     return datetime.now().strftime("%Y%m%d_%H%M%S")
 
 
+def _looks_like_harbor_v2(dataset_root: Path) -> bool:
+    """True when *dataset_root* contains Harbor-native task packages.
+
+    Detects a ``task.toml`` marker up to two levels deep (handles both
+    ``<dataset>/<task>/`` and ``<dataset>/data_v2/<task>/`` layouts).
+    """
+    if not dataset_root.is_dir():
+        return False
+    for child in dataset_root.iterdir():
+        if not child.is_dir():
+            continue
+        if (child / "task.toml").is_file():
+            return True
+        for grandchild in child.iterdir():
+            if grandchild.is_dir() and (grandchild / "task.toml").is_file():
+                return True
+    return False
+
+
+def _select_backend(backend_choice: str, benchmark_path: Path, dataset: str | None):
+    """Instantiate the requested (or auto-detected) benchmark backend.
+
+    Returns a tuple ``(backend, load_kwargs)`` where ``load_kwargs`` carries the
+    resolved dataset name for ``runner.run(**load_kwargs)``.
+    """
+    from pawbench import get_harbor_v2_backend
+
+    choice = backend_choice
+    if choice == "auto":
+        # Probe the explicit dataset first; fall back to the harbor-v2 default.
+        HarborV2 = get_harbor_v2_backend()
+        probe_ds = dataset or HarborV2.DEFAULT_DATASET
+        if _looks_like_harbor_v2(benchmark_path / "data" / probe_ds):
+            choice = "harbor-v2"
+        else:
+            choice = "pawbench"
+
+    load_kwargs: dict = {}
+    if choice == "harbor-v2":
+        HarborV2 = get_harbor_v2_backend()
+        backend = HarborV2(benchmark_path)
+        load_kwargs["dataset"] = dataset or HarborV2.DEFAULT_DATASET
+    else:
+        backend = PawBenchBackend(benchmark_path)
+        if dataset:
+            load_kwargs["dataset"] = dataset
+    return backend, load_kwargs, choice
+
+
 def _default_base_url_for_model(model: str | None) -> str:
     """Return the best default base URL for *model* based on its provider type.
 
@@ -499,7 +561,10 @@ async def _run_benchmark(
     print(f"Model     : {model}")
     print(f"Agent     : {agent_label}")
 
-    backend = PawBenchBackend(benchmark_path)
+    backend, load_kwargs, backend_choice = _select_backend(
+        getattr(args, "backend", "auto"), benchmark_path, args.dataset,
+    )
+    print(f"Backend   : {backend_choice}")
 
     agent_config: dict = {
         "model": model,
@@ -535,8 +600,10 @@ async def _run_benchmark(
 
     if args.thinking:
         agent_config["thinking_level"] = args.thinking
-    if args.dataset:
-        agent_config["dataset"] = args.dataset
+    # Resolved dataset comes from the backend selector (handles harbor-v2 default).
+    resolved_dataset = load_kwargs.get("dataset") or args.dataset
+    if resolved_dataset:
+        agent_config["dataset"] = resolved_dataset
     api_model_name = os.environ.get("BENCH_API_MODEL_NAME")
     if api_model_name:
         agent_config["api_model_name"] = api_model_name
@@ -546,10 +613,11 @@ async def _run_benchmark(
         agent_config["save_workspace"] = True
     if getattr(args, "save_docker_image", False):
         agent_config["save_docker_image"] = True
-
-    load_kwargs: dict = {}
-    if args.dataset:
-        load_kwargs["dataset"] = args.dataset
+    if backend_choice == "harbor-v2":
+        # Harbor bind-mounts the trial's agent-logs dir into the task container.
+        # Under docker-socket sharing the path must exist on the host, so anchor
+        # trials under the (host-visible) results dir rather than a container tmp.
+        agent_config["trials_dir"] = str(Path(args.results_dir) / "trials")
 
     runner = BenchmarkRunner(
         backend=backend,
