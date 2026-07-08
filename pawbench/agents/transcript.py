@@ -198,7 +198,7 @@ def _events_from_session_dir(sessions_dir: Path) -> "list[dict[str, Any]]":
         if events:
             return events
 
-        # OpenClawAgent writes JSONL events directly into agent.memory.content;
+        # OpenClaw sessions write JSONL events directly into agent.memory.content;
         # detect and return them as-is (they are already in transcript format).
         events = _openclaw_native_events(data)
         if events:
@@ -236,6 +236,7 @@ _RAW_LOG_NAMES = (
     "mini-swe-agent.txt",
     "aider.txt",
     "hermes-session.jsonl",
+    "hermes.txt",
     "openclaw.txt",
     "agent.txt",
 )
@@ -1051,7 +1052,7 @@ def _openclaw_native_events(
 ) -> "list[dict[str, Any]]":
     """Extract openclaw-format events stored directly in agent.memory.content.
 
-    OpenClawAgent writes JSONL events (type=message/toolCall/toolResult)
+    OpenClaw sessions write JSONL events (type=message/toolCall/toolResult)
     directly into ``agent.memory.content``.  Those events are already in the
     expected transcript format, so we return them as-is.
 

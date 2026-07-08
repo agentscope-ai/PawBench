@@ -11,24 +11,26 @@ Expected directory layout
       assets/
         ...
 
-Run with qwenpaw agent (default)::
+Run with the default agent (harbor:qwenpaw)::
 
     python run_bench.py --model openai/gpt-4o
 
-Run with OpenClaw Docker agent::
+Run with another Harbor-bridge agent::
 
-    python run_bench.py --agents openclaw --model dashscope/qwen3.6-plus
+    python run_bench.py --agents harbor:hermes --model dashscope/qwen3.6-plus
 
 agent_config keys
 -----------------
 model              str   (required) Model identifier
-agent_type         str   ``"qwenpaw"`` (default) or ``"openclaw"``
+agent_type         str   Harbor agent name, ``harbor:`` prefix optional
+                         (default: ``"harbor:qwenpaw"``)
 dataset            str   Dataset name under ``data/`` (default: pawbench-v1.0)
 docker_image       str   Docker image override
 timeout_multiplier float  Scale task timeouts (default: 1.0)
-thinking_level     str   [openclaw] Thinking level (low/medium/high/xhigh)
-api_key            str   [qwenpaw] API key forwarded to the agent
-base_url           str   [qwenpaw] OpenAI-compatible base URL
+thinking_level     str   Thinking level (low/medium/high/xhigh); honoured by
+                         agents that expose it (e.g. openclaw)
+api_key            str   API key forwarded to the agent
+base_url           str   OpenAI-compatible base URL
 judge_model        str   Model used for LLM-judge grading
 verbose            bool  Verbose logging (default: False)
 """
@@ -123,21 +125,20 @@ class BenchmarkBackend(ABC):
 class PawBenchBackend(BenchmarkBackend):
     """Run and grade pawbench tasks.
 
-    Supported agent types (``--agents`` / ``agent_config["agent_type"]``):
+    All agents run through the Harbor bridge
+    (:class:`~pawbench.agents.impl.harbor_bridge_agent.HarborBridgeAgent`) inside
+    the ``pawbench-base:latest`` image (docker/Dockerfile.pawbench-base).
 
-    * ``"qwenpaw"`` (default) — QwenPaw HTTP-API agent.
-      Default image: ``qwenclawbench-qwenpaw:latest``
-      (docker/Dockerfile.pawbench-qwenpaw)
+    ``agent_type`` (``--agents`` / ``agent_config["agent_type"]``) is a Harbor
+    agent name; the ``harbor:`` prefix is optional and defaults to
+    ``"harbor:qwenpaw"``.  Examples::
 
-    * ``"openclaw"`` — OpenClaw CLI agent (``openclaw agent --message``).
-      Default image: ``openclaw-pawbench:latest``
-      (examples/upstream/docker/Dockerfile.pawbench-openclaw — has pre-configured
-      qwen provider and gateway auth; use ``docker/Dockerfile.openclaw`` only as
-      a base for building this image, NOT directly for evaluation)
+        --agents qwenpaw          # == harbor:qwenpaw (default)
+        --agents harbor:hermes
+        --agents harbor:openclaw
+        --agents harbor:codex
 
-    * ``"hermes"`` — Hermes Agent v0.11 (``hermes chat -q … --yolo``).
-      Default image: ``hermes-qwenclawbench:latest``
-      (docker/Dockerfile.hermes — built from qwenclawbench family)
+    See :mod:`pawbench.agents.impl.harbor_bridge_agent` for the full list.
     """
 
     DEFAULT_DATASET = "pawbench-v1.0"
@@ -232,10 +233,10 @@ class PawBenchBackend(BenchmarkBackend):
     ) -> TaskResult:
         """Generic async runner: stage files → setup → run → collect → grade.
 
-        Works for all agent types (qwenpaw / openclaw / hermes).  Agent-specific
-        behaviour (workspace symlinks, session conversion, transcript building)
-        is delegated to the agent class via ``setup()``, ``post_run_collect()``
-        and ``extract_transcript()``.
+        Works for all Harbor-bridge agents.  Agent-specific behaviour (workspace
+        symlinks, session conversion, transcript building) is delegated to the
+        agent class via ``setup()``, ``post_run_collect()`` and
+        ``extract_transcript()``.
         """
         api_key = agent_config.get("api_key") or os.environ.get("OPENAI_API_KEY", "")
         base_url = agent_config.get("base_url") or os.environ.get(
@@ -246,7 +247,7 @@ class PawBenchBackend(BenchmarkBackend):
         verbose = bool(agent_config.get("verbose", False))
         docker_image = (
             agent_config.get("docker_image")
-            or AgentFactory.default_image_for_type(agent_config.get("agent_type", "qwenpaw"))
+            or AgentFactory.default_image_for_type(agent_config.get("agent_type", "harbor:qwenpaw"))
         )
 
         assets_dir = self.benchmark_path / "data" / dataset / "assets"

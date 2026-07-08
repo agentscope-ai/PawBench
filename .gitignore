@@ -1,4 +1,5 @@
 .DS_Store
+*.log
 .idea/
 
 # Python bytecode / cache

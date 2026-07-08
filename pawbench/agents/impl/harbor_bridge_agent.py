@@ -455,11 +455,23 @@ class HarborBridgeAgent(ContainerAgent):
         # Copy known Harbor agent session/log files into the PawBench workspace
         # sessions/ dir so that build_transcript_from_session() can read them.
         _LOG_SOURCES = [
-            # hermes exports its session here
+            # hermes exports its structured session here (via `hermes sessions
+            # export`).  This can end up empty when the export finds no CLI
+            # session, so we also copy the raw `hermes.txt` transcript below as a
+            # reliable fallback for transcript reconstruction.
             "/logs/agent/hermes-session.jsonl",
+            # hermes raw CLI transcript (captured via `tee`) — always populated
+            # when the agent actually ran; used by the raw-text transcript
+            # fallback when hermes-session.jsonl is empty/missing.
+            "/logs/agent/hermes.txt",
             # openclaw raw CLI transcript (captured via tee) and native session
             "/logs/agent/openclaw.txt",
             "/logs/agent/openclaw.session.jsonl",
+            # qwenpaw raw call_agent stdout (provider/model/activate statuses and
+            # any [call_agent] ERROR) — invaluable for diagnosing empty runs.
+            "/logs/agent/qwenpaw.txt",
+            # qwenpaw newest session JSON copied by the agent post-run.
+            "/logs/agent/qwenpaw.session.json",
             # aider session transcript (if any)
             "/logs/agent/aider.txt",
             # mini-swe-agent log (captured via tee)

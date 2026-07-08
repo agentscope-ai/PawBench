@@ -112,22 +112,24 @@ For OpenAI-compatible or custom providers, set `OPENAI_API_KEY` / `OPENAI_BASE_U
 
 ### Run Evaluation
 
-Before the first run, build the default Docker harness image:
+All agent harnesses run through the **Harbor Bridge** inside a single base image. Every agent (QwenPaw, OpenClaw, Hermes, Claude Code, Codex, Aider, …) is a [Harbor](https://github.com/av/harbor)-compatible `BaseInstalledAgent` executed inside `pawbench-base:latest`.
+
+Before the first run, build the base image (includes `harbor-framework` and all system dependencies):
 
 ```bash
-docker build -f docker/Dockerfile.pawbench-qwenpaw -t qwenclawbench-qwenpaw:latest .
+docker build -f docker/Dockerfile.pawbench-base -t pawbench-base:latest .
 ```
 
 ```bash
-# Smoke test: run one PawBench v1.0 task with the default qwenpaw harness
+# Smoke test: run one PawBench v1.0 task with the default agent (harbor:qwenpaw)
 python run_bench.py --tasks T053 --model dashscope/qwen3.6-plus
 
-# Pick a different harness
-python run_bench.py --agents openclaw --tasks T053 --model dashscope/qwen3.6-plus
+# Pick a different harness (the harbor: prefix is optional; qwenpaw == harbor:qwenpaw)
+python run_bench.py --agents harbor:openclaw --tasks T053 --model dashscope/qwen3.6-plus
 
 # Compare harnesses on a task subset
 python run_bench.py \
-  --agents qwenpaw openclaw hermes \
+  --agents harbor:qwenpaw harbor:openclaw harbor:hermes \
   --model dashscope/qwen3.6-plus \
   --tasks T002 T006
 
@@ -139,17 +141,11 @@ python run_bench.py \
 
 See `python run_bench.py --help` for all flags, including `--no-results-version-path`, `--save-workspace`, and `--save-docker-image`.
 
-#### Evaluating with Harbor Bridge Agents (Claude Code, Codex, and more)
+#### Evaluating with other Harbor Bridge Agents (Claude Code, Codex, and more)
 
-PawBench supports evaluating any [Harbor](https://github.com/av/harbor)-compatible agent harness via the **Harbor Bridge**. This lets you benchmark Claude Code, OpenAI Codex CLI, Aider, and many other coding agents on the same 150 PawBench tasks.
+The same Harbor Bridge lets you benchmark Claude Code, OpenAI Codex CLI, Aider, and many other coding agents on the same 150 PawBench tasks — no extra image build required.
 
-**1. Build the base image** (includes `harbor-framework` and all system dependencies):
-
-```bash
-docker build -f docker/Dockerfile.pawbench-base -t pawbench-base:latest .
-```
-
-**2. Set your API keys** in `.env` (copy from `.env.example` if you haven't already):
+**1. Set your API keys** in `.env` (copy from `.env.example` if you haven't already):
 
 ```bash
 # For Claude Code
@@ -159,7 +155,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 OPENAI_API_KEY=sk-...
 ```
 
-**3. Run with the `harbor:` prefix** in `--agents`:
+**2. Run with the `harbor:` prefix** in `--agents`:
 
 ```bash
 # Evaluate Claude Code (claude-opus-4-5 or any Anthropic model)
@@ -176,7 +172,7 @@ python run_bench.py \
 
 # Side-by-side comparison: Claude Code vs Codex vs QwenPaw on the same tasks
 python run_bench.py \
-  --agents harbor:claude-code harbor:codex qwenpaw \
+  --agents harbor:claude-code harbor:codex harbor:qwenpaw \
   --model anthropic/claude-opus-4-5 \
   --tasks T002 T006 T053
 ```
@@ -185,6 +181,9 @@ python run_bench.py \
 
 | Name | Agent |
 | :--- | :--- |
+| `qwenpaw` | QwenPaw (default) |
+| `openclaw` | OpenClaw |
+| `hermes` | Hermes |
 | `claude-code` | Anthropic Claude Code CLI |
 | `codex` | OpenAI Codex CLI |
 | `aider` | Aider (Paul Gauthier) |

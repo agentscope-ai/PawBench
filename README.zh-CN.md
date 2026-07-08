@@ -113,22 +113,24 @@ EOF
 
 ### 运行评测
 
-首次运行前，先构建默认的 Docker harness 镜像：
+所有 Agent harness 都通过 **Harbor Bridge** 在同一个基础镜像中运行。每个 Agent（QwenPaw、OpenClaw、Hermes、Claude Code、Codex、Aider…）都是一个 [Harbor](https://github.com/av/harbor) 兼容的 `BaseInstalledAgent`，在 `pawbench-base:latest` 镜像中执行。
+
+首次运行前，先构建基础镜像（已包含 `harbor-framework` 和所有系统依赖）：
 
 ```bash
-docker build -f docker/Dockerfile.pawbench-qwenpaw -t qwenclawbench-qwenpaw:latest .
+docker build -f docker/Dockerfile.pawbench-base -t pawbench-base:latest .
 ```
 
 ```bash
-# Smoke test：用默认 qwenpaw harness 跑一个 PawBench v1.0 任务
+# Smoke test：用默认 Agent（harbor:qwenpaw）跑一个 PawBench v1.0 任务
 python run_bench.py --tasks T053 --model dashscope/qwen3.6-plus
 
-# 切换 Harness
-python run_bench.py --agents openclaw --tasks T053 --model dashscope/qwen3.6-plus
+# 切换 Harness（harbor: 前缀可省略，qwenpaw == harbor:qwenpaw）
+python run_bench.py --agents harbor:openclaw --tasks T053 --model dashscope/qwen3.6-plus
 
 # 在指定任务集上横向对比多个 Harness
 python run_bench.py \
-  --agents qwenpaw openclaw hermes \
+  --agents harbor:qwenpaw harbor:openclaw harbor:hermes \
   --model dashscope/qwen3.6-plus \
   --tasks T002 T006
 
@@ -140,17 +142,11 @@ python run_bench.py \
 
 其他参数（`--no-results-version-path`、`--save-workspace`、`--save-docker-image` 等）见 `python run_bench.py --help`。
 
-#### 使用 Harbor Bridge 评测 Claude Code、Codex 等 Agent
+#### 使用 Harbor Bridge 评测 Claude Code、Codex 等其他 Agent
 
-PawBench 通过 **Harbor Bridge** 支持评测任何 [Harbor](https://github.com/av/harbor) 兼容的 Agent，包括 Claude Code、OpenAI Codex CLI、Aider 等主流编程 Agent，使用相同的 150 道 PawBench 任务。
+同样的 Harbor Bridge 可让你在相同的 150 道 PawBench 任务上评测 Claude Code、OpenAI Codex CLI、Aider 等主流编程 Agent —— 无需额外构建镜像。
 
-**第一步：构建基础镜像**（已包含 `harbor-framework` 和所有系统依赖）：
-
-```bash
-docker build -f docker/Dockerfile.pawbench-base -t pawbench-base:latest .
-```
-
-**第二步：在 `.env` 中配置 API Key**（可从 `.env.example` 复制）：
+**第一步：在 `.env` 中配置 API Key**（可从 `.env.example` 复制）：
 
 ```bash
 # Claude Code 所需
@@ -160,7 +156,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 OPENAI_API_KEY=sk-...
 ```
 
-**第三步：在 `--agents` 中使用 `harbor:` 前缀**：
+**第二步：在 `--agents` 中使用 `harbor:` 前缀**：
 
 ```bash
 # 评测 Claude Code（支持任意 Anthropic 模型）
@@ -177,7 +173,7 @@ python run_bench.py \
 
 # Claude Code vs Codex vs QwenPaw 三方横向对比
 python run_bench.py \
-  --agents harbor:claude-code harbor:codex qwenpaw \
+  --agents harbor:claude-code harbor:codex harbor:qwenpaw \
   --model anthropic/claude-opus-4-5 \
   --tasks T002 T006 T053
 ```
@@ -186,6 +182,9 @@ python run_bench.py \
 
 | 名称 | Agent | 提供方 |
 | :--- | :--- | :--- |
+| `harbor:qwenpaw` | QwenPaw（默认） | 阿里巴巴 |
+| `harbor:openclaw` | OpenClaw | — |
+| `harbor:hermes` | Hermes | — |
 | `harbor:claude-code` | Claude Code CLI | Anthropic |
 | `harbor:codex` | Codex CLI | OpenAI |
 | `harbor:aider` | Aider | Paul Gauthier |

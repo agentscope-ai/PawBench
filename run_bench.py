@@ -6,25 +6,20 @@ pawbench runner  ·  unified entry point for running pawbench tasks
 Quick start
 -----------
 
-  # Run all tasks with the qwenpaw agent (default):
+  # Run all tasks with the default agent (harbor:qwenpaw):
   python run_bench.py --model openai/gpt-4o
 
-  # Run with OpenClaw agent (copawbench-openclaw:latest):
-  python run_bench.py --agents openclaw --model dashscope/qwen3.6-plus
+  # Run with another Harbor-bridge agent (the harbor: prefix is optional):
+  python run_bench.py --agents harbor:openclaw --model dashscope/qwen3.6-plus
+  python run_bench.py --agents harbor:hermes   --model dashscope/qwen3.6-plus
 
-  # Run with Hermes agent (hermes-qwenclawbench:latest):
-  python run_bench.py --agents hermes --model dashscope/qwen3.6-plus
+  # Compare several agents on the same tasks:
+  python run_bench.py --agents harbor:qwenpaw harbor:openclaw harbor:hermes --model dashscope/qwen3.6-plus --tasks T002_email_triage
 
-  # Compare all three agents on the same tasks:
-  python run_bench.py --agents qwenpaw openclaw hermes --model dashscope/qwen3.6-plus --tasks T002_email_triage
-
-  # Run a Harbor agent (harbor-framework must be installed; use pawbench-base image):
-  python run_bench.py --agents harbor:hermes  --model anthropic/claude-sonnet-4-5
+  # Run other Harbor agents (all use the pawbench-base image):
   python run_bench.py --agents harbor:codex   --model openai/o3
   python run_bench.py --agents harbor:aider   --model anthropic/claude-opus-4-5
-
-  # Compare a built-in agent against its Harbor counterpart:
-  python run_bench.py --agents hermes harbor:hermes --model anthropic/claude-sonnet-4-5
+  python run_bench.py --agents harbor:claude-code --model anthropic/claude-sonnet-4-5
 
   # Run a specific subset of tasks:
   python run_bench.py --model openai/gpt-4o --tasks T001 T002
@@ -127,13 +122,14 @@ def parse_args() -> argparse.Namespace:
         default=None,
         metavar="AGENT",
         help=(
-            "Agent(s) to use. Built-in: qwenpaw (default), openclaw, hermes. "
-            "Harbor agents: harbor:<name> — runs any Harbor BaseInstalledAgent "
-            "inside the pawbench-base Docker image (requires Python 3.12 + harbor-framework). "
-            "Examples: harbor:hermes, harbor:codex, harbor:aider, harbor:claude-code, "
-            "harbor:gemini-cli, harbor:goose, harbor:qwen-code, harbor:openhands, "
-            "harbor:swe-agent, harbor:nemo-agent. "
-            "Multiple agents run sequentially: --agents qwenpaw harbor:hermes"
+            "Harbor agent(s) to use (default: harbor:qwenpaw). Every agent runs "
+            "as a Harbor BaseInstalledAgent inside the pawbench-base Docker image "
+            "(requires Python 3.12 + harbor-framework). The harbor: prefix is "
+            "optional (qwenpaw == harbor:qwenpaw). "
+            "Examples: harbor:qwenpaw, harbor:openclaw, harbor:hermes, harbor:codex, "
+            "harbor:aider, harbor:claude-code, harbor:gemini-cli, harbor:goose, "
+            "harbor:qwen-code, harbor:openhands, harbor:swe-agent, harbor:nemo-agent. "
+            "Multiple agents run sequentially: --agents harbor:qwenpaw harbor:hermes"
         ),
     )
     run_grp.add_argument(
@@ -182,22 +178,18 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help=(
             "Docker image override. "
-            "qwenpaw mode default: qwenclawbench-qwenpaw:latest (pre-built with qwenpaw); "
-            "openclaw mode default: ghcr.io/openclaw/openclaw:main."
+            "Default for all Harbor-bridge agents: pawbench-base:latest "
+            "(Python 3.12 + harbor-framework, built from docker/Dockerfile.pawbench-base)."
         ),
     )
     exec_grp.add_argument(
         "--thinking",
         default=None,
         metavar="LEVEL",
-        help="[openclaw] Thinking level: low | medium | high | xhigh.",
-    )
-    exec_grp.add_argument(
-        "--skip-bootstrap",
-        action="store_true",
-        default=False,
-        dest="skip_bootstrap",
-        help="[openclaw] Remove BOOTSTRAP.md / SOUL.md from the task workspace before execution.",
+        help=(
+            "Thinking level: low | medium | high | xhigh. "
+            "Only honoured by agents that expose it (e.g. harbor:openclaw)."
+        ),
     )
 
     model_grp = p.add_argument_group("Model & API configuration")
@@ -511,7 +503,7 @@ async def main() -> int:
         return 1
 
     base_results_dir = Path(args.results_dir)
-    agents = args.agents or ["qwenpaw"]
+    agents = args.agents or ["harbor:qwenpaw"]
 
     run_ts = _run_timestamp()
 
@@ -554,7 +546,7 @@ async def _run_benchmark(
     api_key: str | None,
     base_url: str,
     benchmark_path: Path,
-    agent_label: str = "qwenpaw",
+    agent_label: str = "harbor:qwenpaw",
 ) -> int:
     print(f"Benchmark : {_BENCHMARK_NAME}")
     print(f"Path      : {benchmark_path}")
@@ -607,8 +599,6 @@ async def _run_benchmark(
     api_model_name = os.environ.get("BENCH_API_MODEL_NAME")
     if api_model_name:
         agent_config["api_model_name"] = api_model_name
-    if getattr(args, "skip_bootstrap", False):
-        agent_config["skip_bootstrap"] = True
     if getattr(args, "save_workspace", False):
         agent_config["save_workspace"] = True
     if getattr(args, "save_docker_image", False):
