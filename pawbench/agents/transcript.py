@@ -198,6 +198,10 @@ def _events_from_session_dir(sessions_dir: Path) -> "list[dict[str, Any]]":
         if events:
             return events
 
+        events = _qwenpaw_v2_native_events(data)
+        if events:
+            return events
+
         # OpenClaw sessions write JSONL events directly into agent.memory.content;
         # detect and return them as-is (they are already in transcript format).
         events = _openclaw_native_events(data)
@@ -1041,6 +1045,119 @@ def _qwenpaw_native_events(
                         "content": [{"type": "text", "text": text}],
                     },
                 })
+
+    return events
+
+
+# ── qwenpaw 2.x memory format ─────────────────────────────────────────────────
+
+def _qwenpaw_v2_native_events(
+    session_data: "dict[str, Any]",
+) -> "list[dict[str, Any]]":
+    """Translate QwenPaw 2.x ``agent.state.context`` turns into transcript events.
+
+    QwenPaw 2.0 replaced the 1.x ``agent.memory.content`` list-of-turn-lists
+    format with a flat ``agent.state.context`` list where each turn already
+    carries a top-level ``role`` (``user``/``assistant``) and a ``content``
+    block list. Block types were also renamed: ``tool_use`` → ``tool_call``,
+    and ``tool_result`` blocks are now nested *inside* the assistant turn
+    that produced the call (rather than a separate ``system`` turn as in
+    1.x). We walk each turn's blocks in order, flushing the accumulated
+    text/tool-call content into an assistant event whenever a tool_result is
+    encountered, so the resulting event order mirrors the actual
+    think → call → result → continue sequence.
+    """
+    if not isinstance(session_data, dict):
+        return []
+    agent = session_data.get("agent")
+    if not isinstance(agent, dict):
+        return []
+    state = agent.get("state")
+    context = state.get("context") if isinstance(state, dict) else None
+    if not isinstance(context, list) or not context:
+        return []
+
+    events: list[dict[str, Any]] = []
+    for turn in context:
+        if not isinstance(turn, dict):
+            continue
+        role = turn.get("role")
+        blocks = turn.get("content")
+        if isinstance(blocks, dict):
+            blocks = [blocks]
+        elif not isinstance(blocks, list):
+            continue
+
+        if role == "user":
+            text = _join_text_blocks(blocks)
+            if text:
+                events.append({
+                    "type": "message",
+                    "message": {
+                        "role": "user",
+                        "content": [{"type": "text", "text": text}],
+                    },
+                })
+            continue
+
+        if role != "assistant":
+            continue
+
+        pending_text: list[str] = []
+        pending_tool_calls: list[dict[str, Any]] = []
+
+        def _flush() -> None:
+            content_items: list[dict[str, Any]] = []
+            if pending_text:
+                content_items.append(
+                    {"type": "text", "text": "\n\n".join(pending_text)}
+                )
+            content_items.extend(pending_tool_calls)
+            if content_items:
+                events.append({
+                    "type": "message",
+                    "message": {"role": "assistant", "content": content_items},
+                })
+            pending_text.clear()
+            pending_tool_calls.clear()
+
+        for b in blocks:
+            if not isinstance(b, dict):
+                continue
+            btype = b.get("type")
+            if btype == "thinking":
+                txt = b.get("thinking") or b.get("text") or ""
+                if txt:
+                    pending_text.append(f"[thinking]\n{txt}")
+            elif btype == "text":
+                txt = b.get("text") or ""
+                if txt:
+                    pending_text.append(txt)
+            elif btype == "tool_call":
+                name = b.get("name") or ""
+                if name:
+                    pending_tool_calls.append({
+                        "type": "toolCall",
+                        "name": name,
+                        "arguments": _parse_tool_args(b.get("input")),
+                    })
+            elif btype == "tool_result":
+                _flush()
+                text = _join_tool_output(b.get("output"))
+                if text:
+                    events.append({
+                        "type": "message",
+                        "message": {
+                            "role": "toolResult",
+                            "content": [{"type": "text", "text": text}],
+                        },
+                    })
+
+        _flush()
+
+        usage = _normalize_usage_dict(turn.get("usage"))
+        if usage:
+            _add_usage_to_last_assistant(events, usage)
 
     return events
 

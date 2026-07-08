@@ -9,7 +9,7 @@ __pycache__/
 
 # generated single-file snapshot (rebuild via `npm run build:snapshot`)
 pawbench-snapshot.html
-
+data/user-sim-demo
 # zipped static-site bundle for sharing
 site/pawbench-site.zip
 

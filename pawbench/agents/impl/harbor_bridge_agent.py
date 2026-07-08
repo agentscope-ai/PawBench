@@ -589,6 +589,13 @@ class HarborBridgeAgent(ContainerAgent):
                 if not base_url.rstrip("/").endswith("/v1"):
                     base_url = base_url.rstrip("/") + "/v1"
             env["OPENAI_BASE_URL"] = base_url
+            if provider == "dashscope":
+                # OpenClaw (unlike other Harbor agents) derives its provider's
+                # env-var prefix directly from the "<provider>/<model>" string
+                # instead of always reading OPENAI_*, so it looks for
+                # DASHSCOPE_BASE_URL specifically. Mirror the OpenAI-compatible
+                # base URL there too so it resolves the same DashScope endpoint.
+                env["DASHSCOPE_BASE_URL"] = base_url
             if provider == "anthropic":
                 # claude-code reads ANTHROPIC_BASE_URL from os.environ; set it in
                 # extra_env so the shell command receives it directly.
@@ -634,7 +641,7 @@ class HarborBridgeAgent(ContainerAgent):
             "OPENAI_API_KEY", "OPENAI_BASE_URL",
             "GOOGLE_API_KEY",
             "OPENROUTER_API_KEY",
-            "DASHSCOPE_API_KEY",
+            "DASHSCOPE_API_KEY", "DASHSCOPE_BASE_URL",
             "KIMI_API_KEY", "GLM_API_KEY",
         ):
             if key not in env and os.environ.get(key):

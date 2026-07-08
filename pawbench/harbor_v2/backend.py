@@ -166,6 +166,12 @@ class HarborV2Backend(BenchmarkBackend):
 
         agent_env = self._build_agent_env(agent_name, model, agent_config)
         verifier_env = self._build_verifier_env(agent_config)
+        # Multi-turn tasks (Strategy A) run a user-sim MCP sidecar in the
+        # environment; inject its dedicated USER_SIM_* credentials so the compose
+        # sidecar service can reach its LLM. Fail-fast when a multi-turn task is
+        # missing the dedicated creds — the user simulator must never silently
+        # fall back to the agent-under-test / judge credentials.
+        environment_env = self._build_environment_env(task, agent_config)
 
         timeout_multiplier = float(agent_config.get("timeout_multiplier", 1.0))
 
@@ -179,7 +185,11 @@ class HarborV2Backend(BenchmarkBackend):
                 model_name=model,
                 env=agent_env,
             ),
-            environment=EnvironmentConfig(),  # provider defaults to docker
+            environment=(
+                EnvironmentConfig(env=environment_env)
+                if environment_env
+                else EnvironmentConfig()  # provider defaults to docker
+            ),
             verifier=VerifierConfig(env=verifier_env) if verifier_env else VerifierConfig(),
         )
 
@@ -335,6 +345,99 @@ class HarborV2Backend(BenchmarkBackend):
         env["LLM_API_FORMAT"] = api_format
         return env
 
+    # ── multi-turn / user-sim wiring ──────────────────────────────────────────────
+
+    # task.toml metadata modes that indicate a multi-turn user-sim task.
+    _MULTI_TURN_MODES = {"multi-turn", "multi_turn", "multiturn", "cowork"}
+    _MULTI_TURN_CATEGORIES = {"user_agent", "user-agent"}
+    # substrings used to recognise a user-sim MCP server declaration by name/url.
+    _USER_SIM_MCP_MARKERS = ("user-sim", "user_sim", "usersim")
+
+    @classmethod
+    def _is_multi_turn_task(cls, task: HarborV2Task) -> bool:
+        """Best-effort detection of a multi-turn user-sim task.
+
+        A task is treated as multi-turn when any of the following hold:
+        * ``[metadata].mode`` is one of the multi-turn modes;
+        * ``[metadata].category`` marks it as a user-agent task;
+        * a ``[[environment.mcp_servers]]`` entry names/points at a user-sim; or
+        * the package ships a ``.user/`` (or ``user/``) persona directory.
+        """
+        metadata = getattr(task, "metadata", {}) or {}
+        mode = str(metadata.get("mode") or "").strip().lower()
+        if mode in cls._MULTI_TURN_MODES:
+            return True
+        category = str(metadata.get("category") or "").strip().lower()
+        if category in cls._MULTI_TURN_CATEGORIES:
+            return True
+
+        raw = getattr(task, "raw_config", {}) or {}
+        env_cfg = raw.get("environment", {}) or {}
+        for server in env_cfg.get("mcp_servers", []) or []:
+            if not isinstance(server, dict):
+                continue
+            haystack = f"{server.get('name', '')} {server.get('url', '')}".lower()
+            if any(marker in haystack for marker in cls._USER_SIM_MCP_MARKERS):
+                return True
+
+        task_dir = getattr(task, "task_dir", None)
+        if task_dir is not None:
+            if (task_dir / ".user").is_dir() or (task_dir / "user").is_dir():
+                return True
+        return False
+
+    def _build_environment_env(
+        self,
+        task: HarborV2Task,
+        agent_config: Dict[str, Any],
+    ) -> Dict[str, str]:
+        """Build the env injected into the environment (sidecar) container(s).
+
+        Only populated for multi-turn tasks. The user simulator uses a dedicated
+        ``USER_SIM_*`` contract with **no** fallback to agent/judge credentials;
+        a missing model/key on a multi-turn task raises (surfaced as an error
+        TaskResult by ``run_and_grade``).
+        """
+        if not self._is_multi_turn_task(task):
+            return {}
+
+        def _resolve(cfg_key: str, env_key: str) -> str:
+            return str(agent_config.get(cfg_key) or os.environ.get(env_key, "") or "").strip()
+
+        api_key = _resolve("user_sim_api_key", "USER_SIM_API_KEY")
+        model = _resolve("user_sim_model", "USER_SIM_MODEL")
+        base_url = _resolve("user_sim_base_url", "USER_SIM_BASE_URL")
+
+        missing = [
+            name
+            for name, value in (("USER_SIM_API_KEY", api_key), ("USER_SIM_MODEL", model))
+            if not value
+        ]
+        if missing:
+            raise ValueError(
+                f"Multi-turn task {task.task_id!r} requires the dedicated user-sim "
+                f"credentials {missing} (set via agent_config user_sim_* or the "
+                f"USER_SIM_* environment). The user simulator must not fall back to "
+                f"the agent-under-test / judge credentials."
+            )
+
+        env: Dict[str, str] = {
+            "USER_SIM_API_KEY": api_key,
+            "USER_SIM_MODEL": model,
+        }
+        if base_url:
+            env["USER_SIM_BASE_URL"] = base_url
+
+        max_turns = agent_config.get("user_sim_max_turns") or os.environ.get("USER_SIM_MAX_TURNS")
+        if max_turns:
+            env["USER_SIM_MAX_TURNS"] = str(max_turns)
+        temperature = agent_config.get("user_sim_temperature")
+        if temperature is None:
+            temperature = os.environ.get("USER_SIM_TEMPERATURE")
+        if temperature is not None and str(temperature).strip():
+            env["USER_SIM_TEMPERATURE"] = str(temperature)
+        return env
+
     # ── result mapping ───────────────────────────────────────────────────────────
 
     def _map_trial_result(
@@ -395,6 +498,12 @@ class HarborV2Backend(BenchmarkBackend):
             logger.info("Trial rewards for %s: %s → score=%.3f", task.task_id, rewards, score)
 
         breakdown = dict(rewards)
+        labels = dict(task.frontmatter)
+        # Tag the run mode so the label report separates multi-turn user-sim
+        # tasks from single-turn ones (non-regression visibility).
+        labels.setdefault(
+            "mode", "multi-turn" if self._is_multi_turn_task(task) else "single-turn"
+        )
         return TaskResult(
             task_id=task.task_id,
             task_name=task.name,
@@ -412,7 +521,7 @@ class HarborV2Backend(BenchmarkBackend):
             error=error_msg,
             transcript=transcript,
             anomaly=anomaly,
-            labels=dict(task.frontmatter),
+            labels=labels,
         )
 
     @staticmethod

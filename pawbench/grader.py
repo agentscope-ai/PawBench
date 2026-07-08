@@ -288,11 +288,14 @@ def _call_openai_compatible_api(
     timeout_seconds: float = DEFAULT_JUDGE_TIMEOUT_SECONDS,
 ) -> str:
     url = base_url.rstrip("/") + "/chat/completions"
+    # DashScope's OpenAI-compatible endpoint caps max_tokens at 8192 for most
+    # models (e.g. qwen-max); larger values return a 400 InvalidParameter error.
+    max_tokens = 8192 if "dashscope.aliyuncs.com" in base_url else 20480
     payload = json.dumps({
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.0,
-        "max_tokens": 20480,
+        "max_tokens": max_tokens,
     }).encode("utf-8")
 
     req = urllib.request.Request(
