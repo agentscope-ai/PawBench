@@ -143,13 +143,26 @@ class HarborV2Backend(BenchmarkBackend):
         from harbor.trial.trial import Trial
         from harbor.models.agent.name import AgentName
 
-        agent_name = self._resolve_agent_name(agent_config.get("agent_type", ""))
+        short_agent_name = self._resolve_agent_name(agent_config.get("agent_type", ""))
+        agent_name = short_agent_name
         # Names not in Harbor's AgentName enum must be passed as a module:Class
         # import path (e.g. the pawbench-bundled qwenpaw agent).
         if agent_name not in AgentName.values():
             agent_name = _AGENT_IMPORT_PATHS.get(agent_name, agent_name)
         model = agent_config.get("model", "")
         verbose = bool(agent_config.get("verbose", False))
+
+        # Extra kwargs forwarded to the native agent constructor via
+        # AgentConfig.kwargs (harbor.agents.factory merges these into the
+        # agent's __init__). OpenClaw's "thinking" CliFlag defaults to "high",
+        # which non-reasoning models (e.g. DashScope qwen3.6-plus) reject
+        # outright ("Thinking level 'high' is not supported ... Use one of:
+        # off."), crashing the CLI with an empty transcript. Mirror
+        # HarborBridgeAgent: force "off" unless the caller explicitly passed
+        # --thinking (agent_config["thinking_level"]).
+        agent_kwargs: Dict[str, Any] = {}
+        if short_agent_name == "openclaw":
+            agent_kwargs["thinking"] = agent_config.get("thinking_level") or "off"
 
         # MUST be an absolute path: Harbor bind-mounts the trial's workspace /
         # artifacts dirs into the task & verifier containers, and under
@@ -184,6 +197,7 @@ class HarborV2Backend(BenchmarkBackend):
                 name=agent_name,
                 model_name=model,
                 env=agent_env,
+                kwargs=agent_kwargs,
             ),
             environment=(
                 EnvironmentConfig(env=environment_env)
@@ -347,28 +361,34 @@ class HarborV2Backend(BenchmarkBackend):
 
     # ── multi-turn / user-sim wiring ──────────────────────────────────────────────
 
-    # task.toml metadata modes that indicate a multi-turn user-sim task.
+    # task.toml [metadata].mode values that indicate a multi-turn user-sim task.
     _MULTI_TURN_MODES = {"multi-turn", "multi_turn", "multiturn", "cowork"}
-    _MULTI_TURN_CATEGORIES = {"user_agent", "user-agent"}
     # substrings used to recognise a user-sim MCP server declaration by name/url.
     _USER_SIM_MCP_MARKERS = ("user-sim", "user_sim", "usersim")
 
     @classmethod
-    def _is_multi_turn_task(cls, task: HarborV2Task) -> bool:
-        """Best-effort detection of a multi-turn user-sim task.
+    def _requires_user_sim(cls, task: HarborV2Task) -> bool:
+        """Whether a task actually wires a user-sim sidecar (needs ``USER_SIM_*``).
 
-        A task is treated as multi-turn when any of the following hold:
-        * ``[metadata].mode`` is one of the multi-turn modes;
-        * ``[metadata].category`` marks it as a user-agent task;
-        * a ``[[environment.mcp_servers]]`` entry names/points at a user-sim; or
-        * the package ships a ``.user/`` (or ``user/``) persona directory.
+        Detection is deliberately **narrow** so that ``USER_SIM_*`` injection and
+        the fail-fast only fire for tasks that genuinely run a user simulator. A
+        task requires the user simulator when **either**:
+
+        * ``[metadata].mode`` is one of the multi-turn modes (``multi-turn`` /
+          ``cowork`` / …); **or**
+        * a ``[[environment.mcp_servers]]`` entry names/points at a user-sim.
+
+        ``[metadata].category`` (e.g. ``user_agent``) and the presence of a
+        ``.user/`` / ``user/`` persona directory are intentionally **not** used
+        here: existing single-turn ``user_agent`` tasks (e.g. ``ua-cw-wcag-4957``)
+        ship a ``user/`` directory *without* any sidecar, so treating them as
+        multi-turn would wrongly demand ``USER_SIM_*`` and fail-fast — breaking
+        the default dataset. Those signals may still inform the *label* but must
+        never drive the fail-fast gate (see design doc §4.4 / §7.2).
         """
         metadata = getattr(task, "metadata", {}) or {}
         mode = str(metadata.get("mode") or "").strip().lower()
         if mode in cls._MULTI_TURN_MODES:
-            return True
-        category = str(metadata.get("category") or "").strip().lower()
-        if category in cls._MULTI_TURN_CATEGORIES:
             return True
 
         raw = getattr(task, "raw_config", {}) or {}
@@ -378,11 +398,6 @@ class HarborV2Backend(BenchmarkBackend):
                 continue
             haystack = f"{server.get('name', '')} {server.get('url', '')}".lower()
             if any(marker in haystack for marker in cls._USER_SIM_MCP_MARKERS):
-                return True
-
-        task_dir = getattr(task, "task_dir", None)
-        if task_dir is not None:
-            if (task_dir / ".user").is_dir() or (task_dir / "user").is_dir():
                 return True
         return False
 
@@ -398,7 +413,7 @@ class HarborV2Backend(BenchmarkBackend):
         a missing model/key on a multi-turn task raises (surfaced as an error
         TaskResult by ``run_and_grade``).
         """
-        if not self._is_multi_turn_task(task):
+        if not self._requires_user_sim(task):
             return {}
 
         def _resolve(cfg_key: str, env_key: str) -> str:
@@ -474,6 +489,14 @@ class HarborV2Backend(BenchmarkBackend):
             logger.debug("token/cost totals unavailable", exc_info=True)
 
         transcript = self._load_trajectory(trials_dir / trial_name)
+        # For multi-turn tasks the agent-side ATIF only records user turns *inside*
+        # the ``send_message_to_user`` tool results; the authoritative alternating
+        # dialogue lives in the user-sim sidecar's persisted transcript. Merge it in
+        # so the pawbench report / anomaly view sees the real conversation
+        # (design doc §4.5/§4.6, approach #2). Additive & gated: single-turn tasks
+        # never produce the state file, so they are unaffected.
+        if self._requires_user_sim(task):
+            transcript.extend(self._load_user_sim_turns(trials_dir / trial_name))
 
         exception_info = getattr(result, "exception_info", None)
         status = "error" if exception_info is not None else "success"
@@ -502,7 +525,7 @@ class HarborV2Backend(BenchmarkBackend):
         # Tag the run mode so the label report separates multi-turn user-sim
         # tasks from single-turn ones (non-regression visibility).
         labels.setdefault(
-            "mode", "multi-turn" if self._is_multi_turn_task(task) else "single-turn"
+            "mode", "multi-turn" if self._requires_user_sim(task) else "single-turn"
         )
         return TaskResult(
             task_id=task.task_id,
@@ -591,6 +614,46 @@ class HarborV2Backend(BenchmarkBackend):
                 "message": {"role": role, "content": content, "usage": usage},
             })
         return transcript
+
+    @staticmethod
+    def _load_user_sim_turns(trial_dir: Path) -> List[Dict[str, Any]]:
+        """Convert the user-sim sidecar transcript to pawbench transcript shape.
+
+        Multi-turn tasks run the user simulator as a sidecar which persists the
+        authoritative user/agent dialogue to ``agent/user_sim_state.json`` on the
+        shared agent-logs volume (see :class:`UserSimRuntime.state_payload`). The
+        state file's ``transcript`` is a list of ``{"source": "user"|"agent",
+        "text": ...}`` turns. Missing / malformed files are non-fatal (returns []).
+        """
+        state_path = trial_dir / "agent" / "user_sim_state.json"
+        if not state_path.is_file():
+            return []
+        try:
+            data = json.loads(state_path.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            return []
+        turns = data.get("transcript") if isinstance(data, dict) else None
+        if not isinstance(turns, list):
+            return []
+
+        out: List[Dict[str, Any]] = []
+        for turn in turns:
+            if not isinstance(turn, dict):
+                continue
+            text = turn.get("text") or ""
+            if not text:
+                continue
+            role = "user" if turn.get("source") == "user" else "assistant"
+            out.append({
+                "type": "message",
+                "message": {
+                    "role": role,
+                    "content": [{"type": "text", "text": text}],
+                    "usage": {},
+                    "source": "user_sim",
+                },
+            })
+        return out
 
     # ── helpers ──────────────────────────────────────────────────────────────────
 

@@ -168,10 +168,12 @@ class HarborBridgeAgent(ContainerAgent):
         self._api_key = api_key
         self._base_url = base_url
         self._version = version
-        # Only OpenClaw currently declares a "thinking" CliFlag (default
+        # Only OpenClaw currently declares a "thinking" CliFlag (Harbor default
         # "high"). Many non-reasoning models reject that level outright
         # (e.g. "Thinking level 'high' is not supported for <model>. Use one
-        # of: off."), so forward --thinking through when the caller set one.
+        # of: off."). When the caller does not set a level we default OpenClaw
+        # to "off" in install() so the default eval flow never crashes; a
+        # non-None value here is forwarded verbatim.
         self._thinking_level = thinking_level
 
         # Instantiated lazily in install() so Docker image resolves first.
@@ -233,8 +235,15 @@ class HarborBridgeAgent(ContainerAgent):
         module_path, class_name = _REGISTRY[self._harbor_agent_name]
         HarborAgentCls = _import_harbor_class(module_path, class_name)
         ctor_kwargs: dict[str, Any] = {}
-        if self._harbor_agent_name in _THINKING_FLAG_AGENTS and self._thinking_level:
-            ctor_kwargs["thinking"] = self._thinking_level
+        if self._harbor_agent_name in _THINKING_FLAG_AGENTS:
+            # OpenClaw's Harbor CliFlag defaults thinking to "high", which many
+            # non-reasoning models (e.g. the default DashScope qwen3.6-plus)
+            # reject outright ("Thinking level 'high' is not supported ... Use
+            # one of: off."), causing every default eval run to fail. Fall back
+            # to "off" when the caller did not explicitly request a level, so the
+            # default flow works everywhere; callers can still opt into a higher
+            # level via --thinking for reasoning-capable models.
+            ctor_kwargs["thinking"] = self._thinking_level or "off"
         self._harbor_agent = HarborAgentCls(
             logs_dir=self._logs_dir,
             model_name=resolved_model_name,

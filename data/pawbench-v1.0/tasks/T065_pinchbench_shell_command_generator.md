@@ -74,7 +74,10 @@ def grade(transcript: list, workspace_path: str) -> dict:
 
     scores["file_created"] = 1.0
 
-    command = command_file.read_text(encoding="utf-8").strip()
+    # Use utf-8-sig so a leading UTF-8 BOM (some agents, e.g. qwenpaw, prepend
+    # one when writing text files) is stripped instead of becoming part of the
+    # first shell token, which would otherwise fail as "\ufeffgrep: not found".
+    command = command_file.read_text(encoding="utf-8-sig").strip().lstrip("\ufeff")
     if not command:
         return scores
 
