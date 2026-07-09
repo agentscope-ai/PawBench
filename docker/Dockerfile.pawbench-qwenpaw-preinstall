@@ -15,8 +15,14 @@ FROM ${BASE_IMAGE}
 # 1. Refresh harbor-framework with the local source (adds qwenpaw agent +
 #    AgentName.QWENPAW). --no-deps keeps the existing dependency set intact.
 COPY harbor/ /tmp/harbor-src/
-RUN pip install --no-cache-dir --force-reinstall --no-deps /tmp/harbor-src && \
-    rm -rf /tmp/harbor-src && \
+# Apply PawBench's local harbor-agent fixes (idempotent; see base image / patch).
+COPY patches/harbor-agent-fixes.patch /tmp/harbor-agent-fixes.patch
+RUN cd /tmp/harbor-src && \
+    ( git apply -p2 --reverse --check /tmp/harbor-agent-fixes.patch 2>/dev/null \
+        && echo "[harbor patch] already present — skipping" \
+      || git apply -p2 /tmp/harbor-agent-fixes.patch && echo "[harbor patch] applied" ) && \
+    pip install --no-cache-dir --force-reinstall --no-deps /tmp/harbor-src && \
+    rm -rf /tmp/harbor-src /tmp/harbor-agent-fixes.patch && \
     python3 -c "import harbor.agents.installed.qwenpaw as q; print('qwenpaw agent import OK:', q.QwenPaw.name())"
 
 # 2. Bake the qwenpaw venv into the image (fast HarborBridgeAgent.install()

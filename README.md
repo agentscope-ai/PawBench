@@ -120,6 +120,18 @@ Before the first run, build the base image (includes `harbor-framework` and all 
 docker build -f docker/Dockerfile.pawbench-base -t pawbench-base:latest .
 ```
 
+> **Note — vendored Harbor fixes.** The `harbor/` tree is vendored and
+> git-ignored, so two required agent fixes — qwenpaw provider routing (relay
+> endpoints must not use the builtin `openai` provider) and the hermes session
+> export (`--source cli` is broken) — ship as a patch in
+> `patches/harbor-agent-fixes.patch`. The Docker build applies it automatically
+> (idempotently). If you also run agents from the host (e.g. a conda env with
+> `pip install -e ./harbor`), apply it once with:
+>
+> ```bash
+> scripts/apply-harbor-patches.sh   # idempotent; safe to re-run
+> ```
+
 ```bash
 # Smoke test: run one PawBench v1.0 task with the default agent (harbor:qwenpaw)
 python run_bench.py --tasks T053 --model dashscope/qwen3.6-plus

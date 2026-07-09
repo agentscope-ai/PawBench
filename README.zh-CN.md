@@ -121,6 +121,16 @@ EOF
 docker build -f docker/Dockerfile.pawbench-base -t pawbench-base:latest .
 ```
 
+> **说明 — vendored Harbor 补丁。** `harbor/` 目录是 vendored 且被 `.gitignore`
+> 忽略的，因此两处必需的 agent 修复——qwenpaw 的 provider 路由（中转端点不能走内置
+> `openai` provider）与 hermes 的会话导出（`--source cli` 失效）——以补丁形式放在
+> `patches/harbor-agent-fixes.patch`。Docker 构建会自动幂等应用。如果你还在宿主机上
+> 直接运行 agent（例如 conda 环境里 `pip install -e ./harbor`），执行一次即可：
+>
+> ```bash
+> scripts/apply-harbor-patches.sh   # 幂等，可重复运行
+> ```
+
 ```bash
 # Smoke test：用默认 Agent（harbor:qwenpaw）跑一个 PawBench v1.0 任务
 python run_bench.py --tasks T053 --model dashscope/qwen3.6-plus

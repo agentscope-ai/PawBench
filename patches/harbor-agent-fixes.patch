@@ -1,0 +1,71 @@
+# Harbor vendored-agent fixes for PawBench (the harbor/ tree is gitignored).
+# Apply from the repo root against the vendored harbor/ tree:
+#     scripts/apply-harbor-patches.sh        # idempotent, recommended
+#     git apply patches/harbor-agent-fixes.patch
+#     patch -p1 < patches/harbor-agent-fixes.patch
+#
+# Fix 1 (qwenpaw.py): route openai/* relay endpoints through the CUSTOM
+#   provider so the configured base_url is honoured. The builtin openai
+#   provider hardcodes api.openai.com -> HTTP 403 -> MODEL_UNAUTHORIZED_ACCESS
+#   -> empty run for DashScope-compatible / relay endpoints.
+# Fix 2 (hermes.py): drop the broken `--source cli` filter from
+#   `hermes sessions export`, which matched 0 sessions and produced an empty
+#   hermes-session.jsonl -> EMPTY_TRANSCRIPT at grading time.
+
+--- a/harbor/src/harbor/agents/installed/qwenpaw.py
++++ b/harbor/src/harbor/agents/installed/qwenpaw.py
+@@ -52,6 +52,7 @@
+ import time
+ from pathlib import Path
+ from typing import Any, override
++from urllib.parse import urlparse
+ 
+ from harbor.agents.installed.base import (
+     BaseInstalledAgent,
+@@ -386,6 +387,23 @@
+ 
+         builtin_info = _BUILTIN_PROVIDER_MAP.get(provider)
+         is_builtin = builtin_info is not None
++
++        # PAWBENCH PATCH (local, not upstream): qwenpaw's builtin "openai"
++        # provider hardcodes the api.openai.com endpoint and ignores the
++        # base_url pushed via `PUT /api/models/openai/config`. An
++        # OpenAI-compatible RELAY reachable through OPENAI_BASE_URL (e.g.
++        # DashScope compatible-mode at .../compatible-mode/v1, or a self-hosted
++        # gateway) therefore gets routed to api.openai.com instead — which then
++        # rejects the call (observed: HTTP 403 unsupported_country_region_
++        # territory, surfaced as MODEL_UNAUTHORIZED_ACCESS with an empty
++        # transcript). When the resolved base_url points at a non-openai.com
++        # host, route through the CUSTOM provider ("rl-server") flow instead,
++        # which honours default_base_url and reaches the relay correctly.
++        if is_builtin and provider == "openai" and base_url:
++            host = (urlparse(base_url).hostname or "").lower()
++            if host and not (host == "openai.com" or host.endswith(".openai.com")):
++                is_builtin = False
++                builtin_info = None
+ 
+         is_v1 = self._qwenpaw_is_v1()
+ 
+
+--- a/harbor/src/harbor/agents/installed/hermes.py
++++ b/harbor/src/harbor/agents/installed/hermes.py
+@@ -487,9 +487,18 @@
+                 await self.exec_as_agent(
+                     environment,
+                     command=(
++                        # PAWBENCH PATCH (local, not upstream): the `--source cli`
++                        # filter is broken in current hermes builds — `sessions
++                        # export --source cli` matches 0 sessions even when
++                        # `sessions list` shows the just-run session with Src=cli,
++                        # producing an EMPTY hermes-session.jsonl (which then trips
++                        # EMPTY_TRANSCRIPT / SHORT_TRANSCRIPT downstream). Each task
++                        # runs in a fresh container with its own HERMES_HOME, so
++                        # there is exactly one session to export; drop the filter
++                        # and export it directly.
+                         'export PATH="$HOME/.local/bin:$PATH" && '
+                         "hermes sessions export /logs/agent/hermes-session.jsonl "
+-                        "--source cli 2>/dev/null || true"
++                        "2>/dev/null || true"
+                     ),
+                     env={"HERMES_HOME": "/tmp/hermes"},
+                     timeout_sec=30,

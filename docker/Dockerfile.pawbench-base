@@ -77,7 +77,17 @@ RUN pip install --no-cache-dir \
 # The COPY below includes harbor/pyproject.toml and harbor/src/harbor/.
 # After install the temp copy is removed to keep the layer small.
 COPY harbor/ /tmp/harbor-src/
-RUN pip install --no-cache-dir /tmp/harbor-src && rm -rf /tmp/harbor-src
+# Apply PawBench's local harbor-agent fixes (harbor/ is gitignored, so these
+# live as a patch). Idempotent: if the copied tree already carries the fixes
+# (e.g. the host harbor/ was patched before COPY) the reverse-check succeeds and
+# we skip; otherwise the patch is applied to the pristine tree before install.
+COPY patches/harbor-agent-fixes.patch /tmp/harbor-agent-fixes.patch
+RUN cd /tmp/harbor-src && \
+    ( git apply -p2 --reverse --check /tmp/harbor-agent-fixes.patch 2>/dev/null \
+        && echo "[harbor patch] already present — skipping" \
+      || git apply -p2 /tmp/harbor-agent-fixes.patch && echo "[harbor patch] applied" ) && \
+    pip install --no-cache-dir /tmp/harbor-src && \
+    rm -rf /tmp/harbor-src /tmp/harbor-agent-fixes.patch
 
 # ── Standard workspace / log directories ─────────────────────────────────────
 # Harbor agents write logs to /logs/agent/; PawBench grader reads the workspace.
