@@ -192,6 +192,62 @@ def parse_args() -> argparse.Namespace:
         ),
     )
 
+    ma_grp = p.add_argument_group("Multi-agent (sub-agent / agent teams)")
+    ma_grp.add_argument(
+        "--multi-agent",
+        action="store_true",
+        default=False,
+        dest="multi_agent",
+        help=(
+            "Launch the harness in its multi-agent / sub-agent mode. "
+            "Supported harnesses: harbor:claude-code (agent teams + sub-agents), "
+            "harbor:codex (delegation modes), harbor:openclaw (sessions_spawn). "
+            "Other harnesses ignore this flag. Grading is unchanged."
+        ),
+    )
+    ma_grp.add_argument(
+        "--multi-agent-mode",
+        default="auto",
+        dest="multi_agent_mode",
+        metavar="MODE",
+        help=(
+            "Multi-agent style: 'auto' (harness default), 'subagents', "
+            "'teams' (claude-code only), 'delegation' (codex only), "
+            "'disabled'. Default: auto."
+        ),
+    )
+    ma_grp.add_argument(
+        "--multi-agent-max-agents",
+        type=int,
+        default=4,
+        dest="multi_agent_max_agents",
+        metavar="N",
+        help="Max concurrent sub-agents / worker threads (default: 4).",
+    )
+    ma_grp.add_argument(
+        "--multi-agent-max-depth",
+        type=int,
+        default=2,
+        dest="multi_agent_max_depth",
+        metavar="N",
+        help=(
+            "Max sub-agent nesting depth: 1 = main→worker, 2 = "
+            "main→orchestrator→worker (default: 2)."
+        ),
+    )
+    ma_grp.add_argument(
+        "--multi-agent-config",
+        type=Path,
+        default=None,
+        dest="multi_agent_config",
+        metavar="FILE",
+        help=(
+            "Path to a JSON file with a full multi-agent spec "
+            "(enabled/mode/max_agents/max_depth/subagents/raw). Overrides the "
+            "other --multi-agent-* flags. Implies --multi-agent."
+        ),
+    )
+
     model_grp = p.add_argument_group("Model & API configuration")
     model_grp.add_argument(
         "--model",
@@ -469,6 +525,31 @@ def _resolve_per_model_values(
     return models, norm_keys, norm_base_urls
 
 
+def _build_multi_agent_config(args: argparse.Namespace):
+    """Resolve CLI flags into a :class:`MultiAgentConfig`, or ``None`` if disabled.
+
+    A ``--multi-agent-config FILE`` takes precedence over the individual
+    ``--multi-agent-*`` flags and implies ``--multi-agent``.
+    """
+    from pawbench.agents.multi_agent import MultiAgentConfig
+
+    config_path = getattr(args, "multi_agent_config", None)
+    if config_path:
+        cfg = MultiAgentConfig.from_json_file(config_path)
+        cfg.enabled = True
+        return cfg
+
+    if not getattr(args, "multi_agent", False):
+        return None
+
+    return MultiAgentConfig(
+        enabled=True,
+        mode=getattr(args, "multi_agent_mode", "auto"),
+        max_agents=getattr(args, "multi_agent_max_agents", 4),
+        max_depth=getattr(args, "multi_agent_max_depth", 2),
+    )
+
+
 # ── main ───────────────────────────────────────────────────────────────────────
 
 async def main() -> int:
@@ -592,6 +673,17 @@ async def _run_benchmark(
 
     if args.thinking:
         agent_config["thinking_level"] = args.thinking
+
+    multi_agent_cfg = _build_multi_agent_config(args)
+    if multi_agent_cfg is not None:
+        agent_config["multi_agent"] = multi_agent_cfg.to_dict()
+        print(
+            f"Multi-agent: enabled (mode={multi_agent_cfg.mode}, "
+            f"max_agents={multi_agent_cfg.max_agents}, "
+            f"max_depth={multi_agent_cfg.max_depth}, "
+            f"subagents={len(multi_agent_cfg.subagents)})"
+        )
+
     # Resolved dataset comes from the backend selector (handles harbor-v2 default).
     resolved_dataset = load_kwargs.get("dataset") or args.dataset
     if resolved_dataset:

@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 """User simulator subpackage for multi-turn PawBench / Harbor tasks.
 
-Ported and slimmed from CuES-plus (commit
-7f71d5cb3b8fba4f0ba90cee10d0b102f3afe2fc). Provides a persona-driven
-:class:`UserAgent` plus a FastMCP sidecar server (see :mod:`mcp_server`) that
-lets a Harbor agent-under-test talk to a simulated user through MCP tools.
+The persona-driven :class:`UserAgent`, ``UserContext`` and prompt builders are
+imported **directly from CuES-plus** (``examples/CuES-plus/src``) via
+:mod:`pawbench.user_sim._cues`, rather than maintaining a private fork. pawbench
+keeps only the thin integration layer around it:
 
-The user simulator uses a dedicated ``USER_SIM_*`` credential set and never
-falls back to the agent-under-test or judge credentials.
+* :class:`UserAgent` — subclass that wires the upstream agent to the dedicated
+  ``USER_SIM_*`` credentials (no fallback to agent/judge keys) and allows
+  injecting fake LLM clients in tests.
+* :mod:`runtime` + :mod:`mcp_server` — the FastMCP sidecar server that lets a
+  Harbor agent-under-test talk to the simulated user through MCP tools.
 """
 
 from __future__ import annotations

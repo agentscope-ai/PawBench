@@ -11,10 +11,6 @@ the caller must surface as fail-fast.
 from __future__ import annotations
 
 import os
-from pathlib import Path
-
-# Prompt template directory bundled with this subpackage.
-PROMPTS_DIR = Path(__file__).resolve().parent / "prompts_md"
 
 # LLM behaviour knobs.
 DEFAULT_LLM_RETRIES = 3

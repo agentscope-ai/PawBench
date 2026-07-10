@@ -72,6 +72,7 @@ class AgentFactory:
             ),
             version=agent_config.get("version"),
             thinking_level=agent_config.get("thinking_level"),
+            multi_agent=agent_config.get("multi_agent"),
         )
 
     @classmethod

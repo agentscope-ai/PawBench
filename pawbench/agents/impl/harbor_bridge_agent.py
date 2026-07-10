@@ -152,6 +152,7 @@ class HarborBridgeAgent(ContainerAgent):
         base_url: str = "",
         version: str | None = None,
         thinking_level: str | None = None,
+        multi_agent: Any = None,
         **kwargs: Any,
     ) -> None:
         if harbor_agent_name not in _REGISTRY:
@@ -168,6 +169,11 @@ class HarborBridgeAgent(ContainerAgent):
         self._api_key = api_key
         self._base_url = base_url
         self._version = version
+        # Multi-agent (sub-agent / agent-team) launch config. Accepts a
+        # MultiAgentConfig, a plain dict, or None. Normalized to a
+        # MultiAgentConfig here so install() can translate it into the
+        # harness-specific constructor kwargs / env vars.
+        self._multi_agent = self._normalize_multi_agent(multi_agent)
         # Only OpenClaw currently declares a "thinking" CliFlag (Harbor default
         # "high"). Many non-reasoning models reject that level outright
         # (e.g. "Thinking level 'high' is not supported for <model>. Use one
@@ -180,6 +186,26 @@ class HarborBridgeAgent(ContainerAgent):
         self._harbor_agent: Any = None
         self._logs_dir: Path | None = None
         self._tmpdir: Any = None   # tempfile.TemporaryDirectory context manager
+
+    @staticmethod
+    def _normalize_multi_agent(multi_agent: Any) -> Any:
+        """Coerce the *multi_agent* argument into a MultiAgentConfig (or None).
+
+        Accepts a ``MultiAgentConfig``, a plain ``dict``, or ``None``. Imported
+        lazily so this module still loads if the multi_agent helper is absent.
+        """
+        if multi_agent is None:
+            return None
+        from pawbench.agents.multi_agent import MultiAgentConfig
+
+        if isinstance(multi_agent, MultiAgentConfig):
+            return multi_agent
+        if isinstance(multi_agent, dict):
+            return MultiAgentConfig.from_dict(multi_agent)
+        raise TypeError(
+            "multi_agent must be a MultiAgentConfig, dict, or None; "
+            f"got {type(multi_agent).__name__}"
+        )
 
     # ── version ───────────────────────────────────────────────────────────────
 
@@ -244,6 +270,41 @@ class HarborBridgeAgent(ContainerAgent):
             # default flow works everywhere; callers can still opt into a higher
             # level via --thinking for reasoning-capable models.
             ctor_kwargs["thinking"] = self._thinking_level or "off"
+
+        # Multi-agent launch options: translate the normalized MultiAgentConfig
+        # into harness-specific constructor kwargs / env vars.
+        #   * claude-code → subagents (--agents json) + agent teams
+        #   * codex       → delegation_mode / agents_max_threads / agents_max_depth
+        #   * openclaw    → openclaw_config overlay (coding profile + maxSpawnDepth)
+        # Agents that do not support a multi-agent mode receive nothing (no-op).
+        if self._multi_agent is not None and self._multi_agent.enabled:
+            from pawbench.agents.multi_agent import (
+                SUPPORTED_MULTI_AGENT_HARNESSES,
+                build_harbor_kwargs,
+            )
+
+            ma_kwargs, ma_env = build_harbor_kwargs(
+                self._harbor_agent_name, self._multi_agent
+            )
+            if ma_kwargs or ma_env:
+                ctor_kwargs.update(ma_kwargs)
+                extra_env.update(ma_env)
+                _logger.info(
+                    "Harbor agent '%s': multi-agent mode enabled (mode=%s, "
+                    "max_agents=%d, max_depth=%d, subagents=%d).",
+                    self._harbor_agent_name,
+                    self._multi_agent.mode,
+                    self._multi_agent.max_agents,
+                    self._multi_agent.max_depth,
+                    len(self._multi_agent.subagents),
+                )
+            elif self._harbor_agent_name not in SUPPORTED_MULTI_AGENT_HARNESSES:
+                _logger.warning(
+                    "Harbor agent '%s' does not support multi-agent mode; "
+                    "--multi-agent has no effect for this harness.",
+                    self._harbor_agent_name,
+                )
+
         self._harbor_agent = HarborAgentCls(
             logs_dir=self._logs_dir,
             model_name=resolved_model_name,
