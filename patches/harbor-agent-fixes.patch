@@ -11,6 +11,15 @@
 # Fix 2 (hermes.py): drop the broken `--source cli` filter from
 #   `hermes sessions export`, which matched 0 sessions and produced an empty
 #   hermes-session.jsonl -> EMPTY_TRANSCRIPT at grading time.
+# Fix 3 (codex.py): add multi-agent launch support. Accepts `multi_agent` /
+#   `multi_agent_max_threads` ctor kwargs and injects the under-development
+#   `--enable multi_agent_v2` feature flags (+ optional
+#   `multi_agent_v2.max_concurrent_threads_per_session`) so PawBench can run
+#   Codex in its sub-agent delegation mode.
+# Fix 4 (claude_code.py): add multi-agent launch support. Accepts `subagents`
+#   (injected as `--agents '<json>'`), `agent_teams` (sets
+#   CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1), `teammate_mode` and `max_teammates`
+#   ctor kwargs so PawBench can run Claude Code with session sub-agents / teams.
 
 --- a/harbor/src/harbor/agents/installed/qwenpaw.py
 +++ b/harbor/src/harbor/agents/installed/qwenpaw.py
@@ -69,3 +78,151 @@
                      ),
                      env={"HERMES_HOME": "/tmp/hermes"},
                      timeout_sec=30,
+
+--- a/harbor/src/harbor/agents/installed/codex.py
++++ b/harbor/src/harbor/agents/installed/codex.py
+@@ -67,6 +67,43 @@
+         ),
+     ]
+ 
++    def __init__(
++        self,
++        *args,
++        multi_agent: bool = False,
++        multi_agent_max_threads: int | None = None,
++        **kwargs,
++    ):
++        # ── Multi-agent / sub-agent delegation ─────────────────────────────────
++        # Codex CLI ships multi-agent delegation as the under-development
++        # ``multi_agent_v2`` feature (enabled like ``--enable unified_exec``),
++        # configured via the ``[multi_agent_v2]`` table. The delegation mode
++        # (proactive vs explicit) is an app-server/thread-level parameter and is
++        # not a config.toml key in `codex exec`, so headless runs just enable the
++        # feature and (optionally) cap concurrent worker threads.
++        self._multi_agent = bool(multi_agent)
++        self._multi_agent_max_threads = (
++            int(multi_agent_max_threads) if multi_agent_max_threads else None
++        )
++        super().__init__(*args, **kwargs)
++
++    def _build_multi_agent_args(self) -> str:
++        """Return the ``--enable multi_agent_v2 …`` fragment, or ``""`` if off."""
++        if not self._multi_agent:
++            return ""
++        parts = [
++            "--enable multi_agent_v2",
++            # The feature is flagged under-development and prints a warning as a
++            # JSON error item; suppress it so it doesn't pollute the transcript.
++            "-c suppress_unstable_features_warning=true",
++        ]
++        if self._multi_agent_max_threads:
++            parts.append(
++                "-c multi_agent_v2.max_concurrent_threads_per_session="
++                f"{self._multi_agent_max_threads}"
++            )
++        return " ".join(parts)
++
+     @staticmethod
+     @override
+     def name() -> str:
+@@ -1009,6 +1046,10 @@
+ 
+         # Build command with optional CLI config flags from descriptors.
+         cli_flags = self.build_cli_flags()
++        # Append multi-agent (multi_agent_v2) enablement flags when requested.
++        multi_agent_args = self._build_multi_agent_args()
++        if multi_agent_args:
++            cli_flags = f"{cli_flags} {multi_agent_args}".strip()
+         cli_flags_arg = (cli_flags + " ") if cli_flags else ""
+ 
+         # Auth resolution:
+
+--- a/harbor/src/harbor/agents/installed/claude_code.py
++++ b/harbor/src/harbor/agents/installed/claude_code.py
+@@ -128,11 +128,52 @@
+         logs_dir: Path,
+         memory_dir: str | None = None,
+         *args,
++        subagents: list[dict] | None = None,
++        agent_teams: bool = False,
++        teammate_mode: str | None = None,
++        max_teammates: int | None = None,
+         **kwargs,
+     ):
+         self.memory_dir = memory_dir
++        # ── Multi-agent launch options ─────────────────────────────────────────
++        # ``subagents``: session-only sub-agent definitions injected via
++        #   ``claude --agents '<json>'``. Each item: {"name", "description",
++        #   "prompt", optional "tools", optional "model"}.
++        # ``agent_teams``: enable the experimental peer-to-peer *agent teams*
++        #   (CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1; Claude Code >= 2.1.32).
++        # ``teammate_mode``: "in-process" | "tmux" | "iterm" (Docker → in-process).
++        # ``max_teammates``: advisory cap on concurrent teammates.
++        self._subagents = list(subagents) if subagents else []
++        self._agent_teams = bool(agent_teams)
++        self._teammate_mode = teammate_mode
++        self._max_teammates = int(max_teammates) if max_teammates else None
+         super().__init__(logs_dir, *args, **kwargs)
+ 
++    def _build_subagents_flag(self) -> str:
++        """Return a shell-safe ``--agents '<json>'`` flag, or ``""`` if none.
++
++        Serializes ``self._subagents`` into the JSON object claude-code expects
++        (keyed by sub-agent name), then shell-quotes it so the whole JSON is a
++        single argument regardless of embedded spaces/quotes.
++        """
++        if not self._subagents:
++            return ""
++        import json as _json
++        import shlex as _shlex
++
++        agents_obj: dict[str, dict] = {}
++        for spec in self._subagents:
++            if not isinstance(spec, dict):
++                continue
++            name = str(spec.get("name") or "").strip()
++            if not name:
++                continue
++            entry = {k: v for k, v in spec.items() if k != "name"}
++            agents_obj[name] = entry
++        if not agents_obj:
++            return ""
++        return "--agents " + _shlex.quote(_json.dumps(agents_obj, ensure_ascii=False))
++
+     @override
+     def get_version_command(self) -> str | None:
+         return 'export PATH="$HOME/.local/bin:$PATH"; claude --version'
+@@ -1404,6 +1445,16 @@
+         # Allow bypassPermissions mode when running as root inside containers
+         env["IS_SANDBOX"] = "1"
+ 
++        # ── Multi-agent / agent-teams launch ───────────────────────────────────
++        # Enable the experimental peer-to-peer agent teams when requested (also
++        # honours a pre-set env var so callers can opt in without the ctor kwarg).
++        if self._agent_teams or (
++            (self._get_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS") or "").strip() == "1"
++        ):
++            env["CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"] = "1"
++            if self._max_teammates:
++                env["CLAUDE_CODE_MAX_TEAMMATES"] = str(self._max_teammates)
++
+         # Merge declarative env vars (e.g. MAX_THINKING_TOKENS)
+         env.update(self._resolved_env_vars)
+ 
+@@ -1433,6 +1484,16 @@
+         cli_flags = self.build_cli_flags()
+         extra_flags = (cli_flags + " ") if cli_flags else ""
+ 
++        # Session-only sub-agent definitions (--agents '<json>'), when supplied.
++        subagents_flag = self._build_subagents_flag()
++        if subagents_flag:
++            extra_flags += subagents_flag + " "
++
++        # Note: agent-teams execution mode is controlled via the
++        # CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS env var (+ teammateMode in
++        # settings.json), not a CLI flag — recent claude versions do not accept a
++        # `--teammate-mode` option, so we must not inject it here.
++
+         await self.exec_as_agent(
+             environment,
+             command=setup_command,

@@ -4,8 +4,7 @@ FROM python:3.12-slim
 ARG NODE_MAJOR=20
 
 # ── System packages ────────────────────────────────────────────────────────────
-# Same tool set as Dockerfile.pawbench-qwenpaw minus the qwenpaw agent itself.
-# Harbor-ecosystem agents (codex, aider, qwen-code, ...) are installed at
+# Harbor-ecosystem agents not baked in via HARBOR_AGENTS below are installed at
 # runtime by each HarborBridgeAgent.install() call, keeping this image
 # agent-agnostic.
 RUN apt-get update && \
