@@ -258,6 +258,21 @@ class HarborBridgeAgent(ContainerAgent):
             if self._harbor_agent_name in _BARE_MODEL_NAME_AGENTS and "/" in self._model
             else self._model
         )
+        # claude-code forwards ``model_name`` verbatim as ``ANTHROPIC_MODEL`` and,
+        # when a custom ``ANTHROPIC_BASE_URL`` proxy is set, keeps the full
+        # "provider/model" string (see harbor claude_code.py). DashScope-backed
+        # relay gateways register only the bare model id (e.g. "qwen3.6-plus"),
+        # so a full "anthropic/qwen3.6-plus" yields "无可用渠道 / 503". Strip the
+        # provider prefix for claude-code whenever a non-official Anthropic proxy
+        # is configured. (The bridge's extra_env["ANTHROPIC_MODEL"] override is
+        # dropped by harbor because only declared ENV_VARS reach the exec env.)
+        if (
+            self._harbor_agent_name == "claude-code"
+            and "/" in self._model
+        ):
+            _proxy = self._base_url or os.environ.get("ANTHROPIC_BASE_URL", "")
+            if _proxy and _proxy.rstrip("/") != "https://api.anthropic.com":
+                resolved_model_name = self._model.split("/", 1)[1]
         module_path, class_name = _REGISTRY[self._harbor_agent_name]
         HarborAgentCls = _import_harbor_class(module_path, class_name)
         ctor_kwargs: dict[str, Any] = {}
