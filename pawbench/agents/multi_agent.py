@@ -8,9 +8,9 @@ mode — the orchestrator + sub-agent / delegation feature each CLI ships:
 * **claude-code** — *sub-agents* (``--agents '<json>'``, session-only definitions)
   and the experimental *agent teams* (``CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1``).
   See https://code.claude.com/docs/en/sub-agents.
-* **codex** — *delegation modes* (``[agents] delegation_mode`` +
-  ``agents.max_threads`` / ``agents.max_depth``) introduced in Codex CLI v0.142.
-  See https://developers.openai.com/codex/concepts/subagents.
+* **codex** — stable sub-agent delegation (``features.multi_agent`` +
+  ``agents.max_threads`` / ``agents.max_depth``).
+  See https://developers.openai.com/codex/subagents.
 * **openclaw** — *sub-agents* via the ``sessions_spawn`` tool, which requires the
   ``coding`` tool profile and ``subagents.maxSpawnDepth`` in ``openclaw.json``.
   See https://docs.openclaw.ai/tools/subagents.
@@ -226,21 +226,20 @@ def _build_claude_code(cfg: MultiAgentConfig) -> tuple[dict[str, Any], dict[str,
 
 
 def _build_codex(cfg: MultiAgentConfig) -> tuple[dict[str, Any], dict[str, str]]:
-    """codex: enable the ``multi_agent_v2`` delegation feature.
+    """codex: enable stable sub-agent delegation and bound fan-out.
 
-    Verified against Codex CLI 0.143.0: multi-agent delegation ships as the
-    under-development ``multi_agent_v2`` feature, enabled like the existing
-    ``--enable unified_exec`` flag and configured through the ``[multi_agent_v2]``
-    table (``max_concurrent_threads_per_session``). The proactive-vs-explicit
-    delegation *mode* is an app-server/thread-level parameter, not a
-    ``codex exec`` config key, so headless runs simply enable the feature and cap
-    concurrent worker threads. The ``[agents]`` table is reserved for *named*
-    custom sub-agent roles and is intentionally left untouched here.
+    Codex CLI 0.144+ exposes the stable ``multi_agent`` feature and configures
+    concurrency/recursion through ``agents.max_threads`` and
+    ``agents.max_depth``. Headless runs still rely on the task prompt or project
+    instructions to make the model delegate; enabling the feature only exposes
+    the orchestration tools.
     """
     ctor: dict[str, Any] = {"multi_agent": True}
     env: dict[str, str] = {}
     if cfg.max_agents:
         ctor["multi_agent_max_threads"] = int(cfg.max_agents)
+    if cfg.max_depth:
+        ctor["multi_agent_max_depth"] = max(1, int(cfg.max_depth))
 
     _merge_raw(ctor, env, cfg.raw.get("codex"))
     return ctor, env

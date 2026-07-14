@@ -163,6 +163,10 @@ class HarborV2Backend(BenchmarkBackend):
         agent_kwargs: Dict[str, Any] = {}
         if short_agent_name == "openclaw":
             agent_kwargs["thinking"] = agent_config.get("thinking_level") or "off"
+        multi_agent_kwargs, multi_agent_env = self._build_multi_agent_inputs(
+            short_agent_name, agent_config
+        )
+        agent_kwargs.update(multi_agent_kwargs)
 
         # MUST be an absolute path: Harbor bind-mounts the trial's workspace /
         # artifacts dirs into the task & verifier containers, and under
@@ -178,6 +182,7 @@ class HarborV2Backend(BenchmarkBackend):
         trial_name = f"{task.task_id}__{run_id}"
 
         agent_env = self._build_agent_env(agent_name, model, agent_config)
+        agent_env.update(multi_agent_env)
         verifier_env = self._build_verifier_env(agent_config)
         # Multi-turn tasks (Strategy A) run a user-sim MCP sidecar in the
         # environment; inject its dedicated USER_SIM_* credentials so the compose
@@ -221,6 +226,55 @@ class HarborV2Backend(BenchmarkBackend):
             elapsed=elapsed,
             verbose=verbose,
         )
+
+    @staticmethod
+    def _build_multi_agent_inputs(
+        short_agent_name: str,
+        agent_config: Dict[str, Any],
+    ) -> tuple[Dict[str, Any], Dict[str, str]]:
+        """Translate normalized multi-agent config for native Harbor trials.
+
+        The legacy ``HarborBridgeAgent`` already performs this translation, but
+        Harbor-v2 constructs ``TrialConfig`` directly and therefore must forward
+        the harness-specific constructor kwargs and environment itself.
+        """
+        raw_config = agent_config.get("multi_agent")
+        if not raw_config:
+            return {}, {}
+
+        from pawbench.agents.multi_agent import (
+            MultiAgentConfig,
+            SUPPORTED_MULTI_AGENT_HARNESSES,
+            build_harbor_kwargs,
+        )
+
+        if isinstance(raw_config, MultiAgentConfig):
+            config = raw_config
+        elif isinstance(raw_config, dict):
+            config = MultiAgentConfig.from_dict(raw_config)
+        else:
+            raise TypeError(
+                "agent_config['multi_agent'] must be a mapping or MultiAgentConfig"
+            )
+
+        kwargs, env = build_harbor_kwargs(short_agent_name, config)
+        if config.enabled and short_agent_name not in SUPPORTED_MULTI_AGENT_HARNESSES:
+            logger.warning(
+                "Harbor-v2 agent '%s' does not support multi-agent mode; "
+                "the configuration has no effect.",
+                short_agent_name,
+            )
+        elif config.enabled:
+            logger.info(
+                "Harbor-v2 agent '%s': multi-agent mode enabled "
+                "(mode=%s, max_agents=%d, max_depth=%d, subagents=%d).",
+                short_agent_name,
+                config.mode,
+                config.max_agents,
+                config.max_depth,
+                len(config.subagents),
+            )
+        return kwargs, env
 
     # ── credential wiring ────────────────────────────────────────────────────────
 
@@ -339,7 +393,25 @@ class HarborV2Backend(BenchmarkBackend):
         env: Dict[str, str] = {}
         judge_api_key = agent_config.get("judge_api_key")
         judge_base_url = agent_config.get("judge_base_url")
-        judge_model = agent_config.get("judge_model")
+        judge_model_raw = agent_config.get("judge_model")
+
+        # The verifiers issue OpenAI-/Anthropic-style calls with the model id
+        # sent verbatim as ``"model": <id>`` against ``base_url``. A pawbench
+        # ``provider/model`` identifier (e.g. ``openai/qwen3.7-max``) must have
+        # its provider prefix stripped, otherwise DashScope-compatible endpoints
+        # reject it with ``HTTP 404 model_not_found`` and every judge call fails
+        # (scoring a spurious 0.0). Strip only known provider prefixes so real
+        # namespaced model ids (e.g. ``meta-llama/…``) are left intact.
+        judge_provider = ""
+        judge_model = judge_model_raw or ""
+        if judge_model and "/" in judge_model:
+            prefix, rest = judge_model.split("/", 1)
+            if prefix.lower() in {
+                "openai", "dashscope", "anthropic", "google", "gemini",
+                "custom", "deepseek", "azure", "qwen",
+            }:
+                judge_provider = prefix.lower()
+                judge_model = rest
 
         if judge_model:
             env["MODEL"] = judge_model
@@ -350,13 +422,35 @@ class HarborV2Backend(BenchmarkBackend):
 
         api_format = agent_config.get("judge_api_format")
         if not api_format:
-            model_l = (judge_model or "").lower()
+            model_l = judge_model.lower()
             base_l = (judge_base_url or "").lower()
             # Anthropic only for Claude models or an explicit Anthropic endpoint;
             # everything else (qwen, gpt, deepseek, …) is OpenAI-compatible.
             is_anthropic = model_l.startswith("claude") or "anthropic" in base_l
             api_format = "anthropic" if is_anthropic else "openai"
         env["LLM_API_FORMAT"] = api_format
+
+        # ── JUDGE_* contract ──────────────────────────────────────────────────
+        # Tasks converted from CoPaw (e.g. the ws-*/ua-* llm_judge graders) read
+        # a different env contract: JUDGE_MODEL / JUDGE_BASE_URL / JUDGE_API_KEY
+        # / JUDGE_PROVIDER. Without these the grader logs
+        # "grader model/base_url/api_key not configured" and returns 0.0. Inject
+        # them alongside the MODEL/LLM_* contract so both grader styles work.
+        if judge_model:
+            env["JUDGE_MODEL"] = judge_model
+        if judge_base_url:
+            env["JUDGE_BASE_URL"] = judge_base_url
+        if judge_api_key:
+            env["JUDGE_API_KEY"] = judge_api_key
+        # JUDGE_PROVIDER reflects the endpoint, not the pawbench wire-format
+        # prefix (``openai/`` just means OpenAI-compatible protocol).
+        base_l = (judge_base_url or "").lower()
+        if "dashscope" in base_l:
+            env["JUDGE_PROVIDER"] = "dashscope"
+        elif judge_provider:
+            env["JUDGE_PROVIDER"] = judge_provider
+        else:
+            env["JUDGE_PROVIDER"] = "openai"
         return env
 
     # ── multi-turn / user-sim wiring ──────────────────────────────────────────────
@@ -573,6 +667,13 @@ class HarborV2Backend(BenchmarkBackend):
         """
         traj_path = trial_dir / "agent" / "trajectory.json"
         if not traj_path.is_file():
+            # QwenPaw (and other agentscope-based harnesses) persist a
+            # qwenpaw-native session JSON instead of an ATIF trajectory.json.
+            # Fall back to it so the transcript is populated and the
+            # EMPTY_TRANSCRIPT anomaly does not spuriously fire.
+            session_transcript = HarborV2Backend._load_qwenpaw_session(trial_dir)
+            if session_transcript:
+                return session_transcript
             return []
         try:
             data = json.loads(traj_path.read_text(encoding="utf-8"))
@@ -613,6 +714,90 @@ class HarborV2Backend(BenchmarkBackend):
                 "type": "message",
                 "message": {"role": role, "content": content, "usage": usage},
             })
+        return transcript
+
+    @staticmethod
+    def _load_qwenpaw_session(trial_dir: Path) -> List[Dict[str, Any]]:
+        """Convert a QwenPaw-native ``qwenpaw.session.json`` to pawbench shape.
+
+        QwenPaw (agentscope) does not emit an ATIF ``trajectory.json``; it
+        persists its session under ``agent/qwenpaw.session.json`` where the
+        conversation lives at ``agent.state.context`` as a list of messages.
+        Each message has ``role`` and a ``content`` list whose parts are typed
+        ``text`` / ``thinking`` / ``tool_call`` / ``tool_result``. We map those
+        into the ``{"type": "message", "message": {...}}`` shape expected by
+        pawbench anomaly detection and transcript persistence. Missing or
+        malformed files are non-fatal (returns []).
+        """
+        session_path = trial_dir / "agent" / "qwenpaw.session.json"
+        if not session_path.is_file():
+            return []
+        try:
+            data = json.loads(session_path.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            return []
+
+        try:
+            context = data["agent"]["state"]["context"]
+        except (KeyError, TypeError):
+            return []
+        if not isinstance(context, list):
+            return []
+
+        transcript: List[Dict[str, Any]] = []
+
+        def _emit(role: str, content: List[Dict[str, Any]], usage: Dict[str, Any]) -> None:
+            transcript.append({
+                "type": "message",
+                "message": {"role": role, "content": content, "usage": usage or {}},
+            })
+
+        for msg in context:
+            if not isinstance(msg, dict):
+                continue
+            role = msg.get("role") or "assistant"
+            usage = msg.get("usage") if isinstance(msg.get("usage"), dict) else {}
+            parts = msg.get("content")
+
+            # Non-assistant turns (user/system) collapse into a single message.
+            if role != "assistant":
+                content: List[Dict[str, Any]] = []
+                if isinstance(parts, str) and parts:
+                    content.append({"type": "text", "text": parts})
+                elif isinstance(parts, list):
+                    for part in parts:
+                        if isinstance(part, dict) and part.get("text"):
+                            content.append({"type": "text", "text": part["text"]})
+                _emit(role, content, usage)
+                continue
+
+            # The assistant turn packs the whole run (thinking / text / tool
+            # calls / tool results) into one context entry. Expand each part
+            # into its own transcript message so length/roles reflect reality
+            # (and SHORT_TRANSCRIPT only fires when the agent truly did little).
+            if isinstance(parts, str) and parts:
+                _emit("assistant", [{"type": "text", "text": parts}], usage)
+            elif isinstance(parts, list):
+                for part in parts:
+                    if not isinstance(part, dict):
+                        continue
+                    ptype = part.get("type")
+                    if ptype == "text" and part.get("text"):
+                        _emit("assistant", [{"type": "text", "text": part["text"]}], {})
+                    elif ptype == "thinking" and part.get("thinking"):
+                        _emit("assistant", [{"type": "text", "text": part["thinking"]}], {})
+                    elif ptype == "tool_call":
+                        _emit("assistant", [{
+                            "type": "toolCall",
+                            "name": part.get("name", ""),
+                            "arguments": part.get("input", part.get("arguments", "")),
+                        }], {})
+                    elif ptype == "tool_result":
+                        _emit("tool", [{
+                            "type": "toolResult",
+                            "name": part.get("name", ""),
+                            "output": part.get("output", ""),
+                        }], {})
         return transcript
 
     @staticmethod
