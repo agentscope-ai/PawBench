@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pawbench-agentscope-harness"
+version = "0.1.0"
+description = "PawBench 2.0 harness prototype based on AgentScope 2.0"
+requires-python = ">=3.11"
+dependencies = [
+  "agentscope>=2.0.4",
+  "pydantic>=2.13",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "../.."]
+testpaths = ["tests"]

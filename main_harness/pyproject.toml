@@ -1,0 +1,11 @@
+[tool.pytest.ini_options]
+addopts = ["--import-mode=importlib"]
+cache_dir = ".pytest_cache"
+pythonpath = [
+  ".",
+  "candidates/agentscope/src",
+]
+testpaths = [
+  "tests",
+  "candidates/agentscope/tests",
+]
