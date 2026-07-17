@@ -35,6 +35,18 @@ from typing import Any, Dict, List, Optional
 from pawbench.backend import BenchmarkBackend, TaskResult
 from pawbench.utils.anomalies import detect_anomalies
 
+from .generative_user import (
+    build_generative_user_image,
+    generative_user_image_name,
+    is_generative_user_task,
+    materialize_generative_task,
+)
+from .scripted_user import (
+    build_scripted_user_image,
+    is_scripted_multi_turn,
+    materialize_scripted_task,
+    scripted_user_image_name,
+)
 from .task_loader import HarborV2Loader, HarborV2Task
 
 
@@ -180,6 +192,48 @@ class HarborV2Backend(BenchmarkBackend):
         ).resolve()
         run_id = agent_config.get("run_id") or uuid.uuid4().hex[:8]
         trial_name = f"{task.task_id}__{run_id}"
+        if self._uses_runtime_user_sim(task):
+            # Docker Compose uses the trial name as its project name. Repeated
+            # benchmark runs commonly reuse ``<task>_r1``; a unique suffix keeps
+            # concurrent/retried multi-turn trials from sharing project locks.
+            trial_name = f"{trial_name}__{uuid.uuid4().hex[:8]}"
+        runtime_task_dir = task.task_dir
+        if self._uses_generative_user(task):
+            trials_dir.mkdir(parents=True, exist_ok=True)
+            runtime_task_dir, server_dir = materialize_generative_task(
+                task,
+                trials_dir / ".pawbench-runtime-tasks" / trial_name,
+            )
+            image_name = generative_user_image_name(server_dir)
+            await asyncio.to_thread(
+                build_generative_user_image,
+                server_dir,
+                image_name,
+            )
+            logger.info(
+                "Materialized generative multi-turn wrapper for %s at %s (image=%s)",
+                task.task_id,
+                runtime_task_dir,
+                image_name,
+            )
+        elif self._uses_scripted_user(task):
+            trials_dir.mkdir(parents=True, exist_ok=True)
+            runtime_task_dir = materialize_scripted_task(
+                task,
+                trials_dir / ".pawbench-runtime-tasks" / trial_name,
+            )
+            image_name = scripted_user_image_name(runtime_task_dir)
+            await asyncio.to_thread(
+                build_scripted_user_image,
+                runtime_task_dir,
+                image_name,
+            )
+            logger.info(
+                "Materialized scripted multi-turn wrapper for %s at %s (image=%s)",
+                task.task_id,
+                runtime_task_dir,
+                image_name,
+            )
 
         agent_env = self._build_agent_env(agent_name, model, agent_config)
         agent_env.update(multi_agent_env)
@@ -194,7 +248,7 @@ class HarborV2Backend(BenchmarkBackend):
         timeout_multiplier = float(agent_config.get("timeout_multiplier", 1.0))
 
         config = TrialConfig(
-            task=TaskConfig(path=task.task_dir),
+            task=TaskConfig(path=runtime_task_dir),
             trial_name=trial_name,
             trials_dir=trials_dir,
             timeout_multiplier=timeout_multiplier,
@@ -460,6 +514,26 @@ class HarborV2Backend(BenchmarkBackend):
     # substrings used to recognise a user-sim MCP server declaration by name/url.
     _USER_SIM_MCP_MARKERS = ("user-sim", "user_sim", "usersim")
 
+    @staticmethod
+    def _uses_generative_user(task: HarborV2Task) -> bool:
+        """Persona-driven (generative) multi-turn: has ``user/persona.md`` + turns."""
+        return is_generative_user_task(task)
+
+    @classmethod
+    def _uses_scripted_user(cls, task: HarborV2Task) -> bool:
+        """Deterministic replay: multi-turn ``messages.jsonl`` but no persona.
+
+        A persona directory routes the task to the *generative* simulator
+        instead, so scripted replay is the fallback for persona-less multi-turn
+        tasks only.
+        """
+        return is_scripted_multi_turn(task) and not cls._uses_generative_user(task)
+
+    @classmethod
+    def _uses_runtime_user_sim(cls, task: HarborV2Task) -> bool:
+        """Whether PawBench materialises a user-sim sidecar for *task* at runtime."""
+        return cls._uses_generative_user(task) or cls._uses_scripted_user(task)
+
     @classmethod
     def _requires_user_sim(cls, task: HarborV2Task) -> bool:
         """Whether a task actually wires a user-sim sidecar (needs ``USER_SIM_*``).
@@ -471,6 +545,8 @@ class HarborV2Backend(BenchmarkBackend):
         * ``[metadata].mode`` is one of the multi-turn modes (``multi-turn`` /
           ``cowork`` / …); **or**
         * a ``[[environment.mcp_servers]]`` entry names/points at a user-sim.
+        * the task contains at least two authored user turns in
+          ``messages.jsonl`` (wrapped at runtime by PawBench).
 
         ``[metadata].category`` (e.g. ``user_agent``) and the presence of a
         ``.user/`` / ``user/`` persona directory are intentionally **not** used
@@ -480,6 +556,9 @@ class HarborV2Backend(BenchmarkBackend):
         the default dataset. Those signals may still inform the *label* but must
         never drive the fail-fast gate (see design doc §4.4 / §7.2).
         """
+        if cls._uses_runtime_user_sim(task):
+            return True
+
         metadata = getattr(task, "metadata", {}) or {}
         mode = str(metadata.get("mode") or "").strip().lower()
         if mode in cls._MULTI_TURN_MODES:
@@ -502,13 +581,24 @@ class HarborV2Backend(BenchmarkBackend):
     ) -> Dict[str, str]:
         """Build the env injected into the environment (sidecar) container(s).
 
-        Only populated for multi-turn tasks. The user simulator uses a dedicated
-        ``USER_SIM_*`` contract with **no** fallback to agent/judge credentials;
-        a missing model/key on a multi-turn task raises (surfaced as an error
-        TaskResult by ``run_and_grade``).
+        Only populated for multi-turn tasks. Generative user simulators use a
+        dedicated ``USER_SIM_*`` contract with **no** fallback to agent/judge
+        credentials; a missing model/key raises. Deterministic ``scripted``
+        simulators replay the task's authored ``messages.jsonl`` and therefore
+        require no model credentials.
         """
         if not self._requires_user_sim(task):
             return {}
+
+        if self._uses_scripted_user(task):
+            env: Dict[str, str] = {}
+            max_turns = (
+                agent_config.get("user_sim_max_turns")
+                or os.environ.get("USER_SIM_MAX_TURNS")
+            )
+            if max_turns:
+                env["USER_SIM_MAX_TURNS"] = str(max_turns)
+            return env
 
         def _resolve(cfg_key: str, env_key: str) -> str:
             return str(agent_config.get(cfg_key) or os.environ.get(env_key, "") or "").strip()

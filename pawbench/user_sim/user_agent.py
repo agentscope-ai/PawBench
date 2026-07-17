@@ -50,6 +50,7 @@ class UserAgent(UpstreamUserAgent):
         llm_factory: Callable[[LLMConfig], LLMClient] | None = None,
         persona_llm: LLMClient | None = None,
         approval_llm: LLMClient | None = None,
+        authored_turns: list[str] | None = None,
     ) -> None:
         # NB: intentionally NOT calling ``super().__init__`` — the upstream
         # constructor builds its own clients via ``src.defaults`` (which falls
@@ -86,3 +87,71 @@ class UserAgent(UpstreamUserAgent):
             {"role": "system", "content": self.system_prompt},
         ]
         self._done = False
+
+        # ── Guided (hybrid) turns ────────────────────────────────────────────
+        # A purely persona-driven user derives every turn from persona/latent
+        # goals, so the *concrete* deliverables authored for a task (exact file
+        # paths, field names, formats — which live only in ``messages.jsonl``)
+        # can be dropped, making the task under-specified and breaking grading
+        # even for a competent agent. When authored turns are supplied we keep
+        # the persona *voice / reactivity* but ground each turn in the authored
+        # requirement so those hard constraints are always conveyed.
+        self._authored_turns: list[str] = [t for t in (authored_turns or []) if t.strip()]
+        self._authored_idx = 0
+
+    _DIRECTOR_TAG = "[对话导演提示 · 仅你可见]"
+
+    async def _guided_reply(self, seed: str) -> str:
+        self._messages.append({"role": "user", "content": seed})
+        resp = await self._persona_llm.chat(self._messages)
+        text = (resp.choices[0].message.content or "").strip()
+        self._messages.append({"role": "assistant", "content": text})
+        return text
+
+    async def opening(self) -> str:
+        """Persona-voiced opening grounded in the first authored turn.
+
+        Falls back to the upstream persona-only opening when no authored turns
+        are supplied.
+        """
+        if not self._authored_turns:
+            return await super().opening()
+        seed = (
+            f"{self._DIRECTOR_TAG}\n"
+            "这是对话的开场。请用你自己的语气、结合人设与当前情绪，自然地说出第一句话，"
+            "内容要完整传达下面这段诉求；其中所有具体信息（文件路径、参数、字段名、数量、"
+            "格式要求等）必须原样保留，不得遗漏，也不要凭空编造额外要求：\n\n"
+            + self._authored_turns[0]
+        )
+        text = await self._guided_reply(seed)
+        self._authored_idx = 1
+        return text.strip()
+
+    async def _persona_respond(self, assistant_text: str) -> str:
+        """Persona reply that advances through the authored turns when present."""
+        if not self._authored_turns:
+            return await super()._persona_respond(assistant_text)
+
+        if self._authored_idx < len(self._authored_turns):
+            seed = (
+                f"{assistant_text}\n\n{self._DIRECTOR_TAG}\n"
+                "先结合你的人设，对助手上面的回复做出简短、自然的反应（认可/追问/纠正皆可），"
+                "然后提出你本轮的新诉求。本轮诉求如下，其中所有具体信息（文件路径、参数、字段名、"
+                "数量、格式要求等）必须原样保留、不得遗漏，也不要凭空编造额外要求：\n\n"
+                + self._authored_turns[self._authored_idx]
+            )
+            text = await self._guided_reply(seed)
+            self._authored_idx += 1
+            return text.strip()
+
+        # All authored turns delivered and the agent has replied to the last —
+        # let the persona verify satisfaction and close the conversation.
+        seed = (
+            f"{assistant_text}\n\n{self._DIRECTOR_TAG}\n"
+            "对方已回应了你此前提出的全部诉求。如果你已满意，就自然地表达感谢并结束对话，"
+            f"并在消息最末单独另起一行输出 {self.DONE_TOKEN}。如果仍有你先前明确提出、"
+            "但显然未被满足的关键交付物，可简短地再强调一次。"
+        )
+        text = await self._guided_reply(seed)
+        self._done = True
+        return text.strip()

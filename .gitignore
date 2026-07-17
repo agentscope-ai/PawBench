@@ -25,6 +25,8 @@ result/
 results/
 examples/
 .cursor/
+data/agent-judge-eval
+data/agent-judge-task样例
 #harness
 .claude/
 .ruff_cache

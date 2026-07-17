@@ -34,6 +34,36 @@ def default_max_turns() -> int:
     return int(os.environ.get("USER_SIM_MAX_TURNS", "20") or "20")
 
 
+def load_authored_user_turns(task_dir: Path) -> list[str]:
+    """Return the authored user turns from ``<task_dir>/messages.jsonl``.
+
+    These ground the generative user simulator so a task's concrete deliverables
+    (exact file paths / field names / formats — authored only in
+    ``messages.jsonl``) are always conveyed, while the persona still controls
+    voice and reactivity. Returns ``[]`` when the file is absent or malformed,
+    in which case the simulator falls back to a persona-only conversation.
+    """
+    path = Path(task_dir) / "messages.jsonl"
+    if not path.is_file():
+        return []
+    turns: list[str] = []
+    try:
+        for raw_line in path.read_text(encoding="utf-8").splitlines():
+            if not raw_line.strip():
+                continue
+            item = json.loads(raw_line)
+            if (
+                isinstance(item, dict)
+                and item.get("role") == "user"
+                and isinstance(item.get("content"), str)
+                and item["content"].strip()
+            ):
+                turns.append(item["content"])
+    except (OSError, json.JSONDecodeError):
+        return []
+    return turns
+
+
 def _resolve_temperature() -> float:
     raw = os.environ.get("USER_SIM_TEMPERATURE", "").strip()
     if not raw:
@@ -74,6 +104,7 @@ class UserSimRuntime:
                 temperature=(
                     temperature if temperature is not None else _resolve_temperature()
                 ),
+                authored_turns=load_authored_user_turns(self.task_dir),
             )
         self._write_state()
 

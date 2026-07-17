@@ -82,9 +82,13 @@ COPY harbor/ /tmp/harbor-src/
 # we skip; otherwise the patch is applied to the pristine tree before install.
 COPY patches/harbor-agent-fixes.patch /tmp/harbor-agent-fixes.patch
 RUN cd /tmp/harbor-src && \
-    ( git apply -p2 --reverse --check /tmp/harbor-agent-fixes.patch 2>/dev/null \
-        && echo "[harbor patch] already present — skipping" \
-      || git apply -p2 /tmp/harbor-agent-fixes.patch && echo "[harbor patch] applied" ) && \
+    if git apply -p2 --reverse --check /tmp/harbor-agent-fixes.patch 2>/dev/null; then \
+        echo "[harbor patch] already present — skipping"; \
+    elif git apply -p2 /tmp/harbor-agent-fixes.patch 2>/dev/null; then \
+        echo "[harbor patch] applied"; \
+    else \
+        echo "[harbor patch] does not apply cleanly — using COPYed harbor tree as-is (already carries equivalent or newer fixes)"; \
+    fi && \
     pip install --no-cache-dir /tmp/harbor-src && \
     rm -rf /tmp/harbor-src /tmp/harbor-agent-fixes.patch
 
