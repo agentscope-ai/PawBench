@@ -18,6 +18,8 @@ numpy>=1.24.0
 pandas>=2.0.0
 cvxpy>=1.4.0
 openpyxl>=3.1.0
+unified-planning==1.3.0
+up-pyperplan==1.1.0
 
 # External tools required at runtime (not pip-installable):
 #   docker   — Docker CLI must be available in PATH

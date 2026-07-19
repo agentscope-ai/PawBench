@@ -211,16 +211,17 @@ def grade(transcript: list, workspace_path: str) -> dict:
         return scores
 
     try:
-        subprocess.run(
-            [sys.executable, "-m", "pip", "install", "--quiet",
-             "--disable-pip-version-check", "pytest", "unified-planning", "up-pyperplan"],
-            check=True, capture_output=True, timeout=180,
-        )
+        import pytest  # noqa: F401
+        import up_pyperplan  # noqa: F401
+        from unified_planning.io import PDDLReader  # noqa: F401
+        from unified_planning.shortcuts import OneshotPlanner  # noqa: F401
     except Exception:  # noqa: BLE001
         try:
-            import pytest  # noqa: F401
-            from unified_planning.io import PDDLReader  # noqa: F401
-            from unified_planning.shortcuts import OneshotPlanner  # noqa: F401
+            subprocess.run(
+                [sys.executable, "-m", "pip", "install", "--quiet",
+                 "--disable-pip-version-check", "pytest", "unified-planning", "up-pyperplan"],
+                check=True, capture_output=True, timeout=180,
+            )
         except Exception:  # noqa: BLE001
             return scores
 
