@@ -483,6 +483,16 @@ def _write_checkpoint(
             "timed_out": sum(1 for r in results if r.timed_out),
             "failed": sum(1 for r in results if r.status == "error" and not r.timed_out),
         },
+        "multi_agent": {
+            "forced_violations": sum(
+                1 for r in results
+                if (r.multi_agent or {}).get("forced_violation")
+            ),
+            "delegations": sum(
+                int((r.multi_agent or {}).get("delegation_count", 0))
+                for r in results
+            ),
+        },
         "by_label": _build_label_summary(results),
     }
     if pass_k:
@@ -491,6 +501,18 @@ def _write_checkpoint(
     payload: dict[str, Any] = {
         "benchmark": bench_name,
         "model": model,
+        "run_config": {
+            "agent_type": agent_config.get("agent_type", "harbor:qwenpaw"),
+            "backend": bench_name,
+            "multi_agent": agent_config.get(
+                "multi_agent",
+                {
+                    "requested_mode": "single",
+                    "effective_mode": "single",
+                    "enabled": False,
+                },
+            ),
+        },
         "timestamp": datetime.now().isoformat(),
         "summary": summary,
         "results": [
@@ -511,6 +533,7 @@ def _write_checkpoint(
                 "error": r.error,
                 "anomaly": r.anomaly,
                 "labels": r.labels,
+                "multi_agent": r.multi_agent,
             }
             for r in results
         ],

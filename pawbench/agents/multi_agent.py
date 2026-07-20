@@ -25,9 +25,9 @@ Design
 ------
 The normalized config is intentionally small and provider-neutral:
 
-``enabled``      turn multi-agent mode on/off.
-``mode``         high-level style: ``"auto"`` (harness default), ``"subagents"``,
-                 ``"teams"`` (claude only), ``"delegation"`` (codex only).
+``run_mode``     benchmark semantics: ``"single"``, ``"forced"``, or
+                 ``"adaptive"``. Legacy ``mode`` values are normalized.
+``enabled``      compatibility flag derived from the effective run mode.
 ``max_agents``   max concurrent sub-agents / worker threads.
 ``max_depth``    max nesting depth (orchestrator → worker → …).
 ``subagents``    optional list of named sub-agent definitions (claude-code
@@ -36,14 +36,14 @@ The normalized config is intentionally small and provider-neutral:
 ``raw``          optional per-harness escape hatch merged verbatim into the
                  translated kwargs (e.g. ``{"openclaw": {...}, "codex": {...}}``).
 
-Grading is unaffected: a multi-agent run produces the same workspace + transcript
-artifacts as a single-agent run, so all existing graders work unchanged.
+Forced runs additionally require evidence of at least one real delegation call;
+the backends mark a run non-passing when that requirement is not met.
 """
 
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -52,6 +52,32 @@ from typing import Any
 # multi-agent / sub-agent launch mode through this module.
 SUPPORTED_MULTI_AGENT_HARNESSES: frozenset[str] = frozenset(
     {"claude-code", "codex", "openclaw"}
+)
+
+MULTI_AGENT_RUN_MODES: frozenset[str] = frozenset(
+    {"single", "forced", "adaptive"}
+)
+
+_MODE_ALIASES: dict[str, str] = {
+    "single": "single",
+    "disabled": "single",
+    "adaptive": "adaptive",
+    "auto": "adaptive",
+    "subagents": "adaptive",
+    "explicit": "adaptive",
+    "explicit-request-only": "adaptive",
+    "forced": "forced",
+    "teams": "forced",
+    "delegation": "forced",
+    "proactive": "forced",
+}
+
+FORCED_DELEGATION_INSTRUCTION = (
+    "\n\n[PAWBENCH MULTI-AGENT REQUIREMENT]\n"
+    "You must delegate at least one substantive part of this task to a sub-agent "
+    "using this harness's native delegation tool, incorporate that sub-agent's "
+    "result, and then complete the task. Merely describing a delegation does not "
+    "satisfy this requirement.\n"
 )
 
 
@@ -107,10 +133,32 @@ class MultiAgentConfig:
 
     enabled: bool = False
     mode: str = "auto"
+    run_mode: str | None = None
+    requested_mode: str | None = None
+    effective_mode: str | None = None
     max_agents: int = 4
     max_depth: int = 2
     subagents: list[SubAgentSpec] = field(default_factory=list)
     raw: dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        candidate = self.run_mode or self.requested_mode or self.mode
+        normalized = normalize_run_mode(candidate)
+        if not self.enabled:
+            normalized = "single"
+        self.run_mode = normalized
+        self.requested_mode = normalize_run_mode(self.requested_mode or candidate)
+        self.effective_mode = normalize_run_mode(
+            self.effective_mode or normalized
+        )
+        self.enabled = self.effective_mode != "single"
+        self.mode = self.run_mode
+        self.max_agents = int(self.max_agents)
+        self.max_depth = int(self.max_depth)
+        if self.max_agents < 1:
+            raise ValueError("Multi-agent 'max_agents' must be at least 1.")
+        if self.max_depth < 1:
+            raise ValueError("Multi-agent 'max_depth' must be at least 1.")
 
     # ── constructors ──────────────────────────────────────────────────────────
 
@@ -124,9 +172,29 @@ class MultiAgentConfig:
         raw = data.get("raw") or {}
         if not isinstance(raw, dict):
             raise ValueError("Multi-agent 'raw' must be an object.")
+        requested_value = (
+            data.get("requested_mode")
+            or data.get("run_mode")
+            or data.get("mode")
+        )
+        requested = (
+            requested_value
+            if requested_value is not None
+            else ("adaptive" if data.get("enabled", False) else "single")
+        )
+        enabled = (
+            bool(data["enabled"])
+            if "enabled" in data
+            else normalize_run_mode(str(requested)) != "single"
+        )
         return cls(
-            enabled=bool(data.get("enabled", True)),
-            mode=str(data.get("mode") or "auto").strip().lower(),
+            enabled=enabled,
+            mode=str(data.get("mode") or requested).strip().lower(),
+            run_mode=str(requested),
+            requested_mode=str(data.get("requested_mode") or requested),
+            effective_mode=(
+                str(data["effective_mode"]) if data.get("effective_mode") else None
+            ),
             max_agents=int(data.get("max_agents", 4)),
             max_depth=int(data.get("max_depth", 2)),
             subagents=subagents,
@@ -147,6 +215,9 @@ class MultiAgentConfig:
         return {
             "enabled": self.enabled,
             "mode": self.mode,
+            "run_mode": self.run_mode,
+            "requested_mode": self.requested_mode,
+            "effective_mode": self.effective_mode,
             "max_agents": self.max_agents,
             "max_depth": self.max_depth,
             "subagents": [
@@ -183,7 +254,7 @@ def build_harbor_kwargs(
 
     Unknown / unsupported harnesses return empty dicts (multi-agent is a no-op).
     """
-    if not cfg.enabled:
+    if not cfg.enabled or cfg.effective_mode == "single":
         return {}, {}
 
     name = harbor_agent_name.strip().lower()
@@ -203,10 +274,10 @@ def _build_claude_code(cfg: MultiAgentConfig) -> tuple[dict[str, Any], dict[str,
     Harbor shim does not auto-propagate ``extra_env`` into each ``docker exec``;
     the Harbor Claude agent folds these into the command / run env itself.
 
-    * ``mode="teams"`` (or ``"auto"``) enables the experimental *agent teams*
+    * ``effective_mode="forced"`` enables the experimental *agent teams*
       (``CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1``) in deterministic in-process mode.
     * Any provided ``subagents`` are injected as session-only ``--agents`` JSON.
-    * ``mode="subagents"`` keeps teams off and relies on Task-tool delegation.
+    * ``effective_mode="adaptive"`` keeps teams off and relies on Task-tool delegation.
     """
     ctor: dict[str, Any] = {}
     env: dict[str, str] = {}
@@ -216,7 +287,7 @@ def _build_claude_code(cfg: MultiAgentConfig) -> tuple[dict[str, Any], dict[str,
             {"name": s.name, **s.to_claude_entry()} for s in cfg.subagents
         ]
 
-    if cfg.mode in ("auto", "teams"):
+    if cfg.effective_mode == "forced":
         ctor["agent_teams"] = True
         if cfg.max_agents:
             ctor["max_teammates"] = int(cfg.max_agents)
@@ -265,9 +336,9 @@ def _build_openclaw(cfg: MultiAgentConfig) -> tuple[dict[str, Any], dict[str, st
     if cfg.max_agents:
         # 1..20 per schema; also used as the concurrency cap.
         subagents["maxConcurrent"] = min(20, max(1, int(cfg.max_agents)))
-    if cfg.mode in ("auto", "delegation", "proactive", "teams"):
+    if cfg.effective_mode == "forced":
         subagents["delegationMode"] = "prefer"
-    elif cfg.mode in ("subagents", "explicit", "explicit-request-only"):
+    elif cfg.effective_mode == "adaptive":
         subagents["delegationMode"] = "suggest"
 
     overlay: dict[str, Any] = {
@@ -286,6 +357,53 @@ def _build_openclaw(cfg: MultiAgentConfig) -> tuple[dict[str, Any], dict[str, st
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
+
+
+def normalize_run_mode(value: str | None) -> str:
+    """Return the canonical execution mode, accepting legacy mode names."""
+    key = str(value or "single").strip().lower()
+    try:
+        return _MODE_ALIASES[key]
+    except KeyError as exc:
+        valid = ", ".join(sorted(MULTI_AGENT_RUN_MODES))
+        raise ValueError(
+            f"Unknown multi-agent mode {value!r}; expected one of: {valid}."
+        ) from exc
+
+
+def normalize_harness_name(value: str | None) -> str:
+    name = str(value or "qwenpaw").strip().lower()
+    if name.startswith("harbor:"):
+        name = name.split(":", 1)[1]
+    return {"qwen-code": "qwen-coder"}.get(name, name)
+
+
+def resolve_for_harness(
+    cfg: MultiAgentConfig,
+    harness: str,
+) -> MultiAgentConfig:
+    """Resolve requested mode to the mode that a harness can actually execute."""
+    requested = normalize_run_mode(cfg.requested_mode or cfg.run_mode)
+    supported = normalize_harness_name(harness) in SUPPORTED_MULTI_AGENT_HARNESSES
+    effective = requested if supported else "single"
+    return replace(
+        cfg,
+        enabled=effective != "single",
+        mode=requested,
+        run_mode=requested,
+        requested_mode=requested,
+        effective_mode=effective,
+    )
+
+
+def augment_prompt_for_mode(
+    prompt: str,
+    cfg: MultiAgentConfig,
+) -> str:
+    """Append the strict forced-delegation requirement when applicable."""
+    if cfg.effective_mode != "forced":
+        return prompt
+    return prompt.rstrip() + FORCED_DELEGATION_INSTRUCTION
 
 
 def _merge_raw(
@@ -325,4 +443,10 @@ def default_multi_agent_config() -> MultiAgentConfig:
     * codex: proactive delegation, up to 4 threads / depth 2.
     * openclaw: coding profile + maxSpawnDepth 2 (orchestrator pattern).
     """
-    return MultiAgentConfig(enabled=True, mode="auto", max_agents=4, max_depth=2)
+    return MultiAgentConfig(
+        enabled=True,
+        mode="adaptive",
+        run_mode="adaptive",
+        max_agents=4,
+        max_depth=2,
+    )

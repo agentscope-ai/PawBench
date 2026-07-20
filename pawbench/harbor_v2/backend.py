@@ -26,6 +26,7 @@ import asyncio
 import json
 import logging
 import os
+import shutil
 import tempfile
 import time
 import uuid
@@ -33,6 +34,12 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from pawbench.backend import BenchmarkBackend, TaskResult
+from pawbench.agents.delegation import evaluate_multi_agent_run
+from pawbench.agents.multi_agent import (
+    FORCED_DELEGATION_INSTRUCTION,
+    MultiAgentConfig,
+    resolve_for_harness,
+)
 from pawbench.utils.anomalies import detect_anomalies
 
 from .generative_user import (
@@ -163,6 +170,29 @@ class HarborV2Backend(BenchmarkBackend):
             agent_name = _AGENT_IMPORT_PATHS.get(agent_name, agent_name)
         model = agent_config.get("model", "")
         verbose = bool(agent_config.get("verbose", False))
+        raw_multi_agent = agent_config.get("multi_agent")
+        multi_agent_cfg = resolve_for_harness(
+            (
+                raw_multi_agent
+                if isinstance(raw_multi_agent, MultiAgentConfig)
+                else MultiAgentConfig.from_dict(raw_multi_agent)
+            ),
+            short_agent_name,
+        )
+        if (
+            multi_agent_cfg.requested_mode != "single"
+            and multi_agent_cfg.effective_mode == "single"
+        ):
+            logger.warning(
+                "Harbor-v2 agent '%s' does not support multi-agent execution; "
+                "requested mode '%s' falls back to single.",
+                short_agent_name,
+                multi_agent_cfg.requested_mode,
+            )
+        agent_config = {
+            **agent_config,
+            "multi_agent": multi_agent_cfg.to_dict(),
+        }
 
         # Extra kwargs forwarded to the native agent constructor via
         # AgentConfig.kwargs (harbor.agents.factory merges these into the
@@ -235,6 +265,13 @@ class HarborV2Backend(BenchmarkBackend):
                 image_name,
             )
 
+        if multi_agent_cfg.effective_mode == "forced":
+            runtime_task_dir = self._materialize_forced_task(
+                runtime_task_dir,
+                trials_dir,
+                trial_name,
+            )
+
         agent_env = self._build_agent_env(agent_name, model, agent_config)
         agent_env.update(multi_agent_env)
         verifier_env = self._build_verifier_env(agent_config)
@@ -280,6 +317,31 @@ class HarborV2Backend(BenchmarkBackend):
             elapsed=elapsed,
             verbose=verbose,
         )
+
+    @staticmethod
+    def _materialize_forced_task(
+        task_dir: Path,
+        trials_dir: Path,
+        trial_name: str,
+    ) -> Path:
+        """Copy a Harbor task and append the strict delegation instruction."""
+        parent = trials_dir / ".pawbench-runtime-tasks"
+        parent.mkdir(parents=True, exist_ok=True)
+        target = Path(
+            tempfile.mkdtemp(prefix=f"{trial_name}-forced-", dir=parent)
+        )
+        shutil.copytree(task_dir, target, dirs_exist_ok=True, symlinks=True)
+        instruction_path = target / "instruction.md"
+        existing = (
+            instruction_path.read_text(encoding="utf-8")
+            if instruction_path.is_file()
+            else ""
+        )
+        instruction_path.write_text(
+            existing.rstrip() + FORCED_DELEGATION_INSTRUCTION,
+            encoding="utf-8",
+        )
+        return target
 
     @staticmethod
     def _build_multi_agent_inputs(
@@ -681,6 +743,12 @@ class HarborV2Backend(BenchmarkBackend):
         # never produce the state file, so they are unaffected.
         if self._requires_user_sim(task):
             transcript.extend(self._load_user_sim_turns(trials_dir / trial_name))
+        multi_agent_result = evaluate_multi_agent_run(
+            agent_config.get("multi_agent"),
+            agent_config.get("agent_type", "qwenpaw"),
+            transcript,
+            trials_dir / trial_name / "agent",
+        )
 
         exception_info = getattr(result, "exception_info", None)
         status = "error" if exception_info is not None else "success"
@@ -700,11 +768,19 @@ class HarborV2Backend(BenchmarkBackend):
             "log_text": "",
         }
         anomaly = detect_anomalies(execution_result, "")
+        forced_violation = multi_agent_result["forced_violation"]
+        if forced_violation:
+            anomaly = dict(anomaly or {})
+            anomaly["multi_agent_forced_violation"] = True
 
         if verbose:
             logger.info("Trial rewards for %s: %s → score=%.3f", task.task_id, rewards, score)
 
         breakdown = dict(rewards)
+        if multi_agent_result["effective_mode"] == "forced":
+            breakdown["multi_agent_forced_compliance"] = (
+                0.0 if forced_violation else 1.0
+            )
         labels = dict(task.frontmatter)
         # Tag the run mode so the label report separates multi-turn user-sim
         # tasks from single-turn ones (non-regression visibility).
@@ -714,12 +790,21 @@ class HarborV2Backend(BenchmarkBackend):
         return TaskResult(
             task_id=task.task_id,
             task_name=task.name,
-            score=score,
+            score=0.0 if forced_violation else score,
             max_score=1.0,
-            passed=score >= 1.0 - 1e-9,
+            passed=False if forced_violation else score >= 1.0 - 1e-9,
             grading_type="harbor_rewardkit",
             breakdown=breakdown,
-            notes=("; ".join(f"{k}={v}" for k, v in rewards.items()) if rewards else error_msg),
+            notes=(
+                (
+                    "; ".join(f"{k}={v}" for k, v in rewards.items())
+                    if rewards else error_msg
+                )
+                + (
+                    "; Forced multi-agent mode required at least one real delegation."
+                    if forced_violation else ""
+                )
+            ).strip("; "),
             execution_time=elapsed,
             status=status,
             usage=usage,
@@ -729,6 +814,7 @@ class HarborV2Backend(BenchmarkBackend):
             transcript=transcript,
             anomaly=anomaly,
             labels=labels,
+            multi_agent=multi_agent_result,
         )
 
     @staticmethod

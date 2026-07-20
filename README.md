@@ -153,6 +153,37 @@ python run_bench.py \
 
 See `python run_bench.py --help` for all flags, including `--no-results-version-path`, `--save-workspace`, and `--save-docker-image`.
 
+### Single / Forced / Adaptive Agent Modes
+
+PawBench provides three comparable execution modes:
+
+- `single`: do not expose sub-agent orchestration to the harness (default).
+- `adaptive`: expose delegation tools and let the main agent decide whether to delegate.
+- `forced`: require at least one real sub-agent delegation. If the trace contains no
+  Claude Code `Task`, Codex `spawn_agent`, or OpenClaw `sessions_spawn` call, the task
+  is recorded with `score=0` and `passed=false`.
+
+```bash
+# Single agent (default)
+python run_bench.py --agents harbor:openclaw --multi-agent-mode single ...
+
+# Adaptive multi-agent
+python run_bench.py --agents harbor:openclaw --multi-agent-mode adaptive ...
+
+# Forced multi-agent
+python run_bench.py --agents harbor:codex --multi-agent-mode forced ...
+```
+
+Native multi-agent support currently covers `claude-code`, `codex`, and `openclaw`.
+Requests for `forced` or `adaptive` on other harnesses such as `qwenpaw` and `hermes`
+emit a warning and fall back to `single`. Result JSON records requested/effective
+modes, delegation counts, and forced-mode violations under `run_config.multi_agent`
+and each result's `multi_agent` field.
+
+Legacy values remain compatible: `disabled→single`, `auto/subagents→adaptive`, and
+`teams/delegation/proactive→forced`. The legacy `--multi-agent` flag by itself is
+equivalent to `--multi-agent-mode adaptive`.
+
 #### Evaluating with other Harbor Bridge Agents (Claude Code, Codex, and more)
 
 The same Harbor Bridge lets you benchmark Claude Code, OpenAI Codex CLI, Aider, and many other coding agents on the same 150 PawBench tasks — no extra image build required.

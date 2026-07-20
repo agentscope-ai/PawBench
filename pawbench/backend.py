@@ -53,6 +53,12 @@ from typing import Any
 
 from .utils.anomalies import detect_anomalies
 from .agents.factory import AgentFactory
+from .agents.delegation import evaluate_multi_agent_run
+from .agents.multi_agent import (
+    MultiAgentConfig,
+    augment_prompt_for_mode,
+    resolve_for_harness,
+)
 from .grader import grade_task
 from .task_loader import TaskLoader
 
@@ -82,6 +88,8 @@ class TaskResult:
     # Task taxonomy labels extracted from the task's YAML front-matter.
     # Keys: scenario, capabilities, complexity, modality, environment.
     labels: dict = field(default_factory=dict)
+    # Requested/effective agent mode and observed delegation evidence.
+    multi_agent: dict = field(default_factory=dict)
 
 
 class BenchmarkBackend(ABC):
@@ -344,7 +352,17 @@ class PawBenchBackend(BenchmarkBackend):
                         print(f"  [{agent.name}] WARNING: workspace file not found: {source_rel}")
 
             await agent.setup(env)
-            run_result = await agent.run(task.prompt, env)
+            raw_multi_agent = agent_config.get("multi_agent")
+            multi_agent_cfg = resolve_for_harness(
+                (
+                    raw_multi_agent
+                    if isinstance(raw_multi_agent, MultiAgentConfig)
+                    else MultiAgentConfig.from_dict(raw_multi_agent)
+                ),
+                agent_config.get("agent_type", "qwenpaw"),
+            )
+            prompt = augment_prompt_for_mode(task.prompt, multi_agent_cfg)
+            run_result = await agent.run(prompt, env)
             stdout_output = run_result.get("output", "")
             exit_ok = run_result.get("success", False)
 
@@ -414,6 +432,12 @@ class PawBenchBackend(BenchmarkBackend):
                 pass
 
         transcript = agent.extract_transcript(local_workspace, stdout_output)
+        multi_agent_result = evaluate_multi_agent_run(
+            agent_config.get("multi_agent"),
+            agent_config.get("agent_type", "qwenpaw"),
+            transcript,
+            local_workspace,
+        )
 
         # Collect agent log text so anomaly detection can spot 429/rate-limit
         # events that the agent retried internally (and thus never surfaced as
@@ -506,14 +530,28 @@ class PawBenchBackend(BenchmarkBackend):
         # EMPTY_TRANSCRIPT) receive the real value rather than defaulting to 0.
         execution_result["transcript_length"] = len(transcript)
         anomaly = detect_anomalies(execution_result, grade_notes)
+        forced_violation = multi_agent_result["forced_violation"]
+        if forced_violation:
+            anomaly = dict(anomaly or {})
+            anomaly["multi_agent_forced_violation"] = True
+            grade_notes = (
+                f"{grade_notes}; " if grade_notes else ""
+            ) + "Forced multi-agent mode required at least one real delegation."
+
+        final_breakdown = dict(getattr(grade, "breakdown", {}))
+        if multi_agent_result["effective_mode"] == "forced":
+            final_breakdown["multi_agent_forced_compliance"] = (
+                0.0 if forced_violation else 1.0
+            )
 
         return TaskResult(
             task_id=task.task_id,
             task_name=getattr(task, "name", task.task_id),
-            score=grade.score, max_score=grade.max_score,
-            passed=grade.score >= grade.max_score,
+            score=0.0 if forced_violation else grade.score,
+            max_score=grade.max_score,
+            passed=False if forced_violation else grade.score >= grade.max_score,
             grading_type=grade.grading_type,
-            breakdown=getattr(grade, "breakdown", {}),
+            breakdown=final_breakdown,
             notes=grade_notes,
             execution_time=execution_result["execution_time"],
             status=execution_result["status"],
@@ -523,6 +561,7 @@ class PawBenchBackend(BenchmarkBackend):
             transcript=transcript,
             anomaly=anomaly,
             labels=task_labels,
+            multi_agent=multi_agent_result,
         )
 
 

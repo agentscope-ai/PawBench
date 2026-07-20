@@ -199,21 +199,25 @@ def parse_args() -> argparse.Namespace:
         default=False,
         dest="multi_agent",
         help=(
-            "Launch the harness in its multi-agent / sub-agent mode. "
+            "Legacy shorthand for --multi-agent-mode adaptive. "
             "Supported harnesses: harbor:claude-code (agent teams + sub-agents), "
             "harbor:codex (delegation modes), harbor:openclaw (sessions_spawn). "
-            "Other harnesses ignore this flag. Grading is unchanged."
+            "Other harnesses warn and fall back to single-agent."
         ),
     )
     ma_grp.add_argument(
         "--multi-agent-mode",
-        default="auto",
+        default=None,
         dest="multi_agent_mode",
         metavar="MODE",
+        choices=(
+            "single", "forced", "adaptive",
+            "disabled", "auto", "subagents", "teams", "delegation", "proactive",
+        ),
         help=(
-            "Multi-agent style: 'auto' (harness default), 'subagents', "
-            "'teams' (claude-code only), 'delegation' (codex only), "
-            "'disabled'. Default: auto."
+            "Agent execution mode: 'single', 'forced', or 'adaptive'. "
+            "Legacy aliases remain accepted: disabled, auto, subagents, teams, "
+            "delegation, proactive. --multi-agent without this option selects adaptive."
         ),
     )
     ma_grp.add_argument(
@@ -243,8 +247,8 @@ def parse_args() -> argparse.Namespace:
         metavar="FILE",
         help=(
             "Path to a JSON file with a full multi-agent spec "
-            "(enabled/mode/max_agents/max_depth/subagents/raw). Overrides the "
-            "other --multi-agent-* flags. Implies --multi-agent."
+            "(run_mode/max_agents/max_depth/subagents/raw). Overrides the "
+            "other --multi-agent-* flags."
         ),
     )
 
@@ -526,7 +530,7 @@ def _resolve_per_model_values(
 
 
 def _build_multi_agent_config(args: argparse.Namespace):
-    """Resolve CLI flags into a :class:`MultiAgentConfig`, or ``None`` if disabled.
+    """Resolve CLI flags into a validated :class:`MultiAgentConfig`.
 
     A ``--multi-agent-config FILE`` takes precedence over the individual
     ``--multi-agent-*`` flags and implies ``--multi-agent``.
@@ -535,16 +539,19 @@ def _build_multi_agent_config(args: argparse.Namespace):
 
     config_path = getattr(args, "multi_agent_config", None)
     if config_path:
-        cfg = MultiAgentConfig.from_json_file(config_path)
-        cfg.enabled = True
-        return cfg
+        return MultiAgentConfig.from_json_file(config_path)
 
-    if not getattr(args, "multi_agent", False):
-        return None
+    requested_mode = getattr(args, "multi_agent_mode", None)
+    if requested_mode is None:
+        requested_mode = (
+            "adaptive" if getattr(args, "multi_agent", False) else "single"
+        )
 
     return MultiAgentConfig(
-        enabled=True,
-        mode=getattr(args, "multi_agent_mode", "auto"),
+        enabled=requested_mode not in ("single", "disabled"),
+        mode=requested_mode,
+        run_mode=requested_mode,
+        requested_mode=requested_mode,
         max_agents=getattr(args, "multi_agent_max_agents", 4),
         max_depth=getattr(args, "multi_agent_max_depth", 2),
     )
@@ -674,15 +681,31 @@ async def _run_benchmark(
     if args.thinking:
         agent_config["thinking_level"] = args.thinking
 
-    multi_agent_cfg = _build_multi_agent_config(args)
-    if multi_agent_cfg is not None:
-        agent_config["multi_agent"] = multi_agent_cfg.to_dict()
+    from pawbench.agents.multi_agent import (
+        normalize_harness_name,
+        resolve_for_harness,
+    )
+
+    multi_agent_cfg = resolve_for_harness(
+        _build_multi_agent_config(args), agent_label
+    )
+    agent_config["multi_agent"] = multi_agent_cfg.to_dict()
+    if (
+        multi_agent_cfg.requested_mode != "single"
+        and multi_agent_cfg.effective_mode == "single"
+    ):
         print(
-            f"Multi-agent: enabled (mode={multi_agent_cfg.mode}, "
-            f"max_agents={multi_agent_cfg.max_agents}, "
-            f"max_depth={multi_agent_cfg.max_depth}, "
-            f"subagents={len(multi_agent_cfg.subagents)})"
+            f"WARNING: agent '{normalize_harness_name(agent_label)}' does not "
+            f"support multi-agent execution; requested mode "
+            f"'{multi_agent_cfg.requested_mode}' falls back to 'single'."
         )
+    print(
+        f"Agent mode: requested={multi_agent_cfg.requested_mode}, "
+        f"effective={multi_agent_cfg.effective_mode}, "
+        f"max_agents={multi_agent_cfg.max_agents}, "
+        f"max_depth={multi_agent_cfg.max_depth}, "
+        f"subagents={len(multi_agent_cfg.subagents)}"
+    )
 
     # Resolved dataset comes from the backend selector (handles harbor-v2 default).
     resolved_dataset = load_kwargs.get("dataset") or args.dataset
