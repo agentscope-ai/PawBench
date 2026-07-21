@@ -8,7 +8,7 @@ timeout_seconds: 120
 input_modality: text-only
 external_dependency: none
 workspace_files:
-- source: assets/T066_pinchbench_cicd_pipeline_debug/broken_ci.yml
+- source: assets/T066_pinchbench_cicd_pipeline_debug/.github/workflows/broken_ci.yml
   dest: .github/workflows/ci.yml
 labels:
   complexity: L3

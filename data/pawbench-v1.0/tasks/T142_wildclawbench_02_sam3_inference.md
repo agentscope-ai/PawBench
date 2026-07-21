@@ -8,19 +8,19 @@ grading_weights:
   automated: 0.7
   llm_judge: 0.3
 workspace_files:
-- source: assets/T142_wildclawbench_02_sam3_inference/02_sam3_inference/sam3/__init__.py
+- source: assets/T142_wildclawbench_02_sam3_inference/sam3/__init__.py
   dest: sam3/__init__.py
-- source: assets/T142_wildclawbench_02_sam3_inference/02_sam3_inference/sam3/model/__init__.py
+- source: assets/T142_wildclawbench_02_sam3_inference/sam3/model/__init__.py
   dest: sam3/model/__init__.py
-- source: assets/T142_wildclawbench_02_sam3_inference/02_sam3_inference/sam3/model/sam3_image.py
+- source: assets/T142_wildclawbench_02_sam3_inference/sam3/model/sam3_image.py
   dest: sam3/model/sam3_image.py
-- source: assets/T142_wildclawbench_02_sam3_inference/02_sam3_inference/sam3/model/sam3_image_processor.py
+- source: assets/T142_wildclawbench_02_sam3_inference/sam3/model/sam3_image_processor.py
   dest: sam3/model/sam3_image_processor.py
-- source: assets/T142_wildclawbench_02_sam3_inference/02_sam3_inference/sam3/model/box_ops.py
+- source: assets/T142_wildclawbench_02_sam3_inference/sam3/model/box_ops.py
   dest: sam3/model/box_ops.py
-- source: assets/T142_wildclawbench_02_sam3_inference/02_sam3_inference/sam3/assets/images/test_image.jpg
+- source: assets/T142_wildclawbench_02_sam3_inference/sam3/assets/images/test_image.jpg
   dest: sam3/assets/images/test_image.jpg
-- source: assets/T142_wildclawbench_02_sam3_inference/02_sam3_inference/gt/gt_boxes.json
+- source: assets/T142_wildclawbench_02_sam3_inference/gt/gt_boxes.json
   dest: gt/gt_boxes.json
 labels:
   complexity: L3
