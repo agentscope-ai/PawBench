@@ -60,12 +60,16 @@ CMD ["python3", "/app/server.py"]
 _PROTOCOL = """<pawbench-multi-turn-protocol>
 This benchmark contains an authored multi-turn user conversation.
 Use the `user-sim` MCP tools to conduct it:
-1. Call `start_conversation()` exactly once to receive the first user message.
-2. After completing each turn, call `send_message_to_user(message)` with your
-   response. Read the returned JSON's `user_message` and continue working.
-3. Do not stop after the first response. Stop only when `conversation_over` is
-   true, after ensuring all requested deliverables have been written.
-4. Keep using the same workspace throughout the conversation.
+1. Your FIRST task action MUST be `start_conversation()`. Do not inspect files,
+   run commands, edit the workspace, or answer the task before this call.
+2. A normal assistant response is NOT delivered to the user. After completing
+   each turn, call `send_message_to_user(message)` with your complete response
+   instead of ending the run.
+3. Read the returned JSON. If `conversation_over` is false, process its
+   `user_message` and continue working.
+4. Stop only after `send_message_to_user` explicitly returns
+   `conversation_over: true` and all requested deliverables have been written.
+5. Requirements are intentionally withheld until the conversation starts.
 </pawbench-multi-turn-protocol>
 """
 
@@ -150,10 +154,8 @@ def materialize_scripted_task(task: Any, destination: Path) -> Path:
     )
 
     instruction = destination / "instruction.md"
-    original = instruction.read_text(encoding="utf-8") if instruction.is_file() else ""
     instruction.write_text(
-        f"{_PROTOCOL}\n\n<original-instruction>\n{original.rstrip()}\n"
-        "</original-instruction>\n",
+        _PROTOCOL.rstrip() + "\n",
         encoding="utf-8",
     )
 

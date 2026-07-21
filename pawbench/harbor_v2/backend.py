@@ -741,8 +741,16 @@ class HarborV2Backend(BenchmarkBackend):
         # so the pawbench report / anomaly view sees the real conversation
         # (design doc §4.5/§4.6, approach #2). Additive & gated: single-turn tasks
         # never produce the state file, so they are unaffected.
-        if self._requires_user_sim(task):
-            transcript.extend(self._load_user_sim_turns(trials_dir / trial_name))
+        requires_user_sim = self._requires_user_sim(task)
+        protocol_violation = ""
+        if requires_user_sim:
+            trial_dir = trials_dir / trial_name
+            transcript.extend(self._load_user_sim_turns(trial_dir))
+            protocol_complete, protocol_violation = (
+                self._multi_turn_protocol_complete(trial_dir)
+            )
+            if protocol_complete:
+                protocol_violation = ""
         multi_agent_result = evaluate_multi_agent_run(
             agent_config.get("multi_agent"),
             agent_config.get("agent_type", "qwenpaw"),
@@ -772,6 +780,9 @@ class HarborV2Backend(BenchmarkBackend):
         if forced_violation:
             anomaly = dict(anomaly or {})
             anomaly["multi_agent_forced_violation"] = True
+        if protocol_violation:
+            anomaly = dict(anomaly or {})
+            anomaly["multi_turn_protocol_violation"] = protocol_violation
 
         if verbose:
             logger.info("Trial rewards for %s: %s → score=%.3f", task.task_id, rewards, score)
@@ -780,6 +791,10 @@ class HarborV2Backend(BenchmarkBackend):
         if multi_agent_result["effective_mode"] == "forced":
             breakdown["multi_agent_forced_compliance"] = (
                 0.0 if forced_violation else 1.0
+            )
+        if requires_user_sim:
+            breakdown["multi_turn_protocol_compliance"] = (
+                0.0 if protocol_violation else 1.0
             )
         labels = dict(task.frontmatter)
         # Tag the run mode so the label report separates multi-turn user-sim
@@ -790,9 +805,13 @@ class HarborV2Backend(BenchmarkBackend):
         return TaskResult(
             task_id=task.task_id,
             task_name=task.name,
-            score=0.0 if forced_violation else score,
+            score=0.0 if forced_violation or protocol_violation else score,
             max_score=1.0,
-            passed=False if forced_violation else score >= 1.0 - 1e-9,
+            passed=(
+                False
+                if forced_violation or protocol_violation
+                else score >= 1.0 - 1e-9
+            ),
             grading_type="harbor_rewardkit",
             breakdown=breakdown,
             notes=(
@@ -803,6 +822,10 @@ class HarborV2Backend(BenchmarkBackend):
                 + (
                     "; Forced multi-agent mode required at least one real delegation."
                     if forced_violation else ""
+                )
+                + (
+                    f"; Multi-turn protocol violation: {protocol_violation}"
+                    if protocol_violation else ""
                 )
             ).strip("; "),
             execution_time=elapsed,
@@ -977,6 +1000,38 @@ class HarborV2Backend(BenchmarkBackend):
         return transcript
 
     @staticmethod
+    def _load_user_sim_state(trial_dir: Path) -> Dict[str, Any] | None:
+        state_path = trial_dir / "agent" / "user_sim_state.json"
+        if not state_path.is_file():
+            return None
+        try:
+            data = json.loads(state_path.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            return None
+        return data if isinstance(data, dict) else None
+
+    @classmethod
+    def _multi_turn_protocol_complete(
+        cls,
+        trial_dir: Path,
+    ) -> tuple[bool, str]:
+        """Validate that the agent completed the user-sim dialogue lifecycle."""
+        state = cls._load_user_sim_state(trial_dir)
+        if state is None:
+            return False, "user-sim state is missing or malformed"
+        if not state.get("started"):
+            return False, "start_conversation was never called"
+        transcript = state.get("transcript")
+        if not isinstance(transcript, list) or not any(
+            isinstance(turn, dict) and turn.get("source") == "agent"
+            for turn in transcript
+        ):
+            return False, "send_message_to_user was never called"
+        if not state.get("done") or not state.get("termination_reason"):
+            return False, "conversation ended before conversation_over=true"
+        return True, ""
+
+    @staticmethod
     def _load_user_sim_turns(trial_dir: Path) -> List[Dict[str, Any]]:
         """Convert the user-sim sidecar transcript to pawbench transcript shape.
 
@@ -986,12 +1041,8 @@ class HarborV2Backend(BenchmarkBackend):
         state file's ``transcript`` is a list of ``{"source": "user"|"agent",
         "text": ...}`` turns. Missing / malformed files are non-fatal (returns []).
         """
-        state_path = trial_dir / "agent" / "user_sim_state.json"
-        if not state_path.is_file():
-            return []
-        try:
-            data = json.loads(state_path.read_text(encoding="utf-8"))
-        except Exception:  # noqa: BLE001
+        data = HarborV2Backend._load_user_sim_state(trial_dir)
+        if data is None:
             return []
         turns = data.get("transcript") if isinstance(data, dict) else None
         if not isinstance(turns, list):

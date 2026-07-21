@@ -82,15 +82,22 @@ def test_harness_mode_mapping() -> None:
     assert claude_forced["agent_teams"] is True
     assert "agent_teams" not in claude_adaptive
 
-    codex, _ = build_harbor_kwargs("codex", adaptive)
-    assert codex["multi_agent"] is True
+    codex_forced, _ = build_harbor_kwargs("codex", forced)
+    codex_adaptive, _ = build_harbor_kwargs("codex", adaptive)
+    assert codex_forced["multi_agent"] is True
+    assert codex_forced["multi_agent_force_delegation"] is True
+    assert "multi_agent_force_delegation" not in codex_adaptive
 
     openclaw_forced, _ = build_harbor_kwargs("openclaw", forced)
     openclaw_adaptive, _ = build_harbor_kwargs("openclaw", adaptive)
     forced_subagents = openclaw_forced["openclaw_config"]["agents"]["defaults"]["subagents"]
     adaptive_subagents = openclaw_adaptive["openclaw_config"]["agents"]["defaults"]["subagents"]
+    assert openclaw_forced["multi_agent"] is True
+    assert openclaw_adaptive["multi_agent"] is True
     assert forced_subagents["delegationMode"] == "prefer"
     assert adaptive_subagents["delegationMode"] == "suggest"
+    assert openclaw_forced["multi_agent_force_delegation"] is True
+    assert "multi_agent_force_delegation" not in openclaw_adaptive
 
 
 def test_unsupported_harness_falls_back_to_single() -> None:
@@ -114,6 +121,7 @@ def test_forced_prompt_instruction_is_only_added_for_forced() -> None:
     ("harness", "tool"),
     [
         ("claude-code", "Task"),
+        ("claude-code", "Agent"),
         ("codex", "spawn_agent"),
         ("openclaw", "sessions_spawn"),
     ],
@@ -129,6 +137,58 @@ def test_detects_real_delegation_tool_calls(harness: str, tool: str) -> None:
     result = detect_delegation(transcript, harness)
     assert result["delegation_count"] == 1
     assert result["delegation_tools"] == [tool]
+
+
+def test_detects_completed_codex_collab_spawn_once() -> None:
+    transcript = [
+        {
+            "type": "item.started",
+            "item": {
+                "type": "collab_tool_call",
+                "tool": "spawn_agent",
+                "receiver_thread_ids": [],
+                "status": "in_progress",
+            },
+        },
+        {
+            "type": "item.completed",
+            "item": {
+                "type": "collab_tool_call",
+                "tool": "spawn_agent",
+                "receiver_thread_ids": ["child-1"],
+                "status": "completed",
+            },
+        },
+    ]
+    result = detect_delegation(transcript, "codex")
+    assert result["delegation_count"] == 1
+    assert result["delegation_tools"] == ["spawn_agent"]
+
+
+def test_detects_flattened_codex_namespace_tool() -> None:
+    transcript = [{
+        "type": "function_call",
+        "name": "multi_agent_v1__spawn_agent",
+        "arguments": {},
+    }]
+    assert detect_delegation(transcript, "codex")["delegation_count"] == 1
+
+
+def test_deduplicates_replayed_openclaw_tool_call_id() -> None:
+    call = {
+        "type": "toolCall",
+        "id": "call_spawn_1",
+        "name": "sessions_spawn",
+        "arguments": {"task": "analyze"},
+    }
+    transcript = [
+        {"message": {"content": [call]}},
+        {"messagesSnapshot": [{"content": [call]}]},
+    ]
+
+    result = detect_delegation(transcript, "openclaw")
+
+    assert result["delegation_count"] == 1
 
 
 def test_tool_schema_is_not_counted_as_delegation() -> None:

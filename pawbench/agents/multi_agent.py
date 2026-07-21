@@ -73,11 +73,14 @@ _MODE_ALIASES: dict[str, str] = {
 }
 
 FORCED_DELEGATION_INSTRUCTION = (
-    "\n\n[PAWBENCH MULTI-AGENT REQUIREMENT]\n"
+    "[PAWBENCH MULTI-AGENT REQUIREMENT]\n"
     "You must delegate at least one substantive part of this task to a sub-agent "
     "using this harness's native delegation tool, incorporate that sub-agent's "
     "result, and then complete the task. Merely describing a delegation does not "
-    "satisfy this requirement.\n"
+    "satisfy this requirement. Use the actual tool exposed by the harness: "
+    "Codex `spawn_agent`, OpenClaw `sessions_spawn`, or Claude Code `Agent`/`Task`. "
+    "Your first tool call must be that native delegation tool; do not inspect files "
+    "or start the delegated work before launching the sub-agent.\n\n"
 )
 
 
@@ -307,6 +310,8 @@ def _build_codex(cfg: MultiAgentConfig) -> tuple[dict[str, Any], dict[str, str]]
     """
     ctor: dict[str, Any] = {"multi_agent": True}
     env: dict[str, str] = {}
+    if cfg.effective_mode == "forced":
+        ctor["multi_agent_force_delegation"] = True
     if cfg.max_agents:
         ctor["multi_agent_max_threads"] = int(cfg.max_agents)
     if cfg.max_depth:
@@ -352,7 +357,12 @@ def _build_openclaw(cfg: MultiAgentConfig) -> tuple[dict[str, Any], dict[str, st
     if isinstance(raw_oc, dict):
         _deep_merge(overlay, raw_oc)
 
-    ctor: dict[str, Any] = {"openclaw_config": overlay}
+    ctor: dict[str, Any] = {
+        "multi_agent": True,
+        "openclaw_config": overlay,
+    }
+    if cfg.effective_mode == "forced":
+        ctor["multi_agent_force_delegation"] = True
     return ctor, {}
 
 
@@ -400,10 +410,10 @@ def augment_prompt_for_mode(
     prompt: str,
     cfg: MultiAgentConfig,
 ) -> str:
-    """Append the strict forced-delegation requirement when applicable."""
+    """Prepend the strict forced-delegation requirement when applicable."""
     if cfg.effective_mode != "forced":
         return prompt
-    return prompt.rstrip() + FORCED_DELEGATION_INSTRUCTION
+    return FORCED_DELEGATION_INSTRUCTION + prompt.lstrip()
 
 
 def _merge_raw(

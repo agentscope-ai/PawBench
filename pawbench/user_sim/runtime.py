@@ -16,10 +16,17 @@ from pathlib import Path
 from . import defaults
 from .context import load_user_context
 from .user_agent import UserAgent
+from .workspace_patch import WorkspacePatchApplier, find_patch_dir
 
 logger = logging.getLogger("pawbench.user_sim")
 
-__all__ = ["UserSimRuntime", "default_state_path", "default_task_dir", "default_max_turns"]
+__all__ = [
+    "UserSimRuntime",
+    "default_state_path",
+    "default_task_dir",
+    "default_max_turns",
+    "default_workspace_root",
+]
 
 
 def default_state_path() -> Path:
@@ -32,6 +39,10 @@ def default_task_dir() -> Path:
 
 def default_max_turns() -> int:
     return int(os.environ.get("USER_SIM_MAX_TURNS", "20") or "20")
+
+
+def default_workspace_root() -> Path:
+    return Path(os.environ.get("USER_SIM_WORKSPACE_ROOT", "/workspace"))
 
 
 def load_authored_user_turns(task_dir: Path) -> list[str]:
@@ -85,6 +96,7 @@ class UserSimRuntime:
         agent: UserAgent | None = None,
         temperature: float | None = None,
         state_path: Path | str | None = None,
+        workspace_root: Path | str | None = None,
     ) -> None:
         self.task_dir = Path(task_dir)
         self.max_turns = max(1, max_turns if max_turns is not None else default_max_turns())
@@ -94,6 +106,13 @@ class UserSimRuntime:
         self.started = False
         self.termination_reason: str | None = None
         self.transcript: list[dict[str, str]] = []
+        self.workspace_events: list[dict[str, object]] = []
+        self.patch_applier: WorkspacePatchApplier | None = None
+        if find_patch_dir(self.task_dir) is not None:
+            self.patch_applier = WorkspacePatchApplier(
+                self.task_dir,
+                workspace_root or default_workspace_root(),
+            )
 
         if agent is not None:
             self.agent = agent
@@ -129,6 +148,7 @@ class UserSimRuntime:
             "done": self.agent.done,
             "termination_reason": self.termination_reason,
             "transcript": self.transcript,
+            "workspace_events": self.workspace_events,
         }
 
     def _record(self, source: str, text: str) -> None:
@@ -137,6 +157,15 @@ class UserSimRuntime:
     def _terminate(self, reason: str) -> None:
         if self.termination_reason is None:
             self.termination_reason = reason
+
+    def _apply_workspace_patch(self, authored_turn: int) -> None:
+        if self.patch_applier is None:
+            return
+        events = self.patch_applier.apply_turn(authored_turn)
+        for event in events:
+            self.workspace_events.append(
+                {"turn": authored_turn, **event}
+            )
 
     def _status_payload(self, *, user_message: str | None = None) -> dict[str, object]:
         return {
@@ -153,6 +182,8 @@ class UserSimRuntime:
         if self.started:
             return self.transcript[0]["text"] if self.transcript else ""
         self.started = True
+        # The opening turn may declare initial user-side workspace changes.
+        self._apply_workspace_patch(1)
         opening = await self.agent.opening()
         self._record("user", opening)
         if self.agent.done:
@@ -173,6 +204,10 @@ class UserSimRuntime:
         self._record("agent", message)
         self.turn += 1
 
+        # self.turn counts assistant replies.  After reply 1, the simulator is
+        # about to emit authored user turn 2, whose filesystem changes must be
+        # visible before that message is returned to the agent.
+        self._apply_workspace_patch(self.turn + 1)
         reply = await self.agent.respond_or_approve(message)
         self._record("user", reply)
 

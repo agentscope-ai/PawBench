@@ -73,7 +73,9 @@ def test_materialization_preserves_source_and_adds_runtime_sidecar(
     assert config["environment"]["mcp_servers"][0]["name"] == "user-sim"
     wrapped_instruction = (runtime / "instruction.md").read_text(encoding="utf-8")
     assert "start_conversation()" in wrapped_instruction
-    assert original_instruction.strip() in wrapped_instruction
+    assert "FIRST task action" in wrapped_instruction
+    assert "normal assistant response is NOT delivered" in wrapped_instruction
+    assert original_instruction.strip() not in wrapped_instruction
     compose = (runtime / "environment" / "docker-compose.yaml").read_text(
         encoding="utf-8"
     )
@@ -95,3 +97,27 @@ def test_scripted_tasks_need_no_user_llm_credentials(
     backend = object.__new__(HarborV2Backend)
     assert backend._requires_user_sim(task) is True
     assert backend._build_environment_env(task, {}) == {}
+
+
+def test_multi_turn_protocol_completion_requires_send_and_done(tmp_path: Path) -> None:
+    trial = tmp_path / "trial"
+    state_path = trial / "agent" / "user_sim_state.json"
+    state_path.parent.mkdir(parents=True)
+
+    state_path.write_text(
+        '{"started": true, "done": false, "termination_reason": null, '
+        '"transcript": [{"source": "user", "text": "hello"}]}',
+        encoding="utf-8",
+    )
+    complete, reason = HarborV2Backend._multi_turn_protocol_complete(trial)
+    assert complete is False
+    assert reason == "send_message_to_user was never called"
+
+    state_path.write_text(
+        '{"started": true, "done": true, "termination_reason": "user_done", '
+        '"transcript": ['
+        '{"source": "user", "text": "hello"}, '
+        '{"source": "agent", "text": "reply"}]}',
+        encoding="utf-8",
+    )
+    assert HarborV2Backend._multi_turn_protocol_complete(trial) == (True, "")

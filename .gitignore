@@ -42,3 +42,7 @@ harbor/
 docs/
 .agents/
 data/Pawbenchv2_task_0706
+data/pawbenchv2_data_v1_0717
+
+# Local PawBench datasets and trajectory exports
+/pawbenchv2_0706*_trajectories*

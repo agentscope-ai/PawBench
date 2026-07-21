@@ -39,18 +39,24 @@ runtime = UserSimRuntime(default_task_dir(), max_turns=default_max_turns())
 
 @mcp.tool()
 async def start_conversation() -> str:
-    """Start the dialogue with the simulated user; returns the user's opening message."""
+    """Required first task action; returns the user's authoritative opening request.
+
+    Do not inspect or edit the workspace before calling this tool. After handling
+    the returned request, reply through ``send_message_to_user`` rather than a
+    normal final response.
+    """
     return await runtime.start_conversation()
 
 
 @mcp.tool()
 async def send_message_to_user(message: str) -> str:
-    """Send one assistant message to the simulated user.
+    """The only channel that delivers an assistant response to the user.
 
     Returns a JSON string: ``user_message`` is the user's reply,
     ``conversation_over`` is true once the user is satisfied (or limits are hit),
-    and ``turn`` / ``max_turns`` report progress. When ``conversation_over`` is
-    true, stop messaging the user and finish the task.
+    and ``turn`` / ``max_turns`` report progress. If ``conversation_over`` is
+    false, continue the task from ``user_message`` and call this tool again after
+    the next turn. Do not finish the run until it returns true.
     """
     return await runtime.send_message_to_user(message)
 

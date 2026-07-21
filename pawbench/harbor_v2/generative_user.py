@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any
 
 from .scripted_user import load_authored_messages
+from pawbench.user_sim.workspace_patch import has_cowork_patches
 
 # task.toml fragment appended at runtime: mark the task multi-turn, declare the
 # user-sim MCP server, and surface the dedicated USER_SIM_* creds (interpolated
@@ -72,6 +73,48 @@ _COMPOSE_YAML = """services:
       start_period: 5s
 """
 
+_COWORK_COMPOSE_YAML = """services:
+  main:
+    depends_on:
+      user-sim:
+        condition: service_healthy
+    volumes:
+      - type: volume
+        source: pawbench-workspace
+        target: /home/node/workspace
+
+  user-sim:
+    image: __GENERATIVE_USER_IMAGE__
+    pull_policy: never
+    environment:
+      - USER_SIM_API_KEY=${USER_SIM_API_KEY:-}
+      - USER_SIM_MODEL=${USER_SIM_MODEL:-}
+      - USER_SIM_BASE_URL=${USER_SIM_BASE_URL:-}
+      - USER_SIM_MAX_TURNS=${USER_SIM_MAX_TURNS:-16}
+      - USER_SIM_TEMPERATURE=${USER_SIM_TEMPERATURE:-0.7}
+      - USER_SIM_TASK_DIR=/app/task
+      - USER_SIM_STATE_PATH=/logs/agent/user_sim_state.json
+      - USER_SIM_WORKSPACE_ROOT=/workspace
+    volumes:
+      - type: bind
+        source: ${HOST_AGENT_LOGS_PATH}
+        target: ${ENV_AGENT_LOGS_PATH}
+      - type: volume
+        source: pawbench-workspace
+        target: /workspace
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import socket; s=socket.create_connection(('localhost',8000),timeout=2); s.close()"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+
+volumes:
+  pawbench-workspace:
+"""
+
 _DOCKERFILE = """FROM python:3.12-slim
 
 WORKDIR /app
@@ -80,11 +123,14 @@ ENV PYTHONPATH=/opt/user-sim
 ENV CUES_PLUS_ROOT=/opt/user-sim/cues
 ENV USER_SIM_TASK_DIR=/app/task
 ENV USER_SIM_STATE_PATH=/logs/agent/user_sim_state.json
+ENV USER_SIM_WORKSPACE_ROOT=/workspace
 
 RUN pip install --no-cache-dir "fastmcp>=3.0" "openai>=1.40" "pyyaml>=6"
 
 COPY vendor/ /opt/user-sim/
 COPY task/ /app/task/
+COPY workspace/ /workspace/
+RUN rm -rf /workspace/.copaw /workspace/.docker
 
 EXPOSE 8000
 CMD ["python3", "-m", "pawbench.user_sim.mcp_server"]
@@ -94,14 +140,17 @@ _PROTOCOL = """<pawbench-multi-turn-protocol>
 You are collaborating with a **real user** over multiple turns. The user reveals
 their needs gradually — you must converse to clarify them, then deliver. Reach
 the user through the `user-sim` MCP server:
-1. Call `start_conversation()` exactly once to receive the user's first message.
-2. After each of your replies, call `send_message_to_user(message)`. Read the
-   returned JSON: `user_message` is the user's next message; keep working and
-   responding based on it.
-3. Do not stop after the first response. Continue until the returned JSON has
-   `conversation_over: true`, then ensure every requested deliverable is written
-   to disk before finishing.
-4. Keep using the same workspace throughout the conversation.
+1. Your FIRST task action MUST be `start_conversation()`. Do not inspect files,
+   run commands, edit the workspace, or answer the task before this call.
+2. A normal assistant response is NOT delivered to the user. The only way to
+   reply is `send_message_to_user(message)`. After doing the work for each turn,
+   call it with your complete response instead of ending your run.
+3. Read the returned JSON. If `conversation_over` is false, treat
+   `user_message` as the next authoritative request and continue working.
+4. Do not finish until a `send_message_to_user` result explicitly reports
+   `conversation_over: true`; then ensure every requested deliverable is on disk.
+5. Keep using the same workspace throughout the conversation. Requirements are
+   intentionally withheld until `start_conversation()` returns them.
 </pawbench-multi-turn-protocol>
 """
 
@@ -209,6 +258,7 @@ def generative_user_image_name(server_dir: Path) -> str:
     digest = hashlib.sha256()
     _hash_tree(digest, server_dir / "task")
     _hash_tree(digest, server_dir / "vendor")
+    _hash_tree(digest, server_dir / "workspace")
     digest.update((server_dir / "Dockerfile").read_bytes())
     return f"pawbench-generative-user:{digest.hexdigest()[:16]}"
 
@@ -251,12 +301,12 @@ def materialize_generative_task(task: Any, destination: Path) -> tuple[Path, Pat
         encoding="utf-8",
     )
 
-    # instruction.md: prepend the multi-turn protocol, preserving the original.
+    # instruction.md: expose only the protocol.  The first authored request is
+    # intentionally withheld behind start_conversation(); repeating it here lets
+    # an agent bypass the dialogue and guess later-turn requirements.
     instruction = destination / "instruction.md"
-    original = instruction.read_text(encoding="utf-8") if instruction.is_file() else ""
     instruction.write_text(
-        f"{_PROTOCOL}\n\n<original-instruction>\n{original.rstrip()}\n"
-        "</original-instruction>\n",
+        _PROTOCOL.rstrip() + "\n",
         encoding="utf-8",
     )
 
@@ -274,13 +324,35 @@ def materialize_generative_task(task: Any, destination: Path) -> tuple[Path, Pat
     # Persona is baked as ``.user`` (CuES reads ``<task_dir>/.user``) and stays
     # inside the sidecar image — never mounted into the agent container.
     shutil.copytree(persona, task_ctx / ".user")
+    authored_patches = persona / "patches"
+    if authored_patches.is_dir():
+        # CuES upstream discovers cowork assets at task-root/.patch.  Keep the
+        # original .user/patches copy as provenance and add the canonical view.
+        shutil.copytree(authored_patches, task_ctx / ".patch")
     messages = source / "messages.jsonl"
     if messages.is_file():
         shutil.copy2(messages, task_ctx / "messages.jsonl")
 
+    # Cowork patches run in the user-sim sidecar but must affect the exact
+    # filesystem the agent sees.  Seed a named Docker volume from the sidecar
+    # image's /workspace (the main service waits for user-sim, so copy-up occurs
+    # here first), then mount that volume at the task's canonical workdir in
+    # main.  For non-cowork tasks the directory is empty and no volume is used.
+    workspace_seed = server_dir / "workspace"
+    workspace_seed.mkdir(parents=True, exist_ok=True)
+    cowork = has_cowork_patches(source)
+    if cowork:
+        assets = source / "environment" / "assets"
+        if not assets.is_dir():
+            raise FileNotFoundError(
+                f"Cowork task {source.name!r} has no environment/assets workspace"
+            )
+        shutil.copytree(assets, workspace_seed, dirs_exist_ok=True, symlinks=True)
+
     image_name = generative_user_image_name(server_dir)
+    compose_template = _COWORK_COMPOSE_YAML if cowork else _COMPOSE_YAML
     compose_path.write_text(
-        _COMPOSE_YAML.replace("__GENERATIVE_USER_IMAGE__", image_name),
+        compose_template.replace("__GENERATIVE_USER_IMAGE__", image_name),
         encoding="utf-8",
     )
     return destination, server_dir

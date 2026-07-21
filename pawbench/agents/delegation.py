@@ -15,7 +15,9 @@ from .multi_agent import (
 
 
 _DELEGATION_TOOLS: dict[str, frozenset[str]] = {
-    "claude-code": frozenset({"Task", "SendMessage"}),
+    # Claude Code 2.1.212 renamed the sub-agent launch tool from ``Task`` to
+    # ``Agent``. Keep both names so archived and current native traces work.
+    "claude-code": frozenset({"Agent", "Task", "SendMessage"}),
     "codex": frozenset({"spawn_agent", "spawn_agents_on_csv"}),
     "openclaw": frozenset({"sessions_spawn"}),
 }
@@ -92,15 +94,45 @@ def _evidence_from_objects(
             return
 
         event_type = str(value.get("type") or "")
-        tool_name = value.get("name")
+        tool_name = value.get("name") or value.get("tool")
+        if isinstance(tool_name, str):
+            unqualified_name = tool_name.rsplit("__", 1)[-1].rsplit(".", 1)[-1]
+        else:
+            unqualified_name = None
         if event_type in {
             "toolCall", "tool_call", "tool_use", "function_call",
-        } and isinstance(tool_name, str) and tool_name in tools:
-            key = (tool_name, location)
+        } and unqualified_name in tools:
+            call_id = value.get("id") or value.get("toolCallId")
+            identity = (
+                f"id:{call_id}"
+                if isinstance(call_id, str) and call_id
+                else location
+            )
+            key = (unqualified_name, identity)
             if key not in seen:
                 seen.add(key)
                 evidence.append(
-                    {"source": source, "location": location, "tool": tool_name}
+                    {
+                        "source": source,
+                        "location": location,
+                        "tool": unqualified_name,
+                    }
+                )
+        elif (
+            event_type == "collab_tool_call"
+            and unqualified_name in tools
+            and value.get("status") == "completed"
+            and value.get("receiver_thread_ids")
+        ):
+            key = (unqualified_name, str(value.get("receiver_thread_ids")))
+            if key not in seen:
+                seen.add(key)
+                evidence.append(
+                    {
+                        "source": source,
+                        "location": location,
+                        "tool": unqualified_name,
+                    }
                 )
 
         for key, item in value.items():
@@ -140,7 +172,8 @@ def _evidence_from_artifacts(
         for path in sorted(root.glob(pattern)):
             if not path.is_file():
                 continue
-            evidence: list[dict[str, Any]] = []
+            objects: list[Any] = []
+            line_numbers: list[int] = []
             try:
                 with path.open("r", encoding="utf-8", errors="replace") as handle:
                     for line_number, line in enumerate(handle, 1):
@@ -148,14 +181,19 @@ def _evidence_from_artifacts(
                             value = json.loads(line)
                         except (TypeError, json.JSONDecodeError):
                             continue
-                        found = _evidence_from_objects(
-                            [value], tools, str(path)
-                        )
-                        for item in found:
-                            item["line"] = line_number
-                        evidence.extend(found)
+                        objects.append(value)
+                        line_numbers.append(line_number)
             except OSError:
                 continue
+            evidence = _evidence_from_objects(objects, tools, str(path))
+            for item in evidence:
+                location = str(item.get("location") or "")
+                closing = location.find("]")
+                try:
+                    object_index = int(location[2:closing])
+                    item["line"] = line_numbers[object_index]
+                except (ValueError, IndexError):
+                    pass
             if evidence:
                 return evidence
     return []

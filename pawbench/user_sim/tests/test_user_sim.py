@@ -22,6 +22,7 @@ from pawbench.user_sim import (
 from pawbench.user_sim.context import is_approval_request
 from pawbench.user_sim.llm import LLMClient
 from pawbench.user_sim.runtime import UserSimRuntime
+from pawbench.user_sim.workspace_patch import PatchApplyError, WorkspacePatchApplier
 
 
 class ScriptedLLM:
@@ -215,6 +216,79 @@ def test_runtime_send_before_start_raises(tmp_path: Path):
         assert "start_conversation" in str(exc)
     else:  # pragma: no cover
         raise AssertionError("expected RuntimeError")
+
+
+def test_cowork_patches_apply_before_corresponding_user_turn(tmp_path: Path):
+    task_dir = tmp_path / "task"
+    patch_dir = task_dir / ".user" / "patches"
+    workspace = tmp_path / "workspace"
+    patch_dir.mkdir(parents=True)
+    (workspace / "workspace").mkdir(parents=True)
+    target = workspace / "workspace" / "index.html"
+    target.write_text("<html>\n", encoding="utf-8")
+    (patch_dir / "turn_01_hint.md").write_text(
+        "---\nfiles: []\n---\nopening\n",
+        encoding="utf-8",
+    )
+    (patch_dir / "turn_02_hint.md").write_text(
+        "---\n"
+        "files:\n"
+        "  - path: workspace/index.html\n"
+        "    action: edit\n"
+        "    old: \"<html>\"\n"
+        "    new: '<html lang=\"zh-CN\">'\n"
+        "---\nsecond turn\n",
+        encoding="utf-8",
+    )
+    (patch_dir / "turn_03_hint.md").write_text(
+        "---\n"
+        "files:\n"
+        "  - path: workspace/draft.md\n"
+        "    action: create\n"
+        "    content: \"draft\\n\"\n"
+        "---\nthird turn\n",
+        encoding="utf-8",
+    )
+
+    agent = _agent(["opening", "turn two", "turn three"])
+    rt = UserSimRuntime(
+        task_dir,
+        agent=agent,
+        workspace_root=workspace,
+        state_path=tmp_path / "state.json",
+    )
+    _run(rt.start_conversation())
+    assert target.read_text(encoding="utf-8") == "<html>\n"
+
+    _run(rt.send_message_to_user("assistant one"))
+    assert target.read_text(encoding="utf-8") == '<html lang="zh-CN">\n'
+    assert not (workspace / "workspace" / "draft.md").exists()
+
+    _run(rt.send_message_to_user("assistant two"))
+    assert (workspace / "workspace" / "draft.md").read_text() == "draft\n"
+    assert [event["turn"] for event in rt.workspace_events] == [2, 3]
+
+
+def test_workspace_patch_rejects_path_escape(tmp_path: Path):
+    task_dir = tmp_path / "task"
+    patch_dir = task_dir / ".patch"
+    patch_dir.mkdir(parents=True)
+    (patch_dir / "turn_01.md").write_text(
+        "---\n"
+        "files:\n"
+        "  - path: ../escape.txt\n"
+        "    action: create\n"
+        "    content: nope\n"
+        "---\n",
+        encoding="utf-8",
+    )
+    applier = WorkspacePatchApplier(task_dir, tmp_path / "workspace")
+    try:
+        applier.apply_turn(1)
+    except PatchApplyError as exc:
+        assert "escapes workspace" in str(exc)
+    else:  # pragma: no cover
+        raise AssertionError("expected workspace escape to be rejected")
 
 
 if __name__ == "__main__":

@@ -120,13 +120,21 @@ mcp = FastMCP("pawbench-scripted-user")
 
 @mcp.tool()
 def start_conversation() -> str:
-    """Start the conversation and return the first authored user message."""
+    """Required first task action; return the authoritative first user request.
+
+    Do not inspect or edit task files before this call. Reply to the returned
+    request through ``send_message_to_user`` instead of a normal final response.
+    """
     return runtime.start()
 
 
 @mcp.tool()
 def send_message_to_user(message: str) -> str:
-    """Record the agent response and return the next authored user message."""
+    """Deliver the response and return the next user turn plus completion state.
+
+    Continue from ``user_message`` while ``conversation_over`` is false. Do not
+    finish the task until this tool explicitly returns true.
+    """
     return runtime.send(message)
 
 
