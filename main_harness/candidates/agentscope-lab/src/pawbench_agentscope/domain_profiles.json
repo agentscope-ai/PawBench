@@ -1,0 +1,62 @@
+{
+  "schema_version": "harness-core-domain-profiles/v1",
+  "taxonomy_version": "harness_core_v2_20260710",
+  "prioritization_only": true,
+  "profiles": [
+    {
+      "code": "UA",
+      "display_name": "User-Agent",
+      "scene": "Multi-turn interaction with user-visible state and deliverables.",
+      "family_prefix": "ua",
+      "known_v2_prefixes": ["ua-cw", "ua-mt"],
+      "priority_feature_groups": [
+        {"name": "Context", "feature_ids": ["F5.1", "F5.3", "F5.2"]},
+        {"name": "Tools", "feature_ids": ["F2.1", "F2.3", "F2.2"]},
+        {"name": "Evidence", "feature_ids": ["F4.2", "F4.3", "F4.1"]}
+      ],
+      "evidence_checks": [
+        "interaction state is preserved across turns",
+        "explicit confirmation and delivery constraints are honored",
+        "visible artifacts match the verifier result"
+      ]
+    },
+    {
+      "code": "WS",
+      "display_name": "Workspace",
+      "scene": "Source-driven research and workspace deliverables.",
+      "family_prefix": "ws",
+      "known_v2_prefixes": [
+        "ws-adversarial-naming",
+        "ws-audit-trail",
+        "ws-budget-reconciliation"
+      ],
+      "priority_feature_groups": [
+        {"name": "Context", "feature_ids": ["F5.1", "F5.3", "F5.2"]},
+        {"name": "Evidence", "feature_ids": ["F4.2", "F4.3", "F4.1"]},
+        {"name": "Tools", "feature_ids": ["F2.1", "F2.3", "F2.2"]}
+      ],
+      "evidence_checks": [
+        "source-to-claim provenance is retained",
+        "workspace artifacts are complete and internally consistent",
+        "tool failures remain actionable and do not become false success"
+      ]
+    },
+    {
+      "code": "MA",
+      "display_name": "Scientific",
+      "scene": "Scientific reasoning, analysis, and controlled experiments.",
+      "family_prefix": "ma",
+      "known_v2_prefixes": ["ma-cec", "ma-kmeanspp", "ma-randomforest"],
+      "priority_feature_groups": [
+        {"name": "Environment", "feature_ids": ["F1.2", "F1.1", "F1.3"]},
+        {"name": "Evidence", "feature_ids": ["F4.2", "F4.3", "F4.1"]},
+        {"name": "Tools", "feature_ids": ["F2.2", "F2.1", "F2.3"]}
+      ],
+      "evidence_checks": [
+        "runtime dependencies and experimental inputs are reproducible",
+        "quantitative claims trace to artifacts or observations",
+        "the verifier checks the requested scientific conclusion"
+      ]
+    }
+  ]
+}

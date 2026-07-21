@@ -1,0 +1,96 @@
+{
+  "schema_version": "harness-core-ablation-experiment/v1",
+  "experiment_id": "agentscope-f1.1-generalization-example",
+  "status": "proposed",
+  "claim_level": "generalization",
+  "taxonomy_version": "harness_core_v2_20260710",
+  "hypothesis": {
+    "attribution_code": "H1",
+    "feature_id": "F1.1",
+    "statement": "Explicit workspace binding prevents the observed wrong-root artifact failure without creating false acceptance on disjoint tasks.",
+    "evidence_receipts": [
+      {
+        "kind": "reasoning",
+        "sha256": "d3bd0b09f9181a3e909de077d9f5161dc0abd9568a4f456eb165a707b6b19dea"
+      },
+      {
+        "kind": "prior_experiment",
+        "sha256": "7fcf7007ccc5d6751a7f00fd69b6f229b17b42b4c931dfcb3e002ab76d7aa53e"
+      }
+    ],
+    "expected_fix_task_ids": [
+      "ws-h1-workspace-binding-001"
+    ],
+    "regression_risk_task_ids": [
+      "ws-h1-workspace-binding-heldout-001"
+    ]
+  },
+  "task_set": {
+    "snapshot_sha256": "8b1af6d4d3e0a688837a6b63b306ff59764f6ebd8e19d6913513085a5d5d9a2b",
+    "calibration_task_ids": [
+      "ws-h1-workspace-binding-001"
+    ],
+    "validation_task_ids": [
+      "ws-h1-workspace-binding-002"
+    ],
+    "held_out_task_ids": [
+      "ws-h1-workspace-binding-heldout-001"
+    ],
+    "domain_by_task_id": {
+      "ws-h1-workspace-binding-001": "WS",
+      "ws-h1-workspace-binding-002": "WS",
+      "ws-h1-workspace-binding-heldout-001": "WS"
+    }
+  },
+  "runtime_identity": {
+    "harness_name": "AgentScope-Lab",
+    "harness_version": "0.1.2",
+    "feature_manifest_sha256": "00809d66435ac3eb1d3151c7b94d925482daecf8db293771aec4a80d950fc7a2",
+    "model_provider": "openai-compatible",
+    "model_id": "qwen3.7-max",
+    "model_config_sha256": "637db6da22f76922d4a64c452b5c4d32a02ff7eab163972dd6996cf2dc71b0fc",
+    "environment": "harbor",
+    "environment_config_sha256": "5c33de2d68db968b04a4008b12819e8a64e485095fad05ee1d646be2961e5ceb"
+  },
+  "budget": {
+    "trials_per_task_variant": 10,
+    "max_model_calls_per_trial": 64,
+    "max_input_tokens_per_trial": 200000,
+    "max_output_tokens_per_trial": 64000,
+    "timeout_seconds_per_trial": 3600
+  },
+  "variants": [
+    {
+      "id": "all_features_on",
+      "enabled_feature_ids": [
+        "F1.1", "F1.2", "F1.3", "F2.1", "F2.2", "F2.3", "F3.1", "F3.2",
+        "F3.3", "F4.1", "F4.2", "F4.3", "F5.1", "F5.2", "F5.3"
+      ],
+      "disabled_feature_ids": []
+    },
+    {
+      "id": "single_feature_off",
+      "enabled_feature_ids": [
+        "F1.2", "F1.3", "F2.1", "F2.2", "F2.3", "F3.1", "F3.2", "F3.3",
+        "F4.1", "F4.2", "F4.3", "F5.1", "F5.2", "F5.3"
+      ],
+      "disabled_feature_ids": [
+        "F1.1"
+      ]
+    }
+  ],
+  "evaluation": {
+    "primary_metric": "task_acceptance",
+    "minimum_trials": 5,
+    "decisive_wilson_lower_bound": 0.5,
+    "matched_task_level_baseline": "parallel_sampling",
+    "require_zero_false_acceptance_regressions": true
+  },
+  "governance": {
+    "human_approval_required": true,
+    "approval_receipt_sha256": null,
+    "core_mutation_allowed": false,
+    "reasoning_read_only": true,
+    "analyzers_authoritative": false
+  }
+}

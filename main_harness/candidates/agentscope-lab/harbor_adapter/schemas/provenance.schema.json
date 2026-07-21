@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harness-core.local/schemas/provenance-v1.json",
+  "title": "Harness-core AgentScope provenance receipt",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "created_at",
+    "task_id",
+    "run_id",
+    "agent",
+    "input_hashes",
+    "feature_config",
+    "workspace_state_hashes",
+    "required_artifacts",
+    "outputs",
+    "result"
+  ],
+  "properties": {
+    "schema_version": {"const": "harness-core-provenance/v1"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "task_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "run_id": {"type": "string", "minLength": 1},
+    "agent": {"$ref": "#/$defs/agent"},
+    "input_hashes": {
+      "type": "object",
+      "required": [
+        "instruction_sha256",
+        "task_contract_sha256",
+        "feature_config_sha256"
+      ],
+      "properties": {
+        "instruction_sha256": {"$ref": "#/$defs/sha256"},
+        "task_contract_sha256": {"$ref": "#/$defs/sha256"},
+        "feature_config_sha256": {"$ref": "#/$defs/sha256"}
+      },
+      "additionalProperties": false
+    },
+    "feature_config": {
+      "type": "object",
+      "required": [
+        "taxonomy_version",
+        "enabled",
+        "disabled",
+        "ablation_targets",
+        "runtime_timeout_seconds",
+        "compaction_limit_chars",
+        "max_iters"
+      ],
+      "properties": {
+        "taxonomy_version": {"const": "harness_core_v2_20260710"},
+        "enabled": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/featureId"},
+          "uniqueItems": true
+        },
+        "disabled": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/featureId"},
+          "uniqueItems": true
+        },
+        "ablation_targets": {
+          "type": "object",
+          "propertyNames": {"$ref": "#/$defs/featureId"},
+          "additionalProperties": {"type": "string"}
+        },
+        "runtime_timeout_seconds": {"type": "number", "exclusiveMinimum": 0},
+        "compaction_limit_chars": {"type": "integer", "minimum": 1000},
+        "max_iters": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": false
+    },
+    "workspace_state_hashes": {
+      "type": "object",
+      "properties": {
+        "before": {"$ref": "#/$defs/sha256"},
+        "after": {"$ref": "#/$defs/sha256"}
+      },
+      "additionalProperties": false
+    },
+    "required_artifacts": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/artifactReceipt"}
+    },
+    "outputs": {
+      "type": "object",
+      "required": ["native_trace", "trajectory"],
+      "properties": {
+        "native_trace": {"$ref": "#/$defs/fileReceipt"},
+        "trajectory": {"$ref": "#/$defs/fileReceipt"}
+      },
+      "additionalProperties": false
+    },
+    "result": {
+      "type": "object",
+      "required": ["accepted", "completion_ok", "verifier_ok", "event_count"],
+      "properties": {
+        "accepted": {"type": "boolean"},
+        "completion_ok": {"type": "boolean"},
+        "verifier_ok": {"type": "boolean"},
+        "event_count": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "featureId": {
+      "enum": [
+        "F1.1", "F1.2", "F1.3",
+        "F2.1", "F2.2", "F2.3",
+        "F3.1", "F3.2", "F3.3",
+        "F4.1", "F4.2", "F4.3",
+        "F5.1", "F5.2", "F5.3"
+      ]
+    },
+    "agent": {
+      "type": "object",
+      "required": ["name", "version", "runtime", "model_name"],
+      "properties": {
+        "name": {"const": "agentscope-lab"},
+        "version": {"type": "string", "minLength": 1},
+        "runtime": {"const": "AgentScope"},
+        "model_name": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "fileReceipt": {
+      "type": "object",
+      "required": ["path", "size", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "size": {"type": "integer", "minimum": 0},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      },
+      "additionalProperties": false
+    },
+    "artifactReceipt": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["path", "exists"],
+          "properties": {
+            "path": {"type": "string", "minLength": 1},
+            "exists": {"const": false}
+          },
+          "additionalProperties": false
+        },
+        {"$ref": "#/$defs/fileReceipt"}
+      ]
+    }
+  }
+}

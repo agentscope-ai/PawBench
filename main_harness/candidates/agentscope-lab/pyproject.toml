@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools==83.0.0", "wheel==0.47.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pawbench-agentscope-harness"
+version = "0.2.0"
+description = "PawBench 2.0 harness prototype based on AgentScope 2.0"
+requires-python = ">=3.11"
+dependencies = [
+  "agentscope>=2.0.4,<3",
+  "pydantic>=2.13,<3",
+]
+
+[project.scripts]
+agentscope-lab = "pawbench_agentscope.harbor_bridge:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+pawbench_agentscope = ["domain_profiles.json", "feature_manifest.json"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "../.."]
+testpaths = ["tests"]

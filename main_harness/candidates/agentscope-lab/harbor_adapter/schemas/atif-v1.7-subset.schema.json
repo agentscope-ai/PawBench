@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harness-core.local/schemas/atif-v1.7-subset.json",
+  "title": "ATIF-v1.7 subset emitted by Harness-core AgentScope",
+  "type": "object",
+  "required": ["schema_version", "agent", "steps"],
+  "properties": {
+    "schema_version": {"const": "ATIF-v1.7"},
+    "session_id": {"type": ["string", "null"]},
+    "trajectory_id": {"type": "string", "minLength": 1},
+    "agent": {"$ref": "#/$defs/agent"},
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/step"}
+    },
+    "final_metrics": {"$ref": "#/$defs/finalMetrics"},
+    "extra": {"type": "object"}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "agent": {
+      "type": "object",
+      "required": ["name", "version", "model_name"],
+      "properties": {
+        "name": {"const": "agentscope-lab"},
+        "version": {"type": "string", "minLength": 1},
+        "model_name": {"type": "string", "minLength": 1},
+        "tool_definitions": {
+          "type": ["array", "null"],
+          "items": {"type": "object"}
+        },
+        "extra": {"type": ["object", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "contentPart": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type", "text"],
+          "properties": {
+            "type": {"const": "text"},
+            "text": {"type": "string"}
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type", "source"],
+          "properties": {
+            "type": {"const": "image"},
+            "source": {
+              "type": "object",
+              "required": ["media_type", "path"],
+              "properties": {
+                "media_type": {
+                  "enum": ["image/jpeg", "image/png", "image/gif", "image/webp"]
+                },
+                "path": {"type": "string", "minLength": 1}
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "content": {
+      "oneOf": [
+        {"type": "string"},
+        {"type": "array", "items": {"$ref": "#/$defs/contentPart"}}
+      ]
+    },
+    "toolCall": {
+      "type": "object",
+      "required": ["tool_call_id", "function_name", "arguments"],
+      "properties": {
+        "tool_call_id": {"type": "string", "minLength": 1},
+        "function_name": {"type": "string", "minLength": 1},
+        "arguments": {"type": "object"},
+        "extra": {"type": ["object", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "observationResult": {
+      "type": "object",
+      "required": ["content"],
+      "properties": {
+        "source_call_id": {"type": ["string", "null"]},
+        "content": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/content"}
+          ]
+        },
+        "extra": {"type": ["object", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "observation": {
+      "type": "object",
+      "required": ["results"],
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/observationResult"}
+        }
+      },
+      "additionalProperties": false
+    },
+    "step": {
+      "type": "object",
+      "required": ["step_id", "timestamp", "source", "message"],
+      "properties": {
+        "step_id": {"type": "integer", "minimum": 1},
+        "timestamp": {"type": "string", "format": "date-time"},
+        "source": {"enum": ["system", "user", "agent"]},
+        "model_name": {"type": ["string", "null"]},
+        "reasoning_effort": {"type": ["string", "number", "null"]},
+        "message": {"$ref": "#/$defs/content"},
+        "reasoning_content": {"type": ["string", "null"]},
+        "tool_calls": {
+          "type": ["array", "null"],
+          "items": {"$ref": "#/$defs/toolCall"}
+        },
+        "observation": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/observation"}
+          ]
+        },
+        "metrics": {"type": ["object", "null"]},
+        "is_copied_context": {"type": ["boolean", "null"]},
+        "llm_call_count": {"type": ["integer", "null"], "minimum": 0},
+        "extra": {"type": ["object", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "finalMetrics": {
+      "type": "object",
+      "properties": {
+        "total_prompt_tokens": {"type": ["integer", "null"]},
+        "total_completion_tokens": {"type": ["integer", "null"]},
+        "total_cached_tokens": {"type": ["integer", "null"]},
+        "total_cost_usd": {"type": ["number", "null"]},
+        "total_steps": {"type": ["integer", "null"], "minimum": 0},
+        "extra": {"type": ["object", "null"]}
+      },
+      "additionalProperties": false
+    }
+  }
+}
