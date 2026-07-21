@@ -1,0 +1,1 @@
+image_to_text: vision model not configured. Set vision.model and vision.api_key in settings.

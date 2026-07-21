@@ -1,0 +1,16 @@
+image_generation failed
+Traceback (most recent call last):
+  File "/opt/workharness/src/workharness/tools/image_generation_tool.py", line 96, in execute
+    image_b64, revised_prompt = await self._generate_with_codex(arguments, config)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/workharness/src/workharness/tools/image_generation_tool.py", line 148, in _generate_with_codex
+    raise RuntimeError(
+RuntimeError: Codex image generation auth is not configured. Run 'wh auth codex-login' or use provider='openai' with WORKHARNESS_IMAGE_GENERATION_API_KEY.
+image_generation failed
+Traceback (most recent call last):
+  File "/opt/workharness/src/workharness/tools/image_generation_tool.py", line 112, in execute
+    image_b64 = await self._generate_with_openai(arguments, config)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/workharness/src/workharness/tools/image_generation_tool.py", line 133, in _generate_with_openai
+    raise RuntimeError(
+RuntimeError: OpenAI image generation API key is not configured. Set image_generation.api_key or WORKHARNESS_IMAGE_GENERATION_API_KEY, or choose provider='codex'.

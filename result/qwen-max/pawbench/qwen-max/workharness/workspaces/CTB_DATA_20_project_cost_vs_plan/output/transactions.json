@@ -1,0 +1,9 @@
+[
+  {"transaction_id":"TXN-801","type":"expense","amount":150000,"date":"2026-01-15","description":"Smart Campus project - Front-end development outsourcing","category":"Outsourcing","department":"Product"},
+  {"transaction_id":"TXN-802","type":"expense","amount":80000,"date":"2026-02-01","description":"Smart Campus project - UI design","category":"Design","department":"Product"},
+  {"transaction_id":"TXN-803","type":"expense","amount":200000,"date":"2026-02-20","description":"Smart Campus project - Back-end development","category":"Outsourcing","department":"Engineering"},
+  {"transaction_id":"TXN-804","type":"expense","amount":35000,"date":"2026-03-05","description":"Smart Campus project - Testing tools procurement","category":"Tools","department":"QA"},
+  {"transaction_id":"TXN-805","type":"expense","amount":60000,"date":"2026-03-15","description":"Smart Campus project - Cloud service deployment","category":"Technical Services","department":"Operations"},
+  {"transaction_id":"TXN-806","type":"expense","amount":25000,"date":"2026-03-20","description":"Smart Campus project - Documentation outsourcing","category":"Outsourcing","department":"Product"},
+  {"transaction_id":"TXN-807","type":"expense","amount":45000,"date":"2026-03-25","description":"Data Platform project - Requirements research","category":"Consulting","department":"Product"}
+]

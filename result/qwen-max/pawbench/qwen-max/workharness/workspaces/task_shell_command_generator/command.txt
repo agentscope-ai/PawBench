@@ -1,0 +1,1 @@
+grep -rl 'FATAL:' . --include '*.log'

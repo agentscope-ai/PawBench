@@ -1,0 +1,14 @@
+AI Browser Design Document
+==========================
+
+Phase 1: Core content extraction with Playwright
+Phase 2: Template-based structured output (JSON/Markdown)
+Phase 3: Compliance, rate limiting, robots.txt checking
+
+Architecture:
+- core.py: Main browser engine
+- cleaner.py: Content cleaning pipeline
+- injector.py: Script injection for SPA support
+- template_engine.py: Output formatting
+- network_monitor.py: Request capture and analysis
+- compliance/: Rate limiting, robots.txt, user-agent management

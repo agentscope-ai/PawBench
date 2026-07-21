@@ -1,0 +1,15 @@
+{"type": "assistant_complete", "text": ""}
+{"type": "tool_started", "tool_name": "cron_create", "tool_input": {"name": "\u559d\u6c34\u63d0\u9192", "schedule": "0 9 * * *", "command": "echo '\u8bb0\u5f97\u559d\u6c34\u54e6\uff01'", "timezone": "Asia/Shanghai"}}
+{"type": "tool_completed", "tool_name": "cron_create", "output": "Created cron job '\u559d\u6c34\u63d0\u9192' [0 9 * * *] (enabled)", "is_error": false}
+{"type": "assistant_delta", "text": "\u5df2\u4e3a\u60a8"}
+{"type": "assistant_delta", "text": "\u8bbe\u7f6e\u4e86\u4e00\u4e2a\u6bcf\u5929"}
+{"type": "assistant_delta", "text": "\u65e9\u4e0a9\u70b9\uff08"}
+{"type": "assistant_delta", "text": "\u5317\u4eac\u65f6\u95f4\uff09\u7684\u559d\u6c34\u63d0\u9192\u3002"}
+{"type": "assistant_delta", "text": "\u5230\u65f6\u5019\u4f1a\u5728\u7ec8\u7aef\u8f93\u51fa"}
+{"type": "assistant_delta", "text": "\u201c\u8bb0\u5f97\u559d\u6c34\u54e6\uff01\u201d"}
+{"type": "assistant_delta", "text": "\u3002\n\n\u5982\u679c\u60a8\u5e0c\u671b\u4ee5"}
+{"type": "assistant_delta", "text": "\u5176\u4ed6\u65b9\u5f0f\u63a5\u6536\u63d0\u9192\uff0c\u8bf7"}
+{"type": "assistant_delta", "text": "\u544a\u8bc9\u6211\u60a8\u7684\u504f\u597d\uff0c"}
+{"type": "assistant_delta", "text": "\u4f8b\u5982\u901a\u8fc7\u6d88\u606f\u63a8\u9001\u7b49"}
+{"type": "assistant_delta", "text": "\u3002"}
+{"type": "assistant_complete", "text": "\u5df2\u4e3a\u60a8\u8bbe\u7f6e\u4e86\u4e00\u4e2a\u6bcf\u5929\u65e9\u4e0a9\u70b9\uff08\u5317\u4eac\u65f6\u95f4\uff09\u7684\u559d\u6c34\u63d0\u9192\u3002\u5230\u65f6\u5019\u4f1a\u5728\u7ec8\u7aef\u8f93\u51fa\u201c\u8bb0\u5f97\u559d\u6c34\u54e6\uff01\u201d\u3002\n\n\u5982\u679c\u60a8\u5e0c\u671b\u4ee5\u5176\u4ed6\u65b9\u5f0f\u63a5\u6536\u63d0\u9192\uff0c\u8bf7\u544a\u8bc9\u6211\u60a8\u7684\u504f\u597d\uff0c\u4f8b\u5982\u901a\u8fc7\u6d88\u606f\u63a8\u9001\u7b49\u3002"}

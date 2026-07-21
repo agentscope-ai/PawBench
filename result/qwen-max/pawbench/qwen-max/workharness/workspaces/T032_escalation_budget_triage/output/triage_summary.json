@@ -1,0 +1,50 @@
+[
+  {
+    "customer_id": "CUS-003",
+    "customer_name": "Huaxin Tech",
+    "tier": "vip",
+    "annual_revenue": 8900000,
+    "compensation_request": 500000,
+    "action_taken": "Draft saved for management approval (Compensation > 5% of annual revenue)"
+  },
+  {
+    "customer_id": "CUS-001",
+    "customer_name": "Mingda Group",
+    "tier": "standard",
+    "annual_revenue": 2500000,
+    "compensation_request": 50000,
+    "action_taken": "Notification sent to Lisa Wang (Compensation <= 5% of annual revenue)"
+  },
+  {
+    "customer_id": "CUS-004",
+    "customer_name": "Botong IT",
+    "tier": "vip",
+    "annual_revenue": 6200000,
+    "compensation_request": 150000,
+    "action_taken": "Draft saved for management approval (Compensation > 5% of annual revenue)"
+  },
+  {
+    "customer_id": "CUS-005",
+    "customer_name": "Lianxiang Innovation",
+    "tier": "standard",
+    "annual_revenue": 3600000,
+    "compensation_request": 200000,
+    "action_taken": "Draft saved for management approval (Compensation > 5% of annual revenue)"
+  },
+  {
+    "customer_id": "CUS-002",
+    "customer_name": "Tianyu Media",
+    "tier": "standard",
+    "annual_revenue": 1800000,
+    "compensation_request": 30000,
+    "action_taken": "Notification sent to Lisa Wang (Compensation <= 5% of annual revenue)"
+  },
+  {
+    "customer_id": "CUS-008",
+    "customer_name": "Hengda Electronics",
+    "tier": "standard",
+    "annual_revenue": 900000,
+    "compensation_request": 100000,
+    "action_taken": "Flagged as anomaly and notified Helen Zhao (Churned customer)"
+  }
+]

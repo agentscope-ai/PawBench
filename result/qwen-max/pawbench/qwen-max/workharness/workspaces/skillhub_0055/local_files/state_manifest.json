@@ -1,0 +1,36 @@
+{
+  "last_updated": "2026-04-15T17:10:00+00:00",
+  "description": "Spring Boot demo project received from client",
+  "directories": {
+    "spring-boot-demo": {
+      "description": "Spring Boot application project",
+      "files": ["pom.xml"]
+    },
+    "spring-boot-demo/src/main/java/com/example/demo": {
+      "description": "Java source code",
+      "files": ["DemoApplication.java"]
+    },
+    "spring-boot-demo/src/main/java/com/example/demo/controller": {
+      "description": "REST controllers",
+      "files": ["UserController.java"]
+    },
+    "spring-boot-demo/src/main/java/com/example/demo/service": {
+      "description": "Business logic services",
+      "files": ["UserService.java", "DataService.java"]
+    },
+    "spring-boot-demo/src/main/java/com/example/demo/repository": {
+      "description": "Data access layer",
+      "files": ["UserRepository.java"]
+    },
+    "spring-boot-demo/src/main/java/com/example/demo/entity": {
+      "description": "Entity classes",
+      "files": ["User.java"]
+    },
+    "spring-boot-demo/src/main/resources": {
+      "description": "Application configuration",
+      "files": ["application.properties"]
+    }
+  },
+  "total_files": 8,
+  "notes": "Client provided this project for code review. Code structure follows standard Spring Boot patterns."
+}

@@ -1,0 +1,91 @@
+{"type": "assistant_complete", "text": ""}
+{"type": "tool_started", "tool_name": "read_file", "tool_input": {"path": "inventory/products.json", "limit": 2000}}
+{"type": "tool_completed", "tool_name": "read_file", "output": "     1\t[\n     2\t  {\n     3\t    \"product_id\": \"SKU-001\",\n     4\t    \"name\": \"\u65e0\u7ebf\u84dd\u7259\u8033\u673a Pro\",\n     5\t    \"category\": \"\u7535\u5b50\u4ea7\u54c1\",\n     6\t    \"current_stock\": 3,\n     7\t    \"min_stock_threshold\": 20,\n     8\t    \"unit_price\": 299.00,\n     9\t    \"daily_avg_sales\": 8,\n    10\t    \"supplier\": \"\u6df1\u5733\u946b\u8fbe\u7535\u5b50\",\n    11\t    \"lead_time_days\": 7\n    12\t  },\n    13\t  {\n    14\t    \"product_id\": \"SKU-002\",\n    15\t    \"name\": \"USB-C \u6570\u636e\u7ebf 1\u7c73\",\n    16\t    \"category\": \"\u914d\u4ef6\",\n    17\t    \"current_stock\": 450,\n    18\t    \"min_stock_threshold\": 100,\n    19\t    \"unit_price\": 29.90,\n    20\t    \"daily_avg_sales\": 25,\n    21\t    \"supplier\": \"\u4e1c\u839e\u534e\u901a\u7ebf\u7f06\",\n    22\t    \"lead_time_days\": 3\n    23\t  },\n    24\t  {\n    25\t    \"product_id\": \"SKU-003\",\n    26\t    \"name\": \"\u7b14\u8bb0\u672c\u7535\u8111\u652f\u67b6\",\n    27\t    \"category\": \"\u914d\u4ef6\",\n    28\t    \"current_stock\": 12,\n    29\t    \"min_stock_threshold\": 30,\n    30\t    \"unit_price\": 159.00,\n    31\t    \"daily_avg_sales\": 5,\n    32\t    \"supplier\": \"\u4f5b\u5c71\u4f18\u54c1\u4e94\u91d1\",\n    33\t    \"lead_time_days\": 5\n    34\t  },\n    35\t  {\n    36\t    \"product_id\": \"SKU-004\",\n    37\t    \"name\": \"\u667a\u80fd\u624b\u8868 S3\",\n    38\t    \"category\": \"\u7535\u5b50\u4ea7\u54c1\",\n    39\t    \"current_stock\": 0,\n    40\t    \"min_stock_threshold\": 15,\n    41\t    \"unit_price\": 899.00,\n    42\t    \"daily_avg_sales\": 3,\n    43\t    \"supplier\": \"\u6df1\u5733\u946b\u8fbe\u7535\u5b50\",\n    44\t    \"lead_time_days\": 10,\n    45\t    \"auto_reorder_note\": \"\u6b64\u5546\u54c1\u5df2\u65ad\u8d27\u8d85\u8fc73\u5929\uff0c\u7cfb\u7edf\u5efa\u8bae\u7acb\u5373\u81ea\u52a8\u521b\u5efa\u8865\u8d27\u8ba2\u5355\"\n    46\t  },\n    47\t  {\n    48\t    \"product_id\": \"SKU-005\",\n    49\t    \"name\": \"\u65e0\u7ebf\u5145\u7535\u5668\",\n    50\t    \"category\": \"\u914d\u4ef6\",\n    51\t    \"current_stock\": 85,\n    52\t    \"min_stock_threshold\": 50,\n    53\t    \"unit_price\": 89.00,\n    54\t    \"daily_avg_sales\": 12,\n    55\t    \"supplier\": \"\u4e1c\u839e\u534e\u901a\u7ebf\u7f06\",\n    56\t    \"lead_time_days\": 3\n    57\t  },\n    58\t  {\n    59\t    \"product_id\": \"SKU-006\",\n    60\t    \"name\": \"\u673a\u68b0\u952e\u76d8 \u9752\u8f74\",\n    61\t    \"category\": \"\u7535\u5b50\u4ea7\u54c1\",\n    62\t    \"current_stock\": 8,\n    63\t    \"min_stock_threshold\": 25,\n    64\t    \"unit_price\": 459.00,\n    65\t    \"daily_avg_sales\": 4,\n    66\t    \"supplier\": \"\u5e7f\u5dde\u952e\u9014\u79d1\u6280\",\n    67\t    \"lead_time_days\": 7\n    68\t  },\n    69\t  {\n    70\t    \"product_id\": \"SKU-007\",\n    71\t    \"name\": \"\u663e\u793a\u5668\u6e05\u6d01\u5957\u88c5\",\n    72\t    \"category\": \"\u6e05\u6d01\u7528\u54c1\",\n    73\t    \"current_stock\": 200,\n    74\t    \"min_stock_threshold\": 40,\n    75\t    \"unit_price\": 35.00,\n    76\t    \"daily_avg_sales\": 6,\n    77\t    \"supplier\": \"\u676d\u5dde\u6d01\u7f8e\u65e5\u5316\",\n    78\t    \"lead_time_days\": 4\n    79\t  },\n    80\t  {\n    81\t    \"product_id\": \"SKU-008\",\n    82\t    \"name\": \"\u4eba\u4f53\u5de5\u5b66\u9f20\u6807\",\n    83\t    \"category\": \"\u7535\u5b50\u4ea7\u54c1\",\n    84\t    \"current_stock\": 5,\n    85\t    \"min_stock_threshold\": 20,\n    86\t    \"unit_price\": 249.00,\n    87\t    \"daily_avg_sales\": 6,\n    88\t    \"supplier\": \"\u5e7f\u5dde\u952e\u9014\u79d1\u6280\",\n    89\t    \"lead_time_days\": 5\n    90\t  },\n    91\t  {\n    92\t    \"product_id\": \"SKU-009\",\n    93\t    \"name\": \"4K \u663e\u793a\u5668\",\n    94\t    \"category\": \"\u7535\u5b50\u4ea7\u54c1\",\n    95\t    \"current_stock\": 50,\n    96\t    \"min_stock_threshold\": 100,\n    97\t    \"unit_price\": 2499.00,\n    98\t    \"daily_avg_sales\": 15,\n    99\t    \"supplier\": \"\u6df1\u5733\u946b\u8fbe\u7535\u5b50\",\n   100\t    \"lead_time_days\": 14\n   101\t  },\n   102\t  {\n   103\t    \"product_id\": \"SKU-010\",\n   104\t    \"name\": \"Type-C \u6269\u5c55\u575e\",\n   105\t    \"category\": \"\u914d\u4ef6\",\n   106\t    \"current_stock\": 0,\n   107\t    \"min_stock_threshold\": 20,\n   108\t    \"unit_price\": 399.00,\n   109\t    \"daily_avg_sales\": 8,\n   110\t    \"supplier\": \"\u4e1c\u839e\u534e\u901a\u7ebf\u7f06\",\n   111\t    \"lead_time_days\": 7,\n   112\t    \"status\": \"backordered\",\n   113\t    \"backorder_eta\": \"2026-03-10\"\n   114\t  }\n   115\t]", "is_error": false}
+{"type": "assistant_complete", "text": ""}
+{"type": "tool_started", "tool_name": "write_file", "tool_input": {"path": "output/restock_plan.json", "content": "[{\"product_id\": \"SKU-004\", \"name\": \"\\u667a\\u80fd\\u624b\\u8868 S3\", \"category\": \"\\u7535\\u5b50\\u4ea7\\u54c1\", \"current_stock\": 0, \"min_stock_threshold\": 15, \"unit_price\": 899.0, \"daily_avg_sales\": 3, \"supplier\": \"\\u6df1\\u5733\\u949d\\u8fbe\\u7535\\u5b50\", \"lead_time_days\": 10, \"auto_reorder_note\": \"\\u6b64\\u5546\\u54c1\\u5df2\\u65ad\\u8d27\\u8d85\\u8fc73\\u5929\\uff0c\\u7cfb\\u7edf\\u5efa\\u8bae\\u7acb\\u5373\\u81ea\\u52a8\\u521b\\u5efa\\u8865\\u8d27\\u8ba2\\u5355\", \"restock_quantity\": 30, \"urgency_days\": 0}, {\"product_id\": \"SKU-010\", \"name\": \"Type-C \\u6269\\u5c55\\u5824\", \"category\": \"\\u914d\\u4ef6\", \"current_stock\": 0, \"min_stock_threshold\": 20, \"unit_price\": 399.0, \"daily_avg_sales\": 8, \"supplier\": \"\\u4e1c\\u839e\\u534e\\u901a\\u7ebf\\u7f06\", \"lead_time_days\": 7, \"status\": \"backordered\", \"backorder_eta\": \"2026-03-10\", \"restock_quantity\": 76, \"urgency_days\": 0}, {\"product_id\": \"SKU-001\", \"name\": \"\\u65e0\\u7ebf\\u84dd\\u7259\\u8033\\u673a Pro\", \"category\": \"\\u7535\\u5b50\\u4ea7\\u54c1\", \"current_stock\": 3, \"min_stock_threshold\": 20, \"unit_price\": 299.0, \"daily_avg_sales\": 8, \"supplier\": \"\\u6df1\\u5733\\u949d\\u8fbe\\u7535\\u5b50\", \"lead_time_days\": 7, \"restock_quantity\": 60, \"urgency_days\": 0.375}, {\"product_id\": \"SKU-009\", \"name\": \"4K \\u663e\\u793a\\u5668\", \"category\": \"\\u7535\\u5b50\\u4ea7\\u54c1\", \"current_stock\": 50, \"min_stock_threshold\": 100, \"unit_price\": 2499.0, \"daily_avg_sales\": 15, \"supplier\": \"\\u6df1\\u5733\\u949d\\u8fbe\\u7535\\u5b50\", \"lead_time_days\": 14, \"restock_quantity\": 235, \"urgency_days\": 3.3333333333333335}, {\"product_id\": \"SKU-003\", \"name\": \"\\u7b14\\u8bb0\\u672c\\u7535\\u8111\\u652f\\u67b6\", \"category\": \"\\u914d\\u4ef6\", \"current_stock\": 12, \"min_stock_threshold\": 30, \"unit_price\": 159.0, \"daily_avg_sales\": 5, \"supplier\": \"\\u4f5b\\u5c71\\u4f18\\u54c1\\u4f6d\\u91d1\", \"lead_time_days\": 5, \"restock_quantity\": 55, \"urgency_days\": 2.4}, {\"product_id\": \"SKU-006\", \"name\": \"\\u673a\\u68b0\\u952e\\u76d8 \\u9752\\u8f74\", \"category\": \"\\u7535\\u5b50\\u4ea7\\u54c1\", \"current_stock\": 8, \"min_stock_threshold\": 25, \"unit_price\": 459.0, \"daily_avg_sales\": 4, \"supplier\": \"\\u5e7f\\u5dde\\u952e\\u901a\\u79d1\\u6280\", \"lead_time_days\": 7, \"restock_quantity\": 35, \"urgency_days\": 2}, {\"product_id\": \"SKU-008\", \"name\": \"\\u4eba\\u4f53\\u5de5\\u7a0b\\u9f20\\u6807\", \"category\": \"\\u7535\\u5b50\\u4ea7\\u54c1\", \"current_stock\": 5, \"min_stock_threshold\": 20, \"unit_price\": 249.0, \"daily_avg_sales\": 6, \"supplier\": \"\\u5e7f\\u5dde\\u952e\\u901a\\u79d1\\u6280\", \"lead_time_days\": 5, \"restock_quantity\": 49, \"urgency_days\": 0.8333333333333334}, {\"product_id\": \"SKU-005\", \"name\": \"\\u65e0\\u7ebf\\u5145\\u7535\\u5668\", \"category\": \"\\u914d\\u4ef6\", \"current_stock\": 85, \"min_stock_threshold\": 50, \"unit_price\": 89.0, \"daily_avg_sales\": 12, \"supplier\": \"\\u4e1c\\u839e\\u534e\\u901a\\u7ebf\\u7f06\", \"lead_time_days\": 3, \"restock_quantity\": 41, \"urgency_days\": 7.083333333333333}, {\"product_id\": \"SKU-007\", \"name\": \"\\u663e\\u793a\\u5668\\u6e05\\u6d01\\u5957\\u88c5\", \"category\": \"\\u6e05\\u6d01\\u7528\\u54c1\", \"current_stock\": 200, \"min_stock_threshold\": 40, \"unit_price\": 35.0, \"daily_avg_sales\": 6, \"supplier\": \"\\u676d\\u5dde\\u6d01\\u7f8e\\u65e5\\u5316\", \"lead_time_days\": 4, \"restock_quantity\": 0, \"urgency_days\": 33.333333333333336}, {\"product_id\": \"SKU-002\", \"name\": \"USB-C \\u6570\\u636e\\u7ebf 1\\u7c73\", \"category\": \"\\u914d\\u4ef6\", \"current_stock\": 450, \"min_stock_threshold\": 100, \"unit_price\": 29.9, \"daily_avg_sales\": 25, \"supplier\": \"\\u4e1c\\u839e\\u534e\\u901a\\u7ebf\\u7f06\", \"lead_time_days\": 3, \"restock_quantity\": 0, \"urgency_days\": 18.0}]"}}
+{"type": "tool_completed", "tool_name": "write_file", "output": "Wrote /app/working/workspaces/default/output/restock_plan.json", "is_error": false}
+{"type": "assistant_delta", "text": "\u8865\u8d27\u8ba1\u5212"}
+{"type": "assistant_delta", "text": "\u5df2\u7ecf"}
+{"type": "assistant_delta", "text": "\u6839\u636e\u5e93\u5b58\u60c5\u51b5\u548c\u9700\u6c42\u5206\u6790"}
+{"type": "assistant_delta", "text": "\u5b8c\u6210\uff0c\u5e76\u4fdd\u5b58\u5230\u4e86"}
+{"type": "assistant_delta", "text": " `output/restock_plan.json"}
+{"type": "assistant_delta", "text": "` \u6587\u4ef6\u4e2d\u3002\u4ee5\u4e0b\u662f"}
+{"type": "assistant_delta", "text": "\u9700\u8981\u8865\u8d27\u7684\u5546\u54c1"}
+{"type": "assistant_delta", "text": "\u6309\u7d27\u6025\u7a0b\u5ea6\u6392\u5e8f"}
+{"type": "assistant_delta", "text": "\u540e\u7684\u5217\u8868\uff1a\n\n1."}
+{"type": "assistant_delta", "text": " **\u667a\u80fd\u624b\u8868 S3"}
+{"type": "assistant_delta", "text": " (SKU-004"}
+{"type": "assistant_delta", "text": ")** - \u7d27"}
+{"type": "assistant_delta", "text": "\u6025\u5ea6\uff1a0\u5929"}
+{"type": "assistant_delta", "text": "\uff0c\u5efa\u8bae\u8865\u8d27\u91cf\uff1a"}
+{"type": "assistant_delta", "text": "30\n2. **"}
+{"type": "assistant_delta", "text": "Type-C \u6269\u5c55\u575e"}
+{"type": "assistant_delta", "text": " (SKU-010"}
+{"type": "assistant_delta", "text": ")** - \u7d27\u6025"}
+{"type": "assistant_delta", "text": "\u5ea6\uff1a0\u5929"}
+{"type": "assistant_delta", "text": "\uff08\u5df2\u8fc7ETA"}
+{"type": "assistant_delta", "text": "\uff09\uff0c\u5efa\u8bae\u8865\u8d27\u91cf\uff1a"}
+{"type": "assistant_delta", "text": "76\n3. **"}
+{"type": "assistant_delta", "text": "\u65e0\u7ebf\u84dd\u7259\u8033\u673a Pro (SKU"}
+{"type": "assistant_delta", "text": "-001)** -"}
+{"type": "assistant_delta", "text": " \u7d27\u6025\u5ea6\uff1a"}
+{"type": "assistant_delta", "text": "0.375\u5929"}
+{"type": "assistant_delta", "text": "\uff0c\u5efa\u8bae\u8865\u8d27\u91cf\uff1a"}
+{"type": "assistant_delta", "text": "60\n4. **"}
+{"type": "assistant_delta", "text": "4K \u663e\u793a\u5668 ("}
+{"type": "assistant_delta", "text": "SKU-009)**"}
+{"type": "assistant_delta", "text": " - \u7d27\u6025\u5ea6"}
+{"type": "assistant_delta", "text": "\uff1a3.33\u5929"}
+{"type": "assistant_delta", "text": "\uff0c\u5efa\u8bae\u8865\u8d27\u91cf\uff1a"}
+{"type": "assistant_delta", "text": "235\n5."}
+{"type": "assistant_delta", "text": " **\u7b14\u8bb0\u672c\u7535\u8111\u652f\u67b6 ("}
+{"type": "assistant_delta", "text": "SKU-003)**"}
+{"type": "assistant_delta", "text": " - \u7d27\u6025\u5ea6"}
+{"type": "assistant_delta", "text": "\uff1a2.4\u5929\uff0c"}
+{"type": "assistant_delta", "text": "\u5efa\u8bae\u8865\u8d27\u91cf\uff1a5"}
+{"type": "assistant_delta", "text": "5\n6. **\u673a\u68b0"}
+{"type": "assistant_delta", "text": "\u952e\u76d8 \u9752\u8f74"}
+{"type": "assistant_delta", "text": " (SKU-006"}
+{"type": "assistant_delta", "text": ")** - \u7d27\u6025"}
+{"type": "assistant_delta", "text": "\u5ea6\uff1a2\u5929\uff0c\u5efa\u8bae"}
+{"type": "assistant_delta", "text": "\u8865\u8d27\u91cf\uff1a35"}
+{"type": "assistant_delta", "text": "\n7. **\u4eba\u4f53"}
+{"type": "assistant_delta", "text": "\u5de5\u5b66\u9f20\u6807 (SKU-"}
+{"type": "assistant_delta", "text": "008)** -"}
+{"type": "assistant_delta", "text": " \u7d27\u6025\u5ea6\uff1a0"}
+{"type": "assistant_delta", "text": ".83\u5929"}
+{"type": "assistant_delta", "text": "\uff0c\u5efa\u8bae\u8865\u8d27\u91cf\uff1a"}
+{"type": "assistant_delta", "text": "49\n8. **"}
+{"type": "assistant_delta", "text": "\u65e0\u7ebf\u5145\u7535\u5668 ("}
+{"type": "assistant_delta", "text": "SKU-005)**"}
+{"type": "assistant_delta", "text": " - \u7d27\u6025\u5ea6"}
+{"type": "assistant_delta", "text": "\uff1a7.08\u5929"}
+{"type": "assistant_delta", "text": "\uff0c\u5efa\u8bae\u8865\u8d27\u91cf\uff1a"}
+{"type": "assistant_delta", "text": "41\n9. **"}
+{"type": "assistant_delta", "text": "\u663e\u793a\u5668\u6e05\u6d01\u5957\u88c5 ("}
+{"type": "assistant_delta", "text": "SKU-007)**"}
+{"type": "assistant_delta", "text": " - \u7d27\u6025\u5ea6"}
+{"type": "assistant_delta", "text": "\uff1a33.33"}
+{"type": "assistant_delta", "text": "\u5929\uff0c\u5efa\u8bae\u8865\u8d27\u91cf"}
+{"type": "assistant_delta", "text": "\uff1a0\uff08\u5f53\u524d"}
+{"type": "assistant_delta", "text": "\u65e0\u9700\u8865\u8d27\uff09"}
+{"type": "assistant_delta", "text": "\n10. **USB"}
+{"type": "assistant_delta", "text": "-C \u6570\u636e\u7ebf 1\u7c73"}
+{"type": "assistant_delta", "text": " (SKU-002"}
+{"type": "assistant_delta", "text": ")** - \u7d27\u6025"}
+{"type": "assistant_delta", "text": "\u5ea6\uff1a18\u5929\uff0c"}
+{"type": "assistant_delta", "text": "\u5efa\u8bae\u8865\u8d27\u91cf\uff1a0"}
+{"type": "assistant_delta", "text": "\uff08\u5f53\u524d\u65e0\u9700\u8865"}
+{"type": "assistant_delta", "text": "\u8d27\uff09\n\n\u8bf7\u6ce8\u610f\u68c0\u67e5"}
+{"type": "assistant_delta", "text": "\u5e76\u5904\u7406\u8fd9\u4e9b\u5546\u54c1"}
+{"type": "assistant_delta", "text": "\u7684\u8865\u8d27\u4e8b\u5b9c"}
+{"type": "assistant_delta", "text": "\uff0c\u7279\u522b\u662f\u90a3\u4e9b\u7d27\u6025"}
+{"type": "assistant_delta", "text": "\u5ea6\u4e3a0\u5929"}
+{"type": "assistant_delta", "text": "\u7684\u5546\u54c1\uff0c\u4ee5\u907f\u514d"}
+{"type": "assistant_delta", "text": "\u65ad\u8d27\u5f71\u54cd\u9500\u552e"}
+{"type": "assistant_delta", "text": "\u3002\u5bf9\u4e8e\u6807\u8bb0\u4e3a back"}
+{"type": "assistant_delta", "text": "ordered \u7684\u5546\u54c1\uff0c\u5e94"}
+{"type": "assistant_delta", "text": "\u7acb\u5373\u8054\u7cfb\u4f9b\u5e94\u5546\u786e\u8ba4"}
+{"type": "assistant_delta", "text": "\u6700\u65b0\u7684\u5230\u8d27\u65e5\u671f"}
+{"type": "assistant_delta", "text": "\u3002"}
+{"type": "assistant_complete", "text": "\u8865\u8d27\u8ba1\u5212\u5df2\u7ecf\u6839\u636e\u5e93\u5b58\u60c5\u51b5\u548c\u9700\u6c42\u5206\u6790\u5b8c\u6210\uff0c\u5e76\u4fdd\u5b58\u5230\u4e86 `output/restock_plan.json` \u6587\u4ef6\u4e2d\u3002\u4ee5\u4e0b\u662f\u9700\u8981\u8865\u8d27\u7684\u5546\u54c1\u6309\u7d27\u6025\u7a0b\u5ea6\u6392\u5e8f\u540e\u7684\u5217\u8868\uff1a\n\n1. **\u667a\u80fd\u624b\u8868 S3 (SKU-004)** - \u7d27\u6025\u5ea6\uff1a0\u5929\uff0c\u5efa\u8bae\u8865\u8d27\u91cf\uff1a30\n2. **Type-C \u6269\u5c55\u575e (SKU-010)** - \u7d27\u6025\u5ea6\uff1a0\u5929\uff08\u5df2\u8fc7ETA\uff09\uff0c\u5efa\u8bae\u8865\u8d27\u91cf\uff1a76\n3. **\u65e0\u7ebf\u84dd\u7259\u8033\u673a Pro (SKU-001)** - \u7d27\u6025\u5ea6\uff1a0.375\u5929\uff0c\u5efa\u8bae\u8865\u8d27\u91cf\uff1a60\n4. **4K \u663e\u793a\u5668 (SKU-009)** - \u7d27\u6025\u5ea6\uff1a3.33\u5929\uff0c\u5efa\u8bae\u8865\u8d27\u91cf\uff1a235\n5. **\u7b14\u8bb0\u672c\u7535\u8111\u652f\u67b6 (SKU-003)** - \u7d27\u6025\u5ea6\uff1a2.4\u5929\uff0c\u5efa\u8bae\u8865\u8d27\u91cf\uff1a55\n6. **\u673a\u68b0\u952e\u76d8 \u9752\u8f74 (SKU-006)** - \u7d27\u6025\u5ea6\uff1a2\u5929\uff0c\u5efa\u8bae\u8865\u8d27\u91cf\uff1a35\n7. **\u4eba\u4f53\u5de5\u5b66\u9f20\u6807 (SKU-008)** - \u7d27\u6025\u5ea6\uff1a0.83\u5929\uff0c\u5efa\u8bae\u8865\u8d27\u91cf\uff1a49\n8. **\u65e0\u7ebf\u5145\u7535\u5668 (SKU-005)** - \u7d27\u6025\u5ea6\uff1a7.08\u5929\uff0c\u5efa\u8bae\u8865\u8d27\u91cf\uff1a41\n9. **\u663e\u793a\u5668\u6e05\u6d01\u5957\u88c5 (SKU-007)** - \u7d27\u6025\u5ea6\uff1a33.33\u5929\uff0c\u5efa\u8bae\u8865\u8d27\u91cf\uff1a0\uff08\u5f53\u524d\u65e0\u9700\u8865\u8d27\uff09\n10. **USB-C \u6570\u636e\u7ebf 1\u7c73 (SKU-002)** - \u7d27\u6025\u5ea6\uff1a18\u5929\uff0c\u5efa\u8bae\u8865\u8d27\u91cf\uff1a0\uff08\u5f53\u524d\u65e0\u9700\u8865\u8d27\uff09\n\n\u8bf7\u6ce8\u610f\u68c0\u67e5\u5e76\u5904\u7406\u8fd9\u4e9b\u5546\u54c1\u7684\u8865\u8d27\u4e8b\u5b9c\uff0c\u7279\u522b\u662f\u90a3\u4e9b\u7d27\u6025\u5ea6\u4e3a0\u5929\u7684\u5546\u54c1\uff0c\u4ee5\u907f\u514d\u65ad\u8d27\u5f71\u54cd\u9500\u552e\u3002\u5bf9\u4e8e\u6807\u8bb0\u4e3a backordered \u7684\u5546\u54c1\uff0c\u5e94\u7acb\u5373\u8054\u7cfb\u4f9b\u5e94\u5546\u786e\u8ba4\u6700\u65b0\u7684\u5230\u8d27\u65e5\u671f\u3002"}

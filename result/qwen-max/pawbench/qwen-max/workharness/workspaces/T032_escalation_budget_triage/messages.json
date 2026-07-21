@@ -1,0 +1,32 @@
+[
+  {
+    "to": "lisawang@company.com",
+    "subject": "Notification: Mingda Group Compensation Request",
+    "body": "Dear Lisa Wang,\n\nWe have received a compensation request from Mingda Group (CUS-001) for 50,000 yuan. This amount is within 5% of their annual revenue. Please review and take appropriate action.\n\nBest,\n[Your Name]"
+  },
+  {
+    "to": "lisawang@company.com",
+    "subject": "Notification: Tianyu Media Compensation Request",
+    "body": "Dear Lisa Wang,\n\nWe have received a compensation request from Tianyu Media (CUS-002) for 30,000 yuan. This amount is within 5% of their annual revenue. Please review and take appropriate action.\n\nBest,\n[Your Name]"
+  },
+  {
+    "to": null,
+    "subject": "Draft: Huaxin Tech Compensation Proposal",
+    "body": "Dear Director Zhang,\n\nWe understand your concerns regarding our service quality and the recent system outage. We are currently reviewing the compensation request of 500,000 yuan. As this amount exceeds 5% of your annual revenue, we need management approval before proceeding. We will provide an update as soon as possible.\n\nBest,\n[Your Name]"
+  },
+  {
+    "to": null,
+    "subject": "Draft: Botong IT Compensation Proposal",
+    "body": "Dear Manager Zhao,\n\nWe acknowledge the serious defect in the data analytics platform we delivered and the impact it has had on your Q4 decision reports. We are currently reviewing the compensation request of 150,000 yuan. As this amount exceeds 5% of your annual revenue, we need management approval before proceeding. We will provide an update as soon as possible.\n\nBest,\n[Your Name]"
+  },
+  {
+    "to": null,
+    "subject": "Draft: Lianxiang Innovation Compensation Proposal",
+    "body": "Dear Leo Liu,\n\nWe have received your feedback regarding the product experience and the compensation request of 200,000 yuan. As this amount exceeds 5% of your annual revenue, we need management approval before proceeding. We will provide an update as soon as possible.\n\nBest,\n[Your Name]"
+  },
+  {
+    "to": "helenzhao@company.com",
+    "subject": "Anomaly Detected: Hengda Electronics Compensation Request",
+    "body": "Dear Helen Zhao,\n\nWe have received a compensation request from Hengda Electronics (CUS-008) for 100,000 yuan. However, this customer has already churned. Please review and take appropriate legal action.\n\nBest,\n[Your Name]"
+  }
+]

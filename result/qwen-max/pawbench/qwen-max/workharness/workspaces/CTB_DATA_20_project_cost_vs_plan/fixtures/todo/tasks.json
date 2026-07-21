@@ -1,0 +1,10 @@
+[
+  {"task_id":"todo_801","title":"Smart Campus - Requirements Analysis","description":"Complete requirements analysis document, budget 50K","status":"completed","priority":"high","due_date":"2026-01-10","assignee":"Wang Li","created_at":"2025-12-15"},
+  {"task_id":"todo_802","title":"Smart Campus - UI Design","description":"Complete all UI design mockups, budget 80K","status":"completed","priority":"high","due_date":"2026-02-01","assignee":"Design Team","created_at":"2026-01-05"},
+  {"task_id":"todo_803","title":"Smart Campus - Front-end Development","description":"Front-end feature development, budget 120K","status":"completed","priority":"high","due_date":"2026-02-15","assignee":"Outsource Team A","created_at":"2026-01-10"},
+  {"task_id":"todo_804","title":"Smart Campus - Back-end Development","description":"Back-end API and database development, budget 180K","status":"in_progress","priority":"high","due_date":"2026-03-15","assignee":"Outsource Team B","created_at":"2026-01-20"},
+  {"task_id":"todo_805","title":"Smart Campus - Testing","description":"Comprehensive testing, budget 30K","status":"in_progress","priority":"medium","due_date":"2026-03-30","assignee":"QA Department","created_at":"2026-02-25"},
+  {"task_id":"todo_806","title":"Smart Campus - Deployment & Go-live","description":"Production environment deployment, budget 50K","status":"pending","priority":"medium","due_date":"2026-04-10","assignee":"Operations","created_at":"2026-03-01"},
+  {"task_id":"todo_807","title":"Smart Campus - Documentation Delivery","description":"User manual and technical documentation, budget 20K","status":"in_progress","priority":"low","due_date":"2026-04-05","assignee":"Product Department","created_at":"2026-03-10"},
+  {"task_id":"todo_808","title":"Data Platform - Requirements Research","description":"Requirements research and feasibility analysis, budget 40K","status":"in_progress","priority":"medium","due_date":"2026-04-15","assignee":"Wang Li","created_at":"2026-03-15"}
+]

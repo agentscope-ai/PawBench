@@ -1,0 +1,20 @@
+{"type": "assistant_complete", "text": ""}
+{"type": "tool_started", "tool_name": "image_to_text", "tool_input": {"image_path": "local_files/11.jpg", "max_tokens": 2048, "prompt": "\u8bf7\u63cf\u8ff0\u56fe\u7247\u4e2d\u7684\u8f66\u8f86\u578b\u53f7\uff0c\u5e76\u63d0\u4f9b2025\u6b3e\u7684\u9884\u8ba1\u843d\u5730\u4ef7\u4ee5\u53ca\u8be5\u8f66\u578b\u7684\u6cb9\u8017\u4fe1\u606f\u3002"}}
+{"type": "tool_completed", "tool_name": "image_to_text", "output": "image_to_text failed: vision model is not configured. Please set vision.model and vision.api_key in your settings, or configure the WORKHARNESS_VISION_MODEL and WORKHARNESS_VISION_API_KEY environment variables.", "is_error": true}
+{"type": "assistant_delta", "text": "\u76ee\u524d\u65e0\u6cd5"}
+{"type": "assistant_delta", "text": "\u76f4\u63a5"}
+{"type": "assistant_delta", "text": "\u901a\u8fc7\u56fe\u7247\u8bc6\u522b\u8f66\u8f86"}
+{"type": "assistant_delta", "text": "\u578b\u53f7\uff0c\u56e0\u4e3a\u89c6\u89c9"}
+{"type": "assistant_delta", "text": "\u6a21\u578b\u672a\u88ab\u914d\u7f6e\u3002"}
+{"type": "assistant_delta", "text": "\u8bf7\u63d0\u4f9b\u8f66\u8f86\u7684\u63cf\u8ff0"}
+{"type": "assistant_delta", "text": "\u4fe1\u606f\u6216\u8005\u68c0\u67e5\u56fe\u7247"}
+{"type": "assistant_delta", "text": "\u662f\u5426\u5305\u542b\u6587\u5b57\u8bf4\u660e"}
+{"type": "assistant_delta", "text": "\uff0c\u8fd9\u6837\u6211\u53ef\u4ee5\u5e2e\u52a9"}
+{"type": "assistant_delta", "text": "\u4f60\u627e\u5230\u5173\u4e8e\u8be5\u8f66\u578b"}
+{"type": "assistant_delta", "text": "\u53f7\u3001202"}
+{"type": "assistant_delta", "text": "5\u6b3e\u843d\u5730\u4ef7\u4ee5\u53ca"}
+{"type": "assistant_delta", "text": "\u6cb9\u8017\u7684\u4fe1\u606f\u3002\u5982\u679c"}
+{"type": "assistant_delta", "text": "\u9700\u8981\u542f\u7528\u56fe\u50cf\u8bc6\u522b\u529f\u80fd\uff0c\u8bf7"}
+{"type": "assistant_delta", "text": "\u8bbe\u7f6e\u76f8\u5173\u7684\u89c6\u89c9\u6a21\u578b\u548c"}
+{"type": "assistant_delta", "text": "API\u5bc6\u94a5\u3002"}
+{"type": "assistant_complete", "text": "\u76ee\u524d\u65e0\u6cd5\u76f4\u63a5\u901a\u8fc7\u56fe\u7247\u8bc6\u522b\u8f66\u8f86\u578b\u53f7\uff0c\u56e0\u4e3a\u89c6\u89c9\u6a21\u578b\u672a\u88ab\u914d\u7f6e\u3002\u8bf7\u63d0\u4f9b\u8f66\u8f86\u7684\u63cf\u8ff0\u4fe1\u606f\u6216\u8005\u68c0\u67e5\u56fe\u7247\u662f\u5426\u5305\u542b\u6587\u5b57\u8bf4\u660e\uff0c\u8fd9\u6837\u6211\u53ef\u4ee5\u5e2e\u52a9\u4f60\u627e\u5230\u5173\u4e8e\u8be5\u8f66\u578b\u53f7\u30012025\u6b3e\u843d\u5730\u4ef7\u4ee5\u53ca\u6cb9\u8017\u7684\u4fe1\u606f\u3002\u5982\u679c\u9700\u8981\u542f\u7528\u56fe\u50cf\u8bc6\u522b\u529f\u80fd\uff0c\u8bf7\u8bbe\u7f6e\u76f8\u5173\u7684\u89c6\u89c9\u6a21\u578b\u548cAPI\u5bc6\u94a5\u3002"}

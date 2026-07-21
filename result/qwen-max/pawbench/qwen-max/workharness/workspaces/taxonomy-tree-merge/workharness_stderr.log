@@ -1,0 +1,4 @@
+invalid input for bash (resolved from bash): 1 validation error for BashToolInput
+timeout_seconds
+  Input should be less than or equal to 600 [type=less_than_equal, input_value=1200, input_type=int]
+    For further information visit https://errors.pydantic.dev/2.13/v/less_than_equal

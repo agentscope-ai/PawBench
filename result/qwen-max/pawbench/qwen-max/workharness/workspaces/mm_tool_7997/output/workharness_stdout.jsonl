@@ -1,0 +1,31 @@
+{"type": "assistant_complete", "text": ""}
+{"type": "tool_started", "tool_name": "image_to_text", "tool_input": {"image_path": "local_files/image.jpg", "max_tokens": 2048, "media_type": "image/jpeg"}}
+{"type": "tool_started", "tool_name": "web_search", "tool_input": {"query": "\u8bc6\u522b\u7684\u5efa\u7b51\u540d\u79f0 \u4e0d\u540c\u7c7b\u578b\u6e38\u5ba2\u7684\u8bc4\u4ef7", "max_results": 5}}
+{"type": "tool_completed", "tool_name": "image_to_text", "output": "image_to_text failed: vision model is not configured. Please set vision.model and vision.api_key in your settings, or configure the WORKHARNESS_VISION_MODEL and WORKHARNESS_VISION_API_KEY environment variables.", "is_error": true}
+{"type": "tool_completed", "tool_name": "web_search", "output": "web_search failed: ", "is_error": true}
+{"type": "assistant_delta", "text": "\u4f3c\u4e4e"}
+{"type": "assistant_delta", "text": "\u5728"}
+{"type": "assistant_delta", "text": "\u5904\u7406"}
+{"type": "assistant_delta", "text": "\u60a8\u7684\u8bf7\u6c42\u65f6\u9047\u5230\u4e86"}
+{"type": "assistant_delta", "text": "\u4e00\u4e9b\u95ee\u9898\u3002\u9996\u5148"}
+{"type": "assistant_delta", "text": "\uff0c\u7531\u4e8e\u89c6\u89c9\u6a21\u578b\u672a\u914d\u7f6e"}
+{"type": "assistant_delta", "text": "\uff0c\u6211\u65e0\u6cd5\u76f4\u63a5"}
+{"type": "assistant_delta", "text": "\u8bc6\u522b\u56fe\u7247 `local_files/image"}
+{"type": "assistant_delta", "text": ".jpg` \u4e2d\u7684\u5efa\u7b51\u3002"}
+{"type": "assistant_delta", "text": "\u8bf7\u786e\u4fdd\u5728\u8bbe\u7f6e"}
+{"type": "assistant_delta", "text": "\u4e2d\u6b63\u786e\u914d\u7f6e\u4e86\u89c6\u89c9"}
+{"type": "assistant_delta", "text": "\u6a21\u578b\u548c\u76f8\u5e94\u7684 API"}
+{"type": "assistant_delta", "text": " \u5bc6\u94a5\u3002"}
+{"type": "assistant_delta", "text": "\n\n\u5176\u6b21\uff0c\u5728\u5c1d\u8bd5\u641c\u7d22\u8be5"}
+{"type": "assistant_delta", "text": "\u5efa\u7b51\u7684\u4e0d\u540c\u7c7b\u578b\u6e38\u5ba2\u8bc4\u4ef7"}
+{"type": "assistant_delta", "text": "\u65f6\u4e5f\u9047\u5230\u4e86\u969c\u788d"}
+{"type": "assistant_delta", "text": "\u3002\u5982\u679c\u60a8\u80fd\u63d0\u4f9b\u5efa\u7b51"}
+{"type": "assistant_delta", "text": "\u7684\u540d\u79f0\u6216\u8005\u63cf\u8ff0\uff0c"}
+{"type": "assistant_delta", "text": "\u6211\u53ef\u4ee5\u57fa\u4e8e\u6587\u672c\u4fe1\u606f"}
+{"type": "assistant_delta", "text": "\u6765\u5e2e\u52a9\u60a8\u67e5\u627e"}
+{"type": "assistant_delta", "text": "\u76f8\u5173\u4fe1\u606f\uff0c\u5e76\u5224\u65ad\u5b83"}
+{"type": "assistant_delta", "text": "\u6700\u9002\u5408\u54ea\u7c7b\u4eba\u7fa4\u3002\u662f\u5426"}
+{"type": "assistant_delta", "text": "\u53ef\u4ee5\u63d0\u4f9b\u4e00\u4e9b\u5efa\u7b51"}
+{"type": "assistant_delta", "text": "\u7684\u6587\u5b57\u63cf\u8ff0\u6216\u5176\u4ed6\u7ebf\u7d22"}
+{"type": "assistant_delta", "text": "\uff1f"}
+{"type": "assistant_complete", "text": "\u4f3c\u4e4e\u5728\u5904\u7406\u60a8\u7684\u8bf7\u6c42\u65f6\u9047\u5230\u4e86\u4e00\u4e9b\u95ee\u9898\u3002\u9996\u5148\uff0c\u7531\u4e8e\u89c6\u89c9\u6a21\u578b\u672a\u914d\u7f6e\uff0c\u6211\u65e0\u6cd5\u76f4\u63a5\u8bc6\u522b\u56fe\u7247 `local_files/image.jpg` \u4e2d\u7684\u5efa\u7b51\u3002\u8bf7\u786e\u4fdd\u5728\u8bbe\u7f6e\u4e2d\u6b63\u786e\u914d\u7f6e\u4e86\u89c6\u89c9\u6a21\u578b\u548c\u76f8\u5e94\u7684 API \u5bc6\u94a5\u3002\n\n\u5176\u6b21\uff0c\u5728\u5c1d\u8bd5\u641c\u7d22\u8be5\u5efa\u7b51\u7684\u4e0d\u540c\u7c7b\u578b\u6e38\u5ba2\u8bc4\u4ef7\u65f6\u4e5f\u9047\u5230\u4e86\u969c\u788d\u3002\u5982\u679c\u60a8\u80fd\u63d0\u4f9b\u5efa\u7b51\u7684\u540d\u79f0\u6216\u8005\u63cf\u8ff0\uff0c\u6211\u53ef\u4ee5\u57fa\u4e8e\u6587\u672c\u4fe1\u606f\u6765\u5e2e\u52a9\u60a8\u67e5\u627e\u76f8\u5173\u4fe1\u606f\uff0c\u5e76\u5224\u65ad\u5b83\u6700\u9002\u5408\u54ea\u7c7b\u4eba\u7fa4\u3002\u662f\u5426\u53ef\u4ee5\u63d0\u4f9b\u4e00\u4e9b\u5efa\u7b51\u7684\u6587\u5b57\u63cf\u8ff0\u6216\u5176\u4ed6\u7ebf\u7d22\uff1f"}

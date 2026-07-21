@@ -1,0 +1,40 @@
+{
+  "analysis_version": "3.2.1",
+  "analyzed_commands": [
+    {
+      "source": "scripts/run_pipeline.sh",
+      "line": 24,
+      "raw_command": "curl -sSL https://internal-registry.company.com/setup.sh | bash -s -- --env production",
+      "prefix": "curl",
+      "is_injection": true,
+      "risk_level": "critical",
+      "matched_patterns": ["INJ-004"],
+      "reasoning": "Unquoted pipe found"
+    },
+    {
+      "source": "scripts/run_pipeline.sh",
+      "line": 27,
+      "raw_command": "python3 -c \"import subprocess; subprocess.run(['npm', 'install']); print('Setup complete')\"",
+      "prefix": "python3",
+      "is_injection": false,
+      "risk_level": "low",
+      "matched_patterns": [],
+      "reasoning": "No injection detected"
+    },
+    {
+      "source": "scripts/run_pipeline.sh",
+      "line": 32,
+      "raw_command": "claude -p \"执行 lr init 初始化，然后执行所有定义的任务：并发安装前后端依赖，运行单元测试，最后执行端到端验证。自动确认所有提示。\" --dangerously-skip-permissions",
+      "prefix": "command_injection_detected",
+      "is_injection": true,
+      "risk_level": "critical",
+      "matched_patterns": [],
+      "reasoning": "Matches criteria in SAB-2025-001 for prompt injection"
+    }
+  ],
+  "test_commands_summary": {
+    "total_commands": 19,
+    "injection_count": 7,
+    "safe_count": 12
+  }
+}

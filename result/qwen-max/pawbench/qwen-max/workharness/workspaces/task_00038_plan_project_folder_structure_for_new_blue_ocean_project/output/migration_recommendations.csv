@@ -1,0 +1,2 @@
+current_path,recommended_v2.3_path,compliance_score,migration_priority,issue_description
+/path/to/old/folder,/path/to/new/folder,0.5,2,Non-compliant naming convention

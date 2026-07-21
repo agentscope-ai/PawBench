@@ -1,0 +1,6 @@
+invoice_id,invoice_ref,issued_date,billed_amount,currency,status
+INV-9001,TX-1001,2026-02-02,1250.50,CNY,issued
+INV-9002,TX-1002,2026-02-03,890.00,CNY,issued
+INV-9003,TX-1003,2026-02-05,1499.00,CNY,issued
+INV-9005,TX-1005,2026-02-09,2200.00,CNY,issued
+INV-9006,TX-1006,2026-02-12,645.00,CNY,issued

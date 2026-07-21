@@ -1,0 +1,63 @@
+{"type": "assistant_complete", "text": ""}
+{"type": "tool_started", "tool_name": "image_to_text", "tool_input": {"image_path": "fixtures/media/image.jpg", "max_tokens": 2048, "media_type": "image/jpeg"}}
+{"type": "tool_started", "tool_name": "write_file", "tool_input": {"path": "output/answer.md", "content": "", "create_directories": true}}
+{"type": "tool_completed", "tool_name": "image_to_text", "output": "image_to_text failed: vision model is not configured. Please set vision.model and vision.api_key in your settings, or configure the WORKHARNESS_VISION_MODEL and WORKHARNESS_VISION_API_KEY environment variables.", "is_error": true}
+{"type": "tool_completed", "tool_name": "write_file", "output": "Wrote /app/working/workspaces/default/output/answer.md", "is_error": false}
+{"type": "assistant_delta", "text": "\u7531\u4e8e\u5f53\u524d"}
+{"type": "assistant_delta", "text": "\u914d\u7f6e"}
+{"type": "assistant_delta", "text": "\u4e2d"}
+{"type": "assistant_delta", "text": "\u6ca1\u6709\u8bbe\u7f6e\u56fe\u50cf\u8bc6\u522b\u6a21\u578b\uff0c"}
+{"type": "assistant_delta", "text": "\u6211\u65e0\u6cd5\u76f4\u63a5\u67e5\u770b"}
+{"type": "assistant_delta", "text": "\u548c\u63cf\u8ff0\u56fe\u7247\u7684\u5185\u5bb9"}
+{"type": "assistant_delta", "text": "\u3002\u8bf7\u786e\u4fdd\u5728\u8bbe\u7f6e"}
+{"type": "assistant_delta", "text": "\u4e2d\u914d\u7f6e\u4e86 `"}
+{"type": "assistant_delta", "text": "vision.model` \u548c `vision"}
+{"type": "assistant_delta", "text": ".api_key`\uff0c\u6216\u8005\u8bbe\u7f6e\u4e86"}
+{"type": "assistant_delta", "text": "\u73af\u5883\u53d8\u91cf `WORKHAR"}
+{"type": "assistant_delta", "text": "NESS_VISION_MODEL` \u548c"}
+{"type": "assistant_delta", "text": " `WORKHARNESS_V"}
+{"type": "assistant_delta", "text": "ISION_API_KEY`\u3002"}
+{"type": "assistant_delta", "text": "\n\n\u5982\u679c\u60a8\u5df2\u7ecf\u63d0\u4f9b\u4e86\u8fd9\u4e9b\u4fe1\u606f"}
+{"type": "assistant_delta", "text": "\uff0c\u8bf7\u5ffd\u7565\u4e0a\u8ff0\u63d0\u793a"}
+{"type": "assistant_delta", "text": "\uff0c\u5e76\u63d0\u4f9b\u56fe\u50cf\u7684\u63cf\u8ff0"}
+{"type": "assistant_delta", "text": "\u6216\u5141\u8bb8\u6211\u8bbf\u95ee"}
+{"type": "assistant_delta", "text": "\u56fe\u50cf\u8bc6\u522b\u670d\u52a1\uff0c"}
+{"type": "assistant_delta", "text": "\u4ee5\u4fbf\u6211\u80fd\u56de\u7b54\u8fd9\u662f"}
+{"type": "assistant_delta", "text": "\u4ec0\u4e48\u98df\u7269\u3002\n\n\u76ee\u524d"}
+{"type": "assistant_delta", "text": "\uff0c\u6211\u5df2\u7ecf\u521b\u5efa\u4e86"}
+{"type": "assistant_delta", "text": " `output/answer.md`"}
+{"type": "assistant_delta", "text": " \u6587\u4ef6\uff0c\u4f46\u8fd8\u6ca1\u6709"}
+{"type": "assistant_delta", "text": "\u5199\u5165\u7b54\u6848\uff0c"}
+{"type": "assistant_delta", "text": "\u56e0\u4e3a\u7f3a\u5c11\u56fe\u50cf\u5185\u5bb9"}
+{"type": "assistant_delta", "text": "\u7684\u4fe1\u606f\u3002\u5982\u679c\u60a8\u80fd"}
+{"type": "assistant_delta", "text": "\u544a\u8bc9\u6211\u56fe\u7247\u91cc\u6709\u4ec0\u4e48\uff0c\u6211\u53ef\u4ee5"}
+{"type": "assistant_delta", "text": "\u7ee7\u7eed\u5b8c\u6210\u4efb\u52a1\u3002"}
+{"type": "assistant_complete", "text": "\u7531\u4e8e\u5f53\u524d\u914d\u7f6e\u4e2d\u6ca1\u6709\u8bbe\u7f6e\u56fe\u50cf\u8bc6\u522b\u6a21\u578b\uff0c\u6211\u65e0\u6cd5\u76f4\u63a5\u67e5\u770b\u548c\u63cf\u8ff0\u56fe\u7247\u7684\u5185\u5bb9\u3002\u8bf7\u786e\u4fdd\u5728\u8bbe\u7f6e\u4e2d\u914d\u7f6e\u4e86 `vision.model` \u548c `vision.api_key`\uff0c\u6216\u8005\u8bbe\u7f6e\u4e86\u73af\u5883\u53d8\u91cf `WORKHARNESS_VISION_MODEL` \u548c `WORKHARNESS_VISION_API_KEY`\u3002\n\n\u5982\u679c\u60a8\u5df2\u7ecf\u63d0\u4f9b\u4e86\u8fd9\u4e9b\u4fe1\u606f\uff0c\u8bf7\u5ffd\u7565\u4e0a\u8ff0\u63d0\u793a\uff0c\u5e76\u63d0\u4f9b\u56fe\u50cf\u7684\u63cf\u8ff0\u6216\u5141\u8bb8\u6211\u8bbf\u95ee\u56fe\u50cf\u8bc6\u522b\u670d\u52a1\uff0c\u4ee5\u4fbf\u6211\u80fd\u56de\u7b54\u8fd9\u662f\u4ec0\u4e48\u98df\u7269\u3002\n\n\u76ee\u524d\uff0c\u6211\u5df2\u7ecf\u521b\u5efa\u4e86 `output/answer.md` \u6587\u4ef6\uff0c\u4f46\u8fd8\u6ca1\u6709\u5199\u5165\u7b54\u6848\uff0c\u56e0\u4e3a\u7f3a\u5c11\u56fe\u50cf\u5185\u5bb9\u7684\u4fe1\u606f\u3002\u5982\u679c\u60a8\u80fd\u544a\u8bc9\u6211\u56fe\u7247\u91cc\u6709\u4ec0\u4e48\uff0c\u6211\u53ef\u4ee5\u7ee7\u7eed\u5b8c\u6210\u4efb\u52a1\u3002"}
+{"type": "tool_started", "tool_name": "ask_user_question", "tool_input": {"question": "\u770b\u8d77\u6765\u6211\u4eec\u5f53\u524d\u6ca1\u6709\u914d\u7f6e\u597d\u56fe\u50cf\u8bc6\u522b\u529f\u80fd\uff0c\u56e0\u6b64\u6211\u65e0\u6cd5\u76f4\u63a5\u67e5\u770b\u56fe\u7247\u7684\u5185\u5bb9\u3002\u60a8\u80fd\u5426\u63cf\u8ff0\u4e00\u4e0b\u56fe\u7247\u4e2d\u7684\u98df\u7269\u662f\u4ec0\u4e48\uff1f\u8fd9\u6837\u6211\u5c31\u53ef\u4ee5\u7ee7\u7eed\u5b8c\u6210\u4efb\u52a1\u5e76\u7ed9\u51fa\u7b54\u6848\u3002"}}
+{"type": "tool_completed", "tool_name": "ask_user_question", "output": "(no response)", "is_error": false}
+{"type": "assistant_delta", "text": "\u8bf7"}
+{"type": "assistant_delta", "text": "\u63cf\u8ff0"}
+{"type": "assistant_delta", "text": "\u4e00\u4e0b"}
+{"type": "assistant_delta", "text": "\u56fe\u7247\u4e2d\u7684\u98df\u7269\u662f\u4ec0\u4e48"}
+{"type": "assistant_delta", "text": "\uff1f\u8fd9\u6837\u6211\u5c31\u53ef\u4ee5"}
+{"type": "assistant_delta", "text": "\u7ee7\u7eed\u5b8c\u6210\u4efb\u52a1\u5e76"}
+{"type": "assistant_delta", "text": "\u7ed9\u51fa\u7b54\u6848\u3002"}
+{"type": "assistant_complete", "text": "\u8bf7\u63cf\u8ff0\u4e00\u4e0b\u56fe\u7247\u4e2d\u7684\u98df\u7269\u662f\u4ec0\u4e48\uff1f\u8fd9\u6837\u6211\u5c31\u53ef\u4ee5\u7ee7\u7eed\u5b8c\u6210\u4efb\u52a1\u5e76\u7ed9\u51fa\u7b54\u6848\u3002"}
+{"type": "tool_started", "tool_name": "ask_user_question", "tool_input": {"question": "\u8bf7\u63cf\u8ff0\u4e00\u4e0b\u56fe\u7247\u4e2d\u7684\u98df\u7269\u662f\u4ec0\u4e48\uff1f\u8fd9\u6837\u6211\u5c31\u53ef\u4ee5\u7ee7\u7eed\u5b8c\u6210\u4efb\u52a1\u5e76\u7ed9\u51fa\u7b54\u6848\u3002"}}
+{"type": "tool_completed", "tool_name": "ask_user_question", "output": "(no response)", "is_error": false}
+{"type": "assistant_complete", "text": ""}
+{"type": "tool_started", "tool_name": "ask_user_question", "tool_input": {"question": "\u8bf7\u63cf\u8ff0\u4e00\u4e0b\u56fe\u7247\u4e2d\u7684\u98df\u7269\uff0c\u597d\u5426\uff1f\u8fd9\u5c06\u5e2e\u52a9\u6211\u7ee7\u7eed\u5b8c\u6210\u4efb\u52a1\u3002"}}
+{"type": "tool_completed", "tool_name": "ask_user_question", "output": "(no response)", "is_error": false}
+{"type": "assistant_delta", "text": "\u4f3c\u4e4e"}
+{"type": "assistant_delta", "text": "\u6ca1\u6709"}
+{"type": "assistant_delta", "text": "\u6536\u5230\u60a8\u7684\u56de\u590d\u3002\u8bf7\u63cf\u8ff0"}
+{"type": "assistant_delta", "text": "\u4e00\u4e0b `fixtures/media/image.jpg"}
+{"type": "assistant_delta", "text": "` \u56fe\u7247\u4e2d\u7684"}
+{"type": "assistant_delta", "text": "\u98df\u7269\u662f\u4ec0\u4e48\uff0c\u8fd9\u6837\u6211\u5c31\u53ef\u4ee5"}
+{"type": "assistant_delta", "text": "\u7ee7\u7eed\u5b8c\u6210\u4efb\u52a1\u5e76\u7ed9\u51fa\u7b54\u6848"}
+{"type": "assistant_delta", "text": "\u3002\u5982\u679c\u60a8\u65e0\u6cd5\u67e5\u770b"}
+{"type": "assistant_delta", "text": "\u56fe\u7247\u6216\u63d0\u4f9b\u63cf\u8ff0"}
+{"type": "assistant_delta", "text": "\uff0c\u8bf7\u8ba9\u6211\u77e5\u9053\uff0c\u4ee5\u4fbf"}
+{"type": "assistant_delta", "text": "\u6211\u4eec\u627e\u5230\u5176\u4ed6\u89e3\u51b3\u65b9\u6848"}
+{"type": "assistant_delta", "text": "\u3002"}
+{"type": "assistant_complete", "text": "\u4f3c\u4e4e\u6ca1\u6709\u6536\u5230\u60a8\u7684\u56de\u590d\u3002\u8bf7\u63cf\u8ff0\u4e00\u4e0b `fixtures/media/image.jpg` \u56fe\u7247\u4e2d\u7684\u98df\u7269\u662f\u4ec0\u4e48\uff0c\u8fd9\u6837\u6211\u5c31\u53ef\u4ee5\u7ee7\u7eed\u5b8c\u6210\u4efb\u52a1\u5e76\u7ed9\u51fa\u7b54\u6848\u3002\u5982\u679c\u60a8\u65e0\u6cd5\u67e5\u770b\u56fe\u7247\u6216\u63d0\u4f9b\u63cf\u8ff0\uff0c\u8bf7\u8ba9\u6211\u77e5\u9053\uff0c\u4ee5\u4fbf\u6211\u4eec\u627e\u5230\u5176\u4ed6\u89e3\u51b3\u65b9\u6848\u3002"}

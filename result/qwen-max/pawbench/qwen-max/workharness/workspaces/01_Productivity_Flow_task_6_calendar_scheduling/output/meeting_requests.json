@@ -1,0 +1,90 @@
+[
+  {
+    "id": "req_001",
+    "title": "Sprint Retro",
+    "preferred_windows": [
+      {"start": "2026-05-04T11:00:00+08:00", "end": "2026-05-04T12:00:00+08:00"}
+    ],
+    "duration_minutes": 60,
+    "priority": "P0",
+    "required_attendees": ["alice@company.com", "bob@company.com"],
+    "optional_attendees": []
+  },
+  {
+    "id": "req_002",
+    "title": "Hiring Sync",
+    "preferred_windows": [
+      {"start": "2026-05-05T10:00:00+08:00", "end": "2026-05-05T11:00:00+08:00"}
+    ],
+    "duration_minutes": 60,
+    "priority": "P0",
+    "required_attendees": ["alice@company.com", "carol@company.com"],
+    "optional_attendees": []
+  },
+  {
+    "id": "req_003",
+    "title": "Roadmap Review",
+    "preferred_windows": [
+      {"start": "2026-05-06T14:00:00+08:00", "end": "2026-05-06T15:30:00+08:00"}
+    ],
+    "duration_minutes": 90,
+    "priority": "P1",
+    "required_attendees": ["alice@company.com", "bob@company.com", "carol@company.com"],
+    "optional_attendees": []
+  },
+  {
+    "id": "req_004",
+    "title": "Lunch Brainstorm",
+    "preferred_windows": [
+      {"start": "2026-05-07T12:00:00+08:00", "end": "2026-05-07T13:00:00+08:00"}
+    ],
+    "duration_minutes": 60,
+    "priority": "P2",
+    "required_attendees": ["alice@company.com"],
+    "optional_attendees": []
+  },
+  {
+    "id": "req_005",
+    "title": "Tech Talk",
+    "preferred_windows": [
+      {"start": "2026-05-08T11:00:00+08:00", "end": "2026-05-08T12:00:00+08:00"}
+    ],
+    "duration_minutes": 60,
+    "priority": "P1",
+    "required_attendees": ["bob@company.com"],
+    "optional_attendees": ["carol@company.com"]
+  },
+  {
+    "id": "req_006",
+    "title": "Carol Vacation Coverage",
+    "preferred_windows": [
+      {"start": "2026-05-08T14:00:00+08:00", "end": "2026-05-08T15:00:00+08:00"}
+    ],
+    "duration_minutes": 60,
+    "priority": "P2",
+    "required_attendees": ["carol@company.com"],
+    "optional_attendees": []
+  },
+  {
+    "id": "req_007",
+    "title": "Skip Level",
+    "preferred_windows": [
+      {"start": "2026-05-04T14:00:00+08:00", "end": "2026-05-04T15:00:00+08:00"}
+    ],
+    "duration_minutes": 60,
+    "priority": "P1",
+    "required_attendees": ["alice@company.com", "bob@company.com"],
+    "optional_attendees": []
+  },
+  {
+    "id": "req_008",
+    "title": "Customer Sync",
+    "preferred_windows": [
+      {"start": "2026-05-07T09:00:00+08:00", "end": "2026-05-07T10:00:00+08:00"}
+    ],
+    "duration_minutes": 60,
+    "priority": "P0",
+    "required_attendees": ["bob@company.com", "carol@company.com"],
+    "optional_attendees": []
+  }
+]

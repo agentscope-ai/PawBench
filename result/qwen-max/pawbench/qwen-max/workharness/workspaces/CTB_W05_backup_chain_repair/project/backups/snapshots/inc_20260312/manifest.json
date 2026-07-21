@@ -1,0 +1,8 @@
+{
+  "snapshot_id": "inc_20260312",
+  "kind": "incremental",
+  "files": {
+    "reports/daily_20260312.csv": "backups/snapshots/inc_20260312/payloads/daily_20260312.csv",
+    "exports/latest_summary.txt": "backups/snapshots/inc_20260312/payloads/latest_summary.txt"
+  }
+}

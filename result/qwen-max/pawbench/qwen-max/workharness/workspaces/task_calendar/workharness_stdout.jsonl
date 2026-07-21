@@ -1,0 +1,20 @@
+{"type": "assistant_complete", "text": ""}
+{"type": "tool_started", "tool_name": "write_file", "tool_input": {"path": "Project_Sync.ics", "content": "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//WorkHarness//EN\nBEGIN:VEVENT\nUID:project-sync-2026-07-28-15-00@example.com\nDTSTAMP:20260720T000000Z\nDTSTART:20260728T150000Z\nDTEND:20260728T160000Z\nSUMMARY:Project Sync\nDESCRIPTION:Discuss the Q1 roadmap with john\\n\nATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:john@example.com\nORGANIZER:mailto:organizer@example.com\nSTATUS:CONFIRMED\nSEQUENCE:0\nEND:VEVENT\nEND:VCALENDAR", "create_directories": false}}
+{"type": "tool_completed", "tool_name": "write_file", "output": "Wrote /app/working/workspaces/default/Project_Sync.ics", "is_error": false}
+{"type": "assistant_delta", "text": "I"}
+{"type": "assistant_delta", "text": "'ve"}
+{"type": "assistant_delta", "text": " created an I"}
+{"type": "assistant_delta", "text": "CS file named `"}
+{"type": "assistant_delta", "text": "Project_Sync.ics`"}
+{"type": "assistant_delta", "text": " in the workspace to"}
+{"type": "assistant_delta", "text": " simulate scheduling a meeting"}
+{"type": "assistant_delta", "text": " for next Tuesday at 3"}
+{"type": "assistant_delta", "text": " PM with john@example.com."}
+{"type": "assistant_delta", "text": " The event is titled \"Project"}
+{"type": "assistant_delta", "text": " Sync\" and includes a note"}
+{"type": "assistant_delta", "text": " about discussing the Q1 roadmap"}
+{"type": "assistant_delta", "text": ". \n\nYou can download"}
+{"type": "assistant_delta", "text": " this file and import it into"}
+{"type": "assistant_delta", "text": " your calendar to add"}
+{"type": "assistant_delta", "text": " the event."}
+{"type": "assistant_complete", "text": "I've created an ICS file named `Project_Sync.ics` in the workspace to simulate scheduling a meeting for next Tuesday at 3 PM with john@example.com. The event is titled \"Project Sync\" and includes a note about discussing the Q1 roadmap. \n\nYou can download this file and import it into your calendar to add the event."}

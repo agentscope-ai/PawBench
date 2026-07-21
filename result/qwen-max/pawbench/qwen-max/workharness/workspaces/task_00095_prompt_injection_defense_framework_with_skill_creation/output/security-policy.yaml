@@ -1,0 +1,30 @@
+thresholds:
+  input_validation:
+    max_length: 1024
+    max_lines: 10
+    max_tokens: 512
+  behavioral_analysis:
+    anomaly_score: 0.7
+    confidence_threshold: 0.8
+  contextual_awareness:
+    context_similarity: 0.6
+  user_auth:
+    session_timeout: 3600
+    max_attempts: 3
+  incident_response:
+    alert_threshold: 5
+    log_retention_days: 30
+
+permission_tiers:
+  - name: basic
+    permissions: [read, write]
+  - name: admin
+    permissions: [read, write, execute, manage]
+
+sanitization_rules:
+  - pattern: ".*<script>.*"
+    replacement: "[SCRIPT REMOVED]"
+  - pattern: ".*<img.*"
+    replacement: "[IMAGE REMOVED]"
+  - pattern: ".*<a href=.*"
+    replacement: "[LINK REMOVED]"

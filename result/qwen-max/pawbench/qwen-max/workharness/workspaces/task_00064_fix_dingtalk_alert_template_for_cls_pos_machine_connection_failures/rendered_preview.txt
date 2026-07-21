@@ -1,0 +1,86 @@
+### 场景 1: 触发 (如果 NotifyType = 1)
+
+告警名称: 收银机连接失败告警
+告警时间: 2024-01-15 10:30:00
+触发条件: pos_conn_fail | stats count(*) as cnt, cnt > 0
+
+设备SN: POS20240001 
+门店名: 东区数字标志店 
+门店NO: SH001
+日志时间: 2024-01-15 10:28:33 
+	告警信息: TCP connection timeout after 30s
+---
+设备SN: POS20240002 
+门店名: 西区分店 
+门店NO: SH002
+日志时间: 2024-01-15 10:29:01 
+	告警信息: heartbeat lost
+---
+设备SN: POS20240003 
+门店名: 南区购物中心店 
+门店NO: SH015
+日志时间: 2024-01-15 10:29:45 
+	告警信息: SSL handshake failed: certificate expired
+---
+告警详情: https://console.cloud.example.com/cls/alarm/detail?id=abc123 
+通知类型: 触发
+
+(// 模板分支: 头部, 设备循环, 尾部)
+
+### 场景 2: 恢复 (如果 NotifyType = 2)
+
+告警名称: 收银机连接失败告警
+告警时间: 2024-01-15 10:30:00
+触发条件: pos_conn_fail | stats count(*) as cnt, cnt > 0
+
+设备SN: POS20240001 
+门店名: 东区数字标志店 
+门店NO: SH001
+日志时间: 2024-01-15 10:28:33 
+	告警信息: TCP connection timeout after 30s
+---
+设备SN: POS20240002 
+门店名: 西区分店 
+门店NO: SH002
+日志时间: 2024-01-15 10:29:01 
+	告警信息: heartbeat lost
+---
+设备SN: POS20240003 
+门店名: 南区购物中心店 
+门店NO: SH015
+日志时间: 2024-01-15 10:29:45 
+	告警信息: SSL handshake failed: certificate expired
+---
+告警详情: https://console.cloud.example.com/cls/alarm/detail?id=abc123 
+通知类型: 恢复
+
+(// 模板分支: 头部, 设备循环, 尾部)
+
+### 场景 3: 未知 NotifyType (NotifyType = 99)
+
+告警名称: 收银机连接失败告警
+告警时间: 2024-01-15 10:30:00
+触发条件: pos_conn_fail | stats count(*) as cnt, cnt > 0
+
+设备SN: POS20240001 
+门店名: 东区数字标志店 
+门店NO: SH001
+日志时间: 2024-01-15 10:28:33 
+	告警信息: TCP connection timeout after 30s
+---
+设备SN: POS20240002 
+门店名: 西区分店 
+门店NO: SH002
+日志时间: 2024-01-15 10:29:01 
+	告警信息: heartbeat lost
+---
+设备SN: POS20240003 
+门店名: 南区购物中心店 
+门店NO: SH015
+日志时间: 2024-01-15 10:29:45 
+	告警信息: SSL handshake failed: certificate expired
+---
+告警详情: https://console.cloud.example.com/cls/alarm/detail?id=abc123 
+通知类型: 未知 (类型: 99)
+
+(// 模板分支: 头部, 设备循环, 尾部)

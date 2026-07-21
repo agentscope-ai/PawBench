@@ -1,0 +1,27 @@
+[
+    {
+        "id": 1,
+        "name": "alpha",
+        "value": 10.5
+    },
+    {
+        "id": 2,
+        "name": "beta",
+        "value": 20.3
+    },
+    {
+        "id": 3,
+        "name": "gamma",
+        "value": 30.7
+    },
+    {
+        "id": 4,
+        "name": "delta",
+        "value": 40.1
+    },
+    {
+        "id": 5,
+        "name": "epsilon",
+        "value": 50.9
+    }
+]

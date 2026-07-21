@@ -1,0 +1,11 @@
+image_to_text: vision model not configured. Set vision.model and vision.api_key in settings.
+invalid input for edit_file (resolved from edit_file): 3 validation errors for FileEditToolInput
+path
+  Field required [type=missing, input_value={}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/missing
+old_str
+  Field required [type=missing, input_value={}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/missing
+new_str
+  Field required [type=missing, input_value={}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/missing

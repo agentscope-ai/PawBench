@@ -1,0 +1,10 @@
+{
+  "msg_001": {"category": "needs reply", "reason": "The boss is asking for a review and feedback on the Q1 report, specifically to verify the data analysis in Section 3. This requires a response with your input by Friday."},
+  "msg_002": {"category": "needs reply", "reason": "A collaborator is requesting to schedule a meeting to go over the API interface design and also needs confirmation on whether the data format specification document has been updated. A response is expected to confirm the meeting and provide the requested information."},
+  "msg_003": {"category": "notifications (FYI)", "reason": "This is a newsletter providing updates on AI-related news and developments. No action is required unless you wish to read more about the topics mentioned."},
+  "msg_004": {"category": "spam", "reason": "This email claims that you have won a large sum of money and asks for personal banking details to claim the prize. It includes a suspicious link and a limited-time offer, which are typical characteristics of spam or phishing emails."},
+  "msg_005": {"category": "notifications (FYI)", "reason": "An HR update regarding the 2026 employee benefits plan. While it's informative and may require action if you need to adjust your benefits options, no direct reply is necessary as it's an informational notice."},
+  "msg_006": {"category": "needs reply", "reason": "You are being offered free training spots as part of a partnership benefit. You are asked to reply by March 5 to confirm the number of attendees from your company. A response is needed to take advantage of this offer."},
+  "msg_007": {"category": "needs reply", "reason": "A security alert requiring all employees to update their system login passwords within 48 hours. Following the instructions provided is critical, and while not a direct reply, it does require immediate action."},
+  "msg_008": {"category": "notifications (FYI)", "reason": "An invitation to participate in a customer satisfaction survey. The email provides a link to the survey and gives you the option to unsubscribe. No reply is necessary unless you choose to take the survey or opt out."}
+}

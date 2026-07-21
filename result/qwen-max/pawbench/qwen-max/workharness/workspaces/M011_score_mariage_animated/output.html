@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mariage d'Amour - Paul de Senneville</title>
+    <style>
+        /* Add some basic styling */
+        body { font-family: Arial, sans-serif; }
+        .score { display: flex; align-items: center; justify-content: center; }
+        .piano-keyboard { display: flex; justify-content: center; margin-top: 20px; }
+        .key { width: 40px; height: 200px; background-color: #eee; border: 1px solid #000; margin: 0 2px; }
+        .key.active { background-color: #ffcccb; }
+        .play-button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Mariage d'Amour</h1>
+    <h2>by Paul de Senneville</h2>
+    
+    <div class="score">
+        <svg width="600" height="200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Treble and Bass Clefs, Time Signatures, and Key Signature -->
+  <g transform="translate(10, 10)">
+    <text x="0" y="15" font-family="Arial" font-size="14">Mariage d'Amour - Paul de Senneville</text>
+    <text x="0" y="35" font-family="Arial" font-size="14">Key: g minor (2 flats)</text>
+    <text x="0" y="55" font-family="Arial" font-size="14">M1 (4/4) - M2 (4/4) - M3 (5/4)</text>
+    <line x1="0" y1="70" x2="600" y2="70" stroke="black" stroke-width="1"/>
+    <line x1="0" y1="120" x2="600" y2="120" stroke="black" stroke-width="1"/>
+    <line x1="0" y1="170" x2="600" y2="170" stroke="black" stroke-width="1"/>
+    <line x1="200" y1="0" x2="200" y2="200" stroke="black" stroke-width="1"/>
+    <line x1="400" y1="0" x2="400" y2="200" stroke="black" stroke-width="1"/>
+    <text x="100" y="90" font-family="Arial" font-size="14">G2</text>
+    <text x="100" y="140" font-family="Arial" font-size="14">D3</text>
+    <text x="100" y="190" font-family="Arial" font-size="14">G3, Bb3</text>
+    <text x="300" y="90" font-family="Arial" font-size="14">D3, G3</text>
+    <text x="300" y="140" font-family="Arial" font-size="14">Bb3, D3</text>
+    <text x="500" y="90" font-family="Arial" font-size="14">D5, Eb5, F5, G5, A5, Bb5, C6, D6, D5</text>
+  </g>
+</svg>
+    </div>
+    
+    <div class="piano-keyboard">
+        <div id="piano-keyboard">
+    <div class="key" data-note="C2"></div>
+    <div class="key" data-note="D2"></div>
+    <div class="key" data-note="E2"></div>
+    <div class="key" data-note="F2"></div>
+    <div class="key" data-note="G2"></div>
+    <div class="key" data-note="A2"></div>
+    <div class="key" data-note="B2"></div>
+    <div class="key" data-note="C3"></div>
+    <div class="key" data-note="D3"></div>
+    <div class="key" data-note="E3"></div>
+    <div class="key" data-note="F3"></div>
+    <div class="key" data-note="G3"></div>
+    <div class="key" data-note="A3"></div>
+    <div class="key" data-note="B3"></div>
+    <div class="key" data-note="C4"></div>
+    <div class="key" data-note="D4"></div>
+    <div class="key" data-note="E4"></div>
+    <div class="key" data-note="F4"></div>
+    <div class="key" data-note="G4"></div>
+    <div class="key" data-note="A4"></div>
+    <div class="key" data-note="B4"></div>
+    <div class="key" data-note="C5"></div>
+    <div class="key" data-note="D5"></div>
+    <div class="key" data-note="E5"></div>
+    <div class="key" data-note="F5"></div>
+    <div class="key" data-note="G5"></div>
+    <div class="key" data-note="A5"></div>
+    <div class="key" data-note="Bb5"></div>
+    <div class="key" data-note="C6"></div>
+    <div class="key" data-note="D6"></div>
+</div>
+    </div>
+    
+    <button class="play-button">Play</button>
+    
+    <script>
+        // JavaScript for interactivity will be added here
+    <script>
+    const notes = [
+        { measure: 1, note: 'G2', duration: 1 },
+        { measure: 1, note: 'D3', duration: 1 },
+        { measure: 1, note: 'G3', duration: 0.5 },
+        { measure: 1, note: 'Bb3', duration: 0.5 },
+        { measure: 1, note: 'D3', duration: 0.5 },
+        { measure: 1, note: 'G3', duration: 0.5 },
+        { measure: 1, note: 'Bb3', duration: 0.5 },
+        { measure: 1, note: 'D3', duration: 0.5 },
+        // M2 is identical to M1
+        { measure: 2, note: 'G2', duration: 1 },
+        { measure: 2, note: 'D3', duration: 1 },
+        { measure: 2, note: 'G3', duration: 0.5 },
+        { measure: 2, note: 'Bb3', duration: 0.5 },
+        { measure: 2, note: 'D3', duration: 0.5 },
+        { measure: 2, note: 'G3', duration: 0.5 },
+        { measure: 2, note: 'Bb3', duration: 0.5 },
+        { measure: 2, note: 'D3', duration: 0.5 },
+        // M3
+        { measure: 3, note: 'D5', duration: 0.25 },
+        { measure: 3, note: 'Eb5', duration: 0.25 },
+        { measure: 3, note: 'F5', duration: 0.25 },
+        { measure: 3, note: 'G5', duration: 0.25 },
+        { measure: 3, note: 'A5', duration: 0.25 },
+        { measure: 3, note: 'Bb5', duration: 0.25 },
+        { measure: 3, note: 'C6', duration: 0.25 },
+        { measure: 3, note: 'D6', duration: 0.25 },
+        { measure: 3, note: 'D5', duration: 1 }
+    ];
+
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const keyMap = {
+        'C2': 36, 'D2': 38, 'E2': 40, 'F2': 41, 'G2': 43, 'A2': 45, 'B2': 47,
+        'C3': 48, 'D3': 50, 'E3': 52, 'F3': 53, 'G3': 55, 'A3': 57, 'B3': 59,
+        'C4': 60, 'D4': 62, 'E4': 64, 'F4': 65, 'G4': 67, 'A4': 69, 'B4': 71,
+        'C5': 72, 'D5': 74, 'E5': 76, 'F5': 77, 'G5': 79, 'A5': 81, 'Bb5': 83, 'C6': 84, 'D6': 86
+    };
+
+    function playNote(note, duration) {
+        const oscillator = audioContext.createOscillator();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(keyMap[note], audioContext.currentTime);
+        oscillator.connect(audioContext.destination);
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + duration);
+    }
+
+    function highlightKey(note) {
+        const key = document.querySelector(`.key[data-note="${note}"]`);
+        if (key) {
+            key.classList.add('active');
+            setTimeout(() => key.classList.remove('active'), 1000); // Remove highlight after 1 second
+        }
+    }
+
+    let currentNoteIndex = 0;
+    function playNextNote() {
+        if (currentNoteIndex < notes.length) {
+            const note = notes[currentNoteIndex];
+            playNote(note.note, note.duration);
+            highlightKey(note.note);
+            currentNoteIndex++;
+            setTimeout(playNextNote, note.duration * 1000);
+        }
+    }
+
+    document.querySelector('.play-button').addEventListener('click', () => {
+        currentNoteIndex = 0; // Reset index when play button is clicked
+        playNextNote();
+    });
+</script>
+</body>
+</html>

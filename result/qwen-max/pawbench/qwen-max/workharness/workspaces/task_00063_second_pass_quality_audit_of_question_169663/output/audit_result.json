@@ -1,0 +1,15 @@
+{
+  "question_id": 169663,
+  "is_really_wrong": true,
+  "confidence": "high",
+  "issues": [
+    {
+      "category": "math_error_in_analysis",
+      "description": "Incorrectly added the diameter of the semicircle to the perimeter."
+    },
+    {
+      "category": "incorrect_labeled_answer",
+      "description": "The labeled answer B (33.85 cm) is incorrect."
+    }
+  ]
+}

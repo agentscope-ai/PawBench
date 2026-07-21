@@ -1,0 +1,8 @@
+{"type": "assistant_complete", "text": ""}
+{"type": "tool_started", "tool_name": "write_file", "tool_input": {"path": "command.txt", "content": "grep -rl 'FATAL:' . --include '*.log'"}}
+{"type": "tool_completed", "tool_name": "write_file", "output": "Wrote /app/working/workspaces/default/command.txt", "is_error": false}
+{"type": "assistant_delta", "text": "The shell command"}
+{"type": "assistant_delta", "text": " has"}
+{"type": "assistant_delta", "text": " been saved to"}
+{"type": "assistant_delta", "text": " `command.txt`."}
+{"type": "assistant_complete", "text": "The shell command has been saved to `command.txt`."}

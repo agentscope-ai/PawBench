@@ -1,0 +1,15 @@
+invalid input for write_file (resolved from write_file): 2 validation errors for FileWriteToolInput
+path
+  Field required [type=missing, input_value={}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/missing
+content
+  Field required [type=missing, input_value={}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/missing
+invalid input for bash (resolved from bash): 1 validation error for BashToolInput
+command
+  Field required [type=missing, input_value={}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/missing
+invalid input for bash (resolved from bash): 1 validation error for BashToolInput
+command
+  Field required [type=missing, input_value={}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/missing

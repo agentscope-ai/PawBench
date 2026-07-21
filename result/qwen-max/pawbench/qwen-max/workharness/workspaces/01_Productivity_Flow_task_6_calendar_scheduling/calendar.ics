@@ -1,0 +1,46 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//WildClaw//Calendar Scheduling//EN
+CALSCALE:GREGORIAN
+BEGIN:VEVENT
+UID:existing-001@wildclaw
+SUMMARY:Engineering Standup
+DTSTART;TZID=Asia/Shanghai:20260504T093000
+DTEND;TZID=Asia/Shanghai:20260504T100000
+ATTENDEE:mailto:alice@company.com
+ATTENDEE:mailto:bob@company.com
+END:VEVENT
+BEGIN:VEVENT
+UID:existing-002@wildclaw
+SUMMARY:1:1 Alice/Bob
+DTSTART;TZID=Asia/Shanghai:20260505T140000
+DTEND;TZID=Asia/Shanghai:20260505T150000
+ATTENDEE:mailto:alice@company.com
+ATTENDEE:mailto:bob@company.com
+END:VEVENT
+BEGIN:VEVENT
+UID:existing-003@wildclaw
+SUMMARY:Architecture Review
+DTSTART;TZID=Asia/Shanghai:20260506T100000
+DTEND;TZID=Asia/Shanghai:20260506T113000
+ATTENDEE:mailto:alice@company.com
+ATTENDEE:mailto:carol@company.com
+END:VEVENT
+BEGIN:VEVENT
+UID:existing-004@wildclaw
+SUMMARY:Quarterly Planning
+DTSTART;TZID=Asia/Shanghai:20260507T140000
+DTEND;TZID=Asia/Shanghai:20260507T160000
+ATTENDEE:mailto:alice@company.com
+ATTENDEE:mailto:bob@company.com
+ATTENDEE:mailto:carol@company.com
+END:VEVENT
+BEGIN:VEVENT
+UID:existing-005@wildclaw
+SUMMARY:Customer Demo Prep
+DTSTART;TZID=Asia/Shanghai:20260508T093000
+DTEND;TZID=Asia/Shanghai:20260508T103000
+ATTENDEE:mailto:bob@company.com
+ATTENDEE:mailto:carol@company.com
+END:VEVENT
+END:VCALENDAR

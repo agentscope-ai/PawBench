@@ -1,0 +1,31 @@
+{
+  "image": "test_image.jpg",
+  "image_size": [640, 480],
+  "cases": {
+    "text_shoe": {
+      "boxes_xyxy": [
+        [220.0, 380.0, 290.0, 440.0],
+        [400.0, 380.0, 470.0, 440.0]
+      ],
+      "scores": [0.95, 0.92]
+    },
+    "single_box": {
+      "boxes_xyxy": [
+        [350.0, 70.0, 480.0, 360.0]
+      ],
+      "scores": [0.91]
+    },
+    "multi_box": {
+      "boxes_xyxy": [
+        [350.0, 70.0, 480.0, 360.0]
+      ],
+      "scores": [0.91]
+    },
+    "text_box_combined": {
+      "boxes_xyxy": [
+        [350.0, 70.0, 480.0, 360.0]
+      ],
+      "scores": [0.94]
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "drafts": [
+    {
+      "to": "client@bigcorp.com",
+      "subject": "Re: Regarding the project delay",
+      "body": "Dear Director Liu,\n\nThank you for your email and for bringing this matter to our attention. I apologize for the delayed response.\n\nHere is an update on the project:\n1. Current progress: 75% complete.\n2. Anticipated delay: 2 weeks.\n3. To expedite, we can allocate additional resources and work overtime.\n\nPlease let me know if this plan is acceptable or if you have any further concerns.\n\nBest regards,\n[Your Name] | [Your Company]",
+      "reply_to_message_id": "msg_104"
+    },
+    {
+      "to": "boss@company.com",
+      "subject": "Re: Competitive Analysis Report",
+      "body": "Hi,\n\nI've reviewed the Q1 competitive analysis report. Here are my key takeaways:\n- The new features of Product A are significantly impacting our market share. We should consider similar enhancements.\n- Their pricing strategy changes suggest a shift towards a more aggressive stance in the market.\n\nLet's discuss how to respond at our next meeting.\n\nBest,\n[Your Name] | [Your Company]",
+      "reply_to_message_id": "msg_105"
+    }
+  ]
+}

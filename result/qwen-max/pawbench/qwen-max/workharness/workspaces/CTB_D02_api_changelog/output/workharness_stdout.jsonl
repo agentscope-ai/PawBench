@@ -1,0 +1,117 @@
+{"type": "assistant_complete", "text": ""}
+{"type": "tool_started", "tool_name": "read_file", "tool_input": {"path": "fixtures/docs/api_v1_2.md", "limit": 2000}}
+{"type": "tool_started", "tool_name": "read_file", "tool_input": {"path": "fixtures/docs/api_v2_0.md", "limit": 2000}}
+{"type": "tool_completed", "tool_name": "read_file", "output": "     1\t# Analytics API v1.2\n     2\t\n     3\t## 1. Authentication\n     4\t\n     5\t- Endpoint: `POST /v1/sessions`\n     6\t- Request fields:\n     7\t  - `client_id` (string)\n     8\t  - `client_secret` (string)\n     9\t- Response fields:\n    10\t  - `session_id` (string)\n    11\t  - `expires_in_seconds` (integer)\n    12\t\n    13\t## 2. Event Query\n    14\t\n    15\t- Endpoint: `GET /v1/events`\n    16\t- Query parameters:\n    17\t  - `start_date` (YYYY-MM-DD, required)\n    18\t  - `end_date` (YYYY-MM-DD, required)\n    19\t  - `page` (integer, optional)\n    20\t- Response root fields:\n    21\t  - `event_count`\n    22\t  - `items`\n    23\t\n    24\t## 3. Order Creation\n    25\t\n    26\t- Endpoint: `POST /v1/orders`\n    27\t- Request body:\n    28\t  - `customer_id` (string, required)\n    29\t  - `amount_cents` (integer, required)\n    30\t  - `note` (string, optional)\n    31\t- Response body:\n    32\t  - `order_id`\n    33\t  - `status`\n    34\t\n    35\t## 4. Daily Report\n    36\t\n    37\t- Endpoint: `GET /v1/reports/daily`\n    38\t- Purpose: returns daily sales and refund summary\n    39\t\n    40\t## 5. Webhook Verification\n    41\t\n    42\t- Required header: `X-Signature`\n    43\t- Signature algorithm: `HMAC-SHA1`\n    44\t- No timestamp header is required in v1.2", "is_error": false}
+{"type": "tool_completed", "tool_name": "read_file", "output": "     1\t# Analytics API v2.0\n     2\t\n     3\t## 1. Authentication\n     4\t\n     5\t- Endpoint: `POST /v2/auth/tokens`\n     6\t- Request fields:\n     7\t  - `client_id` (string)\n     8\t  - `client_secret` (string)\n     9\t- Response fields:\n    10\t  - `access_token` (string)\n    11\t  - `refresh_token` (string)\n    12\t  - `expires_in` (integer)\n    13\t\n    14\t## 2. Event Query\n    15\t\n    16\t- Endpoint: `GET /v2/events`\n    17\t- Query parameters:\n    18\t  - `from` (YYYY-MM-DD, required)\n    19\t  - `to` (YYYY-MM-DD, required)\n    20\t  - `cursor` (string, optional)\n    21\t- Removed parameter:\n    22\t  - `page`\n    23\t- Response root fields:\n    24\t  - `total`\n    25\t  - `items`\n    26\t\n    27\t## 3. Order Creation\n    28\t\n    29\t- Endpoint: `POST /v2/orders`\n    30\t- Request body:\n    31\t  - `account_id` (string, required)\n    32\t  - `amount` (decimal string, required)\n    33\t  - `currency` (ISO 4217 code, required)\n    34\t  - `note` (string, optional)\n    35\t- Removed fields:\n    36\t  - `customer_id`\n    37\t  - `amount_cents`\n    38\t- Response body:\n    39\t  - `order_id`\n    40\t  - `status`\n    41\t\n    42\t## 4. Order Estimate\n    43\t\n    44\t- New endpoint: `POST /v2/orders/estimate`\n    45\t- Purpose: return estimated tax and fee breakdown before order submission\n    46\t\n    47\t## 5. Daily Report\n    48\t\n    49\t- `GET /v1/reports/daily` is deprecated\n    50\t- Use `GET /v2/reports/daily-summary` instead\n    51\t\n    52\t## 6. Webhook Verification\n    53\t\n    54\t- Required headers:\n    55\t  - `X-Signature`\n    56\t  - `X-Timestamp`\n    57\t- Signature algorithm: `HMAC-SHA256`\n    58\t- Reject webhook events with timestamps older than 5 minutes", "is_error": false}
+{"type": "assistant_delta", "text": "#"}
+{"type": "assistant_delta", "text": " API"}
+{"type": "assistant_delta", "text": " v"}
+{"type": "assistant_delta", "text": "1.2 to v2"}
+{"type": "assistant_delta", "text": ".0 Migration Changelog"}
+{"type": "assistant_delta", "text": "\n\n## Overview\nThis document"}
+{"type": "assistant_delta", "text": " outlines the changes between"}
+{"type": "assistant_delta", "text": " the Analytics API v1"}
+{"type": "assistant_delta", "text": ".2 and v2."}
+{"type": "assistant_delta", "text": "0, focusing on the authentication"}
+{"type": "assistant_delta", "text": " endpoint, event query endpoint,"}
+{"type": "assistant_delta", "text": " order creation endpoint, new estimate"}
+{"type": "assistant_delta", "text": " endpoint, webhook verification mechanism,"}
+{"type": "assistant_delta", "text": " and daily report endpoint migration."}
+{"type": "assistant_delta", "text": " The following table summarizes the changes"}
+{"type": "assistant_delta", "text": ", detailing the change"}
+{"type": "assistant_delta", "text": " type, affected section or"}
+{"type": "assistant_delta", "text": " endpoint, details of the change"}
+{"type": "assistant_delta", "text": ", and an impact assessment."}
+{"type": "assistant_delta", "text": "\n\n## Change Table"}
+{"type": "assistant_delta", "text": "\n\n| Change Type | Section"}
+{"type": "assistant_delta", "text": " / Endpoint                  | Details"}
+{"type": "assistant_delta", "text": "                                                                                          | Impact Assessment"}
+{"type": "assistant_delta", "text": "  |\n|-------------|-------------------------------------"}
+{"type": "assistant_delta", "text": "|--------------------------------------------------------------------------------------------------|--------------------"}
+{"type": "assistant_delta", "text": "|\n| MODIFY      | Authentication"}
+{"type": "assistant_delta", "text": "                      | Endpoint changed"}
+{"type": "assistant_delta", "text": " from `POST /v1"}
+{"type": "assistant_delta", "text": "/sessions` to `POST"}
+{"type": "assistant_delta", "text": " /v/v2/auth/t"}
+{"type": "assistant_delta", "text": "okens`. Response fields updated."}
+{"type": "assistant_delta", "text": "   | **Breaking**"}
+{"type": "assistant_delta", "text": "       |\n| MODIFY"}
+{"type": "assistant_delta", "text": "      | Event Query                         | Endpoint"}
+{"type": "assistant_delta", "text": " changed from `GET /"}
+{"type": "assistant_delta", "text": "v1/events` to `"}
+{"type": "assistant_delta", "text": "GET /v2/events`."}
+{"type": "assistant_delta", "text": " Parameter `page` removed"}
+{"type": "assistant_delta", "text": ", replaced by `cursor"}
+{"type": "assistant_delta", "text": "`. Response root fields updated."}
+{"type": "assistant_delta", "text": " | **Breaking**       |"}
+{"type": "assistant_delta", "text": "\n| MODIFY      | Order Creation"}
+{"type": "assistant_delta", "text": "                      | Endpoint changed from `"}
+{"type": "assistant_delta", "text": "POST /v1/orders`"}
+{"type": "assistant_delta", "text": " to `POST /v2"}
+{"type": "assistant_delta", "text": "/orders`. Request body fields"}
+{"type": "assistant_delta", "text": " updated (`customer_id`"}
+{"type": "assistant_delta", "text": " and `amount_cents`"}
+{"type": "assistant_delta", "text": " removed, `account"}
+{"type": "assistant_delta", "text": "_id`, `amount`,"}
+{"type": "assistant_delta", "text": " and `currency`"}
+{"type": "assistant_delta", "text": " added). | **Breaking"}
+{"type": "assistant_delta", "text": "**       |\n| ADD"}
+{"type": "assistant_delta", "text": "         | New Estimate                        |"}
+{"type": "assistant_delta", "text": " Added endpoint `POST /v"}
+{"type": "assistant_delta", "text": "2/orders/estimate` for"}
+{"type": "assistant_delta", "text": " pre-submission tax"}
+{"type": "assistant_delta", "text": " and fee estimates."}
+{"type": "assistant_delta", "text": "               | **Non-breaking**"}
+{"type": "assistant_delta", "text": "   |\n| REMOVE      |"}
+{"type": "assistant_delta", "text": " Daily Report                        | Deprecated"}
+{"type": "assistant_delta", "text": " `GET /v"}
+{"type": "assistant_delta", "text": "1/reports/daily`,"}
+{"type": "assistant_delta", "text": " replaced with `GET /v"}
+{"type": "assistant_delta", "text": "2/reports/daily-summary"}
+{"type": "assistant_delta", "text": "`.                | **Breaking"}
+{"type": "assistant_delta", "text": "**       |\n| MODIFY"}
+{"type": "assistant_delta", "text": "      | Webhook Verification Mechan"}
+{"type": "assistant_delta", "text": "ism      | Added"}
+{"type": "assistant_delta", "text": " `X-Timestamp"}
+{"type": "assistant_delta", "text": "` header requirement, updated signature"}
+{"type": "assistant_delta", "text": " algorithm to `HMAC-S"}
+{"type": "assistant_delta", "text": "HA256`,"}
+{"type": "assistant_delta", "text": " and introduced a"}
+{"type": "assistant_delta", "text": " 5-minute timestamp validation"}
+{"type": "assistant_delta", "text": " window. | **"}
+{"type": "assistant_delta", "text": "Breaking**       |"}
+{"type": "assistant_delta", "text": "\n\n## Migration Priority / Recommendations"}
+{"type": "assistant_delta", "text": "\n- **High Priority**: M"}
+{"type": "assistant_delta", "text": "igrate to the new"}
+{"type": "assistant_delta", "text": " authentication flow as the"}
+{"type": "assistant_delta", "text": " existing session management will"}
+{"type": "assistant_delta", "text": " no longer be supported"}
+{"type": "assistant_delta", "text": ".\n- **High"}
+{"type": "assistant_delta", "text": " Priority**: Update the event query"}
+{"type": "assistant_delta", "text": " logic to use the new cursor"}
+{"type": "assistant_delta", "text": "-based pagination instead of the deprecated"}
+{"type": "assistant_delta", "text": " page parameter.\n- **High"}
+{"type": "assistant_delta", "text": " Priority**: Adjust the order creation"}
+{"type": "assistant_delta", "text": " process to comply with the new"}
+{"type": "assistant_delta", "text": " required request body fields and"}
+{"type": "assistant_delta", "text": " remove the now unsupported"}
+{"type": "assistant_delta", "text": " fields.\n- **"}
+{"type": "assistant_delta", "text": "Medium Priority**: Implement"}
+{"type": "assistant_delta", "text": " the new estimate endpoint if"}
+{"type": "assistant_delta", "text": " you require pre-order"}
+{"type": "assistant_delta", "text": " submission estimates.\n- **"}
+{"type": "assistant_delta", "text": "High Priority**: Replace"}
+{"type": "assistant_delta", "text": " the old daily report endpoint with"}
+{"type": "assistant_delta", "text": " the new summary endpoint,"}
+{"type": "assistant_delta", "text": " ensuring your reports continue"}
+{"type": "assistant_delta", "text": " to function correctly.\n- **"}
+{"type": "assistant_delta", "text": "High Priority**: Update"}
+{"type": "assistant_delta", "text": " your webhook handling to include the"}
+{"type": "assistant_delta", "text": " `X-Timestamp"}
+{"type": "assistant_delta", "text": "` header, switch"}
+{"type": "assistant_delta", "text": " to the `HMAC-S"}
+{"type": "assistant_delta", "text": "HA256` algorithm"}
+{"type": "assistant_delta", "text": ", and validate timestamps to"}
+{"type": "assistant_delta", "text": " ensure security and compliance with"}
+{"type": "assistant_delta", "text": " the new requirements."}
+{"type": "assistant_complete", "text": "# API v1.2 to v2.0 Migration Changelog\n\n## Overview\nThis document outlines the changes between the Analytics API v1.2 and v2.0, focusing on the authentication endpoint, event query endpoint, order creation endpoint, new estimate endpoint, webhook verification mechanism, and daily report endpoint migration. The following table summarizes the changes, detailing the change type, affected section or endpoint, details of the change, and an impact assessment.\n\n## Change Table\n\n| Change Type | Section / Endpoint                  | Details                                                                                          | Impact Assessment  |\n|-------------|-------------------------------------|--------------------------------------------------------------------------------------------------|--------------------|\n| MODIFY      | Authentication                      | Endpoint changed from `POST /v1/sessions` to `POST /v/v2/auth/tokens`. Response fields updated.   | **Breaking**       |\n| MODIFY      | Event Query                         | Endpoint changed from `GET /v1/events` to `GET /v2/events`. Parameter `page` removed, replaced by `cursor`. Response root fields updated. | **Breaking**       |\n| MODIFY      | Order Creation                      | Endpoint changed from `POST /v1/orders` to `POST /v2/orders`. Request body fields updated (`customer_id` and `amount_cents` removed, `account_id`, `amount`, and `currency` added). | **Breaking**       |\n| ADD         | New Estimate                        | Added endpoint `POST /v2/orders/estimate` for pre-submission tax and fee estimates.               | **Non-breaking**   |\n| REMOVE      | Daily Report                        | Deprecated `GET /v1/reports/daily`, replaced with `GET /v2/reports/daily-summary`.                | **Breaking**       |\n| MODIFY      | Webhook Verification Mechanism      | Added `X-Timestamp` header requirement, updated signature algorithm to `HMAC-SHA256`, and introduced a 5-minute timestamp validation window. | **Breaking**       |\n\n## Migration Priority / Recommendations\n- **High Priority**: Migrate to the new authentication flow as the existing session management will no longer be supported.\n- **High Priority**: Update the event query logic to use the new cursor-based pagination instead of the deprecated page parameter.\n- **High Priority**: Adjust the order creation process to comply with the new required request body fields and remove the now unsupported fields.\n- **Medium Priority**: Implement the new estimate endpoint if you require pre-order submission estimates.\n- **High Priority**: Replace the old daily report endpoint with the new summary endpoint, ensuring your reports continue to function correctly.\n- **High Priority**: Update your webhook handling to include the `X-Timestamp` header, switch to the `HMAC-SHA256` algorithm, and validate timestamps to ensure security and compliance with the new requirements."}

@@ -1,0 +1,200 @@
+[Start]
+Narrator: The tavern door creaks open. Smoke and laughter fill the air. -> TavernEntry
+
+[TavernEntry]
+Narrator: Three figures catch your eye: a hooded stranger, a boisterous merchant, and the barkeep. -> TavernChoice
+
+[TavernChoice]
+1. Approach the hooded stranger. -> StrangerApproach
+2. Sit next to the merchant. -> MerchantApproach
+3. Order a drink from the barkeep. -> BarkeepApproach
+4. [Observe] Study the room from the shadows. -> ObserveRoom
+
+[ObserveRoom]
+Narrator: You notice the stranger slipping a note to the barkeep. The merchant counts gold nervously. -> ObserveChoice
+
+[ObserveChoice]
+1. Intercept the note. -> InterceptNote
+2. Pickpocket the merchant. -> PickpocketAttempt
+3. Pretend you saw nothing. -> TavernChoice
+
+[InterceptNote]
+Stranger: You dare?! -> StrangerHostile
+
+[PickpocketAttempt]
+1. [Sleight of Hand] Swiftly grab the pouch. -> PickpocketSuccess
+2. [Distraction] Bump into him accidentally. -> PickpocketDistract
+3. Abandon the attempt. -> TavernChoice
+
+[PickpocketSuccess]
+Narrator: 50 gold pieces heavier, you slip away. The merchant hasn't noticed... yet. -> PickpocketAfter
+
+[PickpocketDistract]
+Merchant: Watch it, friend! -> MerchantAnnoyed
+
+[MerchantAnnoyed]
+1. Apologize profusely. -> MerchantCalm
+2. [Intimidate] You watch where YOU'RE going. -> MerchantFight
+3. Use the distraction to grab the gold. -> PickpocketSuccess
+
+[MerchantCalm]
+Merchant: Hmph. Buy me a drink and we're even. -> MerchantFriendly
+
+[MerchantFight]
+Merchant: Why you little—! -> BarFight
+
+[PickpocketAfter]
+Narrator: But where to spend your ill-gotten gains? -> PickpocketChoice
+
+[PickpocketChoice]
+1. Buy information from the barkeep. -> BarkeepBribe
+2. Leave before anyone notices. -> TavernExit
+3. Approach the stranger with newfound confidence. -> StrangerApproach
+
+[StrangerApproach]
+Stranger: You have the look of someone seeking something. -> StrangerGreet
+
+[StrangerGreet]
+1. I seek the Crimson Blade. -> CrimsonQuestStart
+2. I'm looking for work. -> WorkOffer
+3. Who are you? -> StrangerIdentity
+4. [Insight] Something tells me you're not what you seem. -> StrangerReveal
+
+[CrimsonQuestStart]
+Stranger: The Crimson Blade? Many seek it. Few survive. -> CrimsonWarning
+
+[CrimsonWarning]
+1. I'm not like the others. -> CrimsonAccept
+2. What happened to them? -> CrimsonLore
+3. Perhaps I should reconsider... -> TavernChoice
+
+[CrimsonAccept]
+Stranger: Then you'll need a map. I have one... for a price. -> CrimsonPrice
+
+[CrimsonPrice]
+1. How much? -> CrimsonNegotiate
+2. [Persuade] Surely we can come to an arrangement. -> CrimsonDiscount
+3. I'll find my own way. -> CrimsonRefuse
+
+[CrimsonNegotiate]
+Stranger: 100 gold, or a favor to be named later. -> CrimsonDeal
+
+[CrimsonDeal]
+1. I'll pay the gold. -> CrimsonGoldPath
+2. I'll owe you a favor. -> CrimsonFavorPath
+3. [Barter] 50 gold and a minor favor. -> CrimsonCompromise
+
+[CrimsonGoldPath]
+Stranger: Wise choice. No strings attached. -> MapReceived
+
+[CrimsonFavorPath]
+Stranger: Remember, I always collect. -> MapReceivedDebt
+
+[CrimsonCompromise]
+Stranger: You drive a hard bargain. Agreed. -> MapReceivedHalf
+
+[CrimsonDiscount]
+Stranger: Your silver tongue amuses me. 75 gold, final offer. -> CrimsonDiscountDeal
+
+[CrimsonDiscountDeal]
+1. Deal. -> MapReceived
+2. Still too rich for my blood. -> CrimsonRefuse
+
+[CrimsonRefuse]
+Stranger: Your loss. The Blade waits for no one. -> TavernChoice
+
+[CrimsonLore]
+Stranger: The mountain claims them. Traps, guardians, madness itself. -> CrimsonLoreMore
+
+[CrimsonLoreMore]
+1. Guardians? -> GuardianInfo
+2. Madness? -> MadnessInfo
+3. I've heard enough. -> CrimsonWarning
+
+[GuardianInfo]
+Stranger: Stone sentinels that never sleep. Best approached with stealth... or great power. -> GuardianChoice
+
+[GuardianChoice]
+1. [Arcana] I have magical means. -> GuardianMagic
+2. [Stealth] I move like a shadow. -> GuardianStealth
+3. I'll figure it out when I get there. -> CrimsonWarning
+
+[GuardianMagic]
+Stranger: A mage, then. You may yet survive. Take this. -> MapReceived
+
+[GuardianStealth]
+Stranger: A rogue's path. Dangerous but possible. -> MapReceived
+
+[MadnessInfo]
+Stranger: The mountain whispers. Those who listen too long... never leave. -> MadnessWarning
+
+[MadnessWarning]
+1. [Willpower] My mind is steel. -> MadnessResist
+2. I'll bring ear plugs. -> StrangerLaugh
+3. This sounds too risky. -> CrimsonRefuse
+
+[MadnessResist]
+Stranger: Confidence or foolishness? We shall see. -> MapReceived
+
+[StrangerLaugh]
+Stranger: Ha! I like you. Maybe you'll be the one. -> MapReceived
+
+[MapReceived]
+Stranger: The Crimson Blade awaits at the peak of Mount Sorrow. Go. -> QuestAccepted
+
+[MapReceivedDebt]
+Stranger: Remember our deal. I will find you when the time is right. -> QuestAcceptedDebt
+
+[MapReceivedHalf]
+Stranger: A fair trade. Now go, before the trail grows cold. -> QuestAccepted
+
+[QuestAccepted]
+Narrator: You pocket the map. Your journey begins at dawn. -> QuestChoice
+
+[QuestAcceptedDebt]
+Narrator: The map feels heavy in your hands. What have you agreed to? -> QuestChoice
+
+[QuestChoice]
+1. Prepare for the journey. -> PrepareQuest
+2. Seek more information first. -> MoreInfo
+3. Recruit allies. -> RecruitChoice
+
+[PrepareQuest]
+Narrator: You gather supplies and rest. Dawn breaks cold and clear. -> JourneyBegin
+
+[MoreInfo]
+Narrator: Who might know more about Mount Sorrow? -> MoreInfoChoice
+
+[MoreInfoChoice]
+1. Ask the barkeep. -> BarkeepInfo
+2. Consult the merchant. -> MerchantInfo
+3. Return to the stranger. -> StrangerMoreInfo
+
+[BarkeepInfo]
+Barkeep: Mount Sorrow? My grandfather went there once. Came back without his voice. Said he traded it for wisdom. -> BarkeepWisdom
+
+[BarkeepWisdom]
+1. What wisdom? -> BarkeepSecret
+2. That's disturbing. -> QuestChoice
+3. [Empathy] It must have been hard for your family. -> BarkeepTrust
+
+[BarkeepSecret]
+Barkeep: He wrote it down before he died. Want to see? -> BarkeepOffer
+
+[BarkeepOffer]
+1. Yes, show me. -> BarkeepJournal
+2. What's the catch? -> BarkeepPrice
+3. I prefer to discover myself. -> QuestChoice
+
+[BarkeepJournal]
+Barkeep: It says: "The silence speaks truth. Listen with your heart, not your ears." -> JournalWisdom
+
+[JournalWisdom]
+Narrator: Cryptic, but perhaps useful. You commit it to memory. -> QuestChoice
+
+[BarkeepPrice]
+Barkeep: Smart. 20 gold for the journal. -> BarkeepDeal
+
+[BarkeepDeal]
+1. Fair enough. -> BarkeepJournal
+2. Too expensive. -> QuestChoice

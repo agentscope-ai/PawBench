@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "video-script-generator": {
+      "name": "Video Script Generator",
+      "zip_url": "https://lightmake.site/api/v1/download?slug=video-script-generator",
+      "source": "skillhub",
+      "version": "1.0.0"
+    }
+  }
+}

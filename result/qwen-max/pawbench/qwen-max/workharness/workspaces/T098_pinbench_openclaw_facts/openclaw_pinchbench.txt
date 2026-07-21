@@ -1,0 +1,47 @@
+OpenClaw Agent Use Cases and Gap Analysis for PinchBench (excerpt)
+====================================================================
+
+Overview
+--------
+This report analyses skill coverage in the OpenClaw Agent ecosystem and
+proposes a benchmark suite called PinchBench. We crawled the public skill
+repository on February 7, 2026, and analysed the results.
+
+Skill Inventory
+---------------
+- Total skills before filtering: 5,705
+- Remaining skills after filtering (deduplication, language gating, quality): 2,999
+
+Top Categories (after filtering)
+-------------------------------
+1. AI & LLMs — 287 skills (largest category)
+2. Search & Research — 253 skills (second-largest)
+3. Productivity & Automation — 211 skills
+4. Developer Tools — 198 skills
+5. Data Analysis — 174 skills
+... (additional categories truncated)
+
+Skill File Format
+-----------------
+Each skill is defined in a `SKILL.md` file located at the root of the
+skill directory. The `SKILL.md` file contains YAML frontmatter for
+metadata plus the body in Markdown. Tools, gateways, and dispatch
+behaviour are configured in adjacent JSON files but the canonical entry
+point is `SKILL.md`.
+
+Gateway
+-------
+The runtime layer between Skills and the host environment is a typed
+WebSocket API ("gateway"). All tool invocations and event streams flow
+through this gateway with strongly-typed envelopes.
+
+Data Collection
+---------------
+The data collection date for this analysis is February 7, 2026.
+
+Proposed Benchmark
+------------------
+PinchBench is the proposed benchmark for evaluating Skill agents. The
+initial release contains 6 tasks spanning categories such as
+multi-step planning, code review, research, calendar management, file
+operations, and ELI5 explanation.

@@ -1,0 +1,47 @@
+[
+  {
+    "transaction_id": "TXN-B001",
+    "type": "expense",
+    "amount": 850000,
+    "date": "2026-03-25",
+    "description": "Q1 Engineering Dept. spending summary - servers, tool subscriptions, outsourcing",
+    "category": "Operating Expenses",
+    "department": "Engineering"
+  },
+  {
+    "transaction_id": "TXN-B002",
+    "type": "expense",
+    "amount": 320000,
+    "date": "2026-03-25",
+    "description": "Q1 Marketing Dept. spending summary - advertising, events, content production",
+    "category": "Marketing Expenses",
+    "department": "Marketing"
+  },
+  {
+    "transaction_id": "TXN-B003",
+    "type": "expense",
+    "amount": 180000,
+    "date": "2026-03-25",
+    "description": "Q1 Sales Dept. spending summary - travel, client entertainment, CRM tools",
+    "category": "Sales Expenses",
+    "department": "Sales"
+  },
+  {
+    "transaction_id": "TXN-B004",
+    "type": "expense",
+    "amount": 150000,
+    "date": "2026-03-25",
+    "description": "Q1 Administration Dept. spending summary - office supplies, property management, utilities",
+    "category": "Administrative Expenses",
+    "department": "Administration"
+  },
+  {
+    "transaction_id": "TXN-B005",
+    "type": "expense",
+    "amount": 95000,
+    "date": "2026-03-25",
+    "description": "Q1 HR Dept. spending summary - recruitment, training, team building",
+    "category": "HR Expenses",
+    "department": "Human Resources"
+  }
+]

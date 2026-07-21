@@ -1,0 +1,14 @@
+{
+  "id": "evt_q2_product_review",
+  "title": "Q2 Product Review",
+  "owner": "you@company.com",
+  "start": "2026-03-19T09:30:00+08:00",
+  "end": "2026-03-19T11:00:00+08:00",
+  "location": "Conference Room A",
+  "participants": [
+    {"email": "liwei@company.com", "name": "Li Wei"},
+    {"email": "zhangmin@company.com", "name": "Zhang Min"},
+    {"email": "wangfang@company.com", "name": "Wang Fang"}
+  ],
+  "note": "Do not delete evt_conflict_zm from the calendar."
+}

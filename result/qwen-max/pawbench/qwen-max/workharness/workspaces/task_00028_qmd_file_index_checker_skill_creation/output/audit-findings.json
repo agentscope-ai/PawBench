@@ -1,0 +1,8 @@
+[
+  {
+    "issue_type": "No QMD Files Found",
+    "evidence_file": null,
+    "finding": "No `.qmd` files were found in the workspace.",
+    "recommendation": "If you expect to have QMD files in the workspace, please ensure they are added to the appropriate directories. If not, no action is needed."
+  }
+]

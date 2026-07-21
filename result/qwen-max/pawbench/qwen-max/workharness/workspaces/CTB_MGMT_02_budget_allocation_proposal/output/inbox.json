@@ -1,0 +1,42 @@
+[
+  {
+    "message_id": "msg_mgmt02_01",
+    "thread_id": "thread_mgmt02_01",
+    "subject": "Q2 Budget Request - Engineering Department",
+    "from": "rd-director@innovate.cn",
+    "to": ["cfo@innovate.cn"],
+    "date": "2026-03-24T10:00:00Z",
+    "body": "Dear CFO,\n\nEngineering Department Q2 budget request:\n- Infrastructure expansion: 350,000 CNY (new GPU servers for AI model training)\n- Tool subscription renewals: 200,000 CNY\n- Outsourced development: 400,000 CNY (mobile app refactoring project)\nTotal request: 950,000 CNY (11.8% increase over Q1)\n\nRationale: The AI product line is a strategic priority for the company and requires GPU compute resources. The mobile app refactoring is a CEO-designated Q2 priority project.\n\nEngineering Director, Zhang Lei",
+    "is_read": false
+  },
+  {
+    "message_id": "msg_mgmt02_02",
+    "thread_id": "thread_mgmt02_02",
+    "subject": "Q2 Budget Request - Marketing Department",
+    "from": "marketing-director@innovate.cn",
+    "to": ["cfo@innovate.cn"],
+    "date": "2026-03-24T11:00:00Z",
+    "body": "Dear CFO,\n\nMarketing Department Q2 budget request:\n- Brand advertising: 250,000 CNY (increase short-video platform campaigns)\n- Industry conference sponsorships: 150,000 CNY (2 industry summits)\n- Content marketing: 80,000 CNY\nTotal request: 480,000 CNY (50% increase over Q1)\n\nRationale: Q1 customer acquisition cost was high (180 CNY/person vs. target of 150), and we need to increase brand investment to lower long-term acquisition costs. Two major industry summits in Q2 present good acquisition opportunities.\n\nMarketing Director, Liu Na",
+    "is_read": false
+  },
+  {
+    "message_id": "msg_mgmt02_03",
+    "thread_id": "thread_mgmt02_03",
+    "subject": "Q2 Budget Request - Sales Department",
+    "from": "sales-director@innovate.cn",
+    "to": ["cfo@innovate.cn"],
+    "date": "2026-03-24T14:00:00Z",
+    "body": "Dear CFO,\n\nSales Department Q2 budget request:\n- Travel expenses: 100,000 CNY (South China regional expansion)\n- Client entertainment: 50,000 CNY\n- CRM system upgrade: 30,000 CNY\nTotal request: 180,000 CNY (on par with Q1)\n\nRationale: Q1 sales performance exceeded targets (revenue 13.5 million vs. target 12 million). Q2 can maintain current investment levels. South China regional expansion is a new addition.\n\nSales Director, Wang Qiang",
+    "is_read": false
+  },
+  {
+    "message_id": "msg_mgmt02_04",
+    "thread_id": "thread_mgmt02_04",
+    "subject": "Q2 Total Budget Notification",
+    "from": "ceo@innovate.cn",
+    "to": ["cfo@innovate.cn"],
+    "date": "2026-03-23T09:00:00Z",
+    "body": "CFO,\n\nThe Q2 total operating budget across all departments is 1,800,000 CNY (1.8 million), an increase from Q1 (1.595 million).\n\nPlease propose a reasonable allocation based on each department's requests and Q1 execution.\n\nPriority order:\n1. AI product line investment (strategic level)\n2. Sales growth support\n3. Brand building\n\nAdministration and HR departments should maintain Q1 budget levels for Q2.\n\nCEO, Li Ming",
+    "is_read": true
+  }
+]
