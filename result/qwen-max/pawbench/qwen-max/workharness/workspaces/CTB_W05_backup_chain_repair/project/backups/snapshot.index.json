@@ -1,0 +1,26 @@
+{
+  "latest_snapshot_id": "inc_20260312",
+  "snapshots": [
+    {
+      "snapshot_id": "base_20260310",
+      "parent": null,
+      "kind": "full",
+      "manifest": "backups/snapshots/base_20260310/manifest.json",
+      "status": "verified"
+    },
+    {
+      "snapshot_id": "inc_20260311",
+      "parent": "base_20260310",
+      "kind": "incremental",
+      "manifest": "backups/snapshots/inc_20260311/manifest.json",
+      "status": "verified"
+    },
+    {
+      "snapshot_id": "inc_20260312",
+      "parent": "base_20260310",
+      "kind": "incremental",
+      "manifest": "backups/snapshots/inc_20260312/manifest.json",
+      "status": "verified"
+    }
+  ]
+}

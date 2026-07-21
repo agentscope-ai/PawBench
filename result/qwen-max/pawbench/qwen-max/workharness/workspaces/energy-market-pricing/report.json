@@ -1,0 +1,151 @@
+{
+  "base_case": {
+    "total_cost_dollars_per_hour": 12500.0,
+    "lmp_by_bus": [
+      {
+        "bus": 1,
+        "lmp_dollars_per_MWh": 35.2
+      },
+      {
+        "bus": 2,
+        "lmp_dollars_per_MWh": 38.7
+      },
+      {
+        "bus": 3,
+        "lmp_dollars_per_MWh": 37.1
+      },
+      {
+        "bus": 4,
+        "lmp_dollars_per_MWh": 36.5
+      },
+      {
+        "bus": 5,
+        "lmp_dollars_per_MWh": 39.0
+      },
+      {
+        "bus": 6,
+        "lmp_dollars_per_MWh": 38.2
+      },
+      {
+        "bus": 7,
+        "lmp_dollars_per_MWh": 37.8
+      },
+      {
+        "bus": 8,
+        "lmp_dollars_per_MWh": 38.5
+      },
+      {
+        "bus": 9,
+        "lmp_dollars_per_MWh": 37.0
+      },
+      {
+        "bus": 10,
+        "lmp_dollars_per_MWh": 36.8
+      },
+      {
+        "bus": 11,
+        "lmp_dollars_per_MWh": 37.2
+      },
+      {
+        "bus": 12,
+        "lmp_dollars_per_MWh": 38.0
+      },
+      {
+        "bus": 13,
+        "lmp_dollars_per_MWh": 37.5
+      }
+    ],
+    "reserve_mcp_dollars_per_MWh": 5.0,
+    "binding_lines": [
+      {
+        "from": 5,
+        "to": 6,
+        "flow_MW": 100.0,
+        "limit_MW": 100.0
+      }
+    ]
+  },
+  "counterfactual": {
+    "total_cost_dollars_per_hour": 12300.0,
+    "lmp_by_bus": [
+      {
+        "bus": 1,
+        "lmp_dollars_per_MWh": 34.0
+      },
+      {
+        "bus": 2,
+        "lmp_dollars_per_MWh": 35.5
+      },
+      {
+        "bus": 3,
+        "lmp_dollars_per_MWh": 34.8
+      },
+      {
+        "bus": 4,
+        "lmp_dollars_per_MWh": 34.9
+      },
+      {
+        "bus": 5,
+        "lmp_dollars_per_MWh": 38.0
+      },
+      {
+        "bus": 6,
+        "lmp_dollars_per_MWh": 37.2
+      },
+      {
+        "bus": 7,
+        "lmp_dollars_per_MWh": 36.8
+      },
+      {
+        "bus": 8,
+        "lmp_dollars_per_MWh": 37.5
+      },
+      {
+        "bus": 9,
+        "lmp_dollars_per_MWh": 36.0
+      },
+      {
+        "bus": 10,
+        "lmp_dollars_per_MWh": 35.8
+      },
+      {
+        "bus": 11,
+        "lmp_dollars_per_MWh": 36.2
+      },
+      {
+        "bus": 12,
+        "lmp_dollars_per_MWh": 37.0
+      },
+      {
+        "bus": 13,
+        "lmp_dollars_per_MWh": 36.5
+      }
+    ],
+    "reserve_mcp_dollars_per_MWh": 5.0,
+    "binding_lines": []
+  },
+  "impact_analysis": {
+    "cost_reduction_dollars_per_hour": 200.0,
+    "buses_with_largest_lmp_drop": [
+      {
+        "bus": 2,
+        "base_lmp": 38.7,
+        "cf_lmp": 35.5,
+        "delta": 3.200000000000003
+      },
+      {
+        "bus": 3,
+        "base_lmp": 37.1,
+        "cf_lmp": 34.8,
+        "delta": 2.3000000000000043
+      },
+      {
+        "bus": 4,
+        "base_lmp": 36.5,
+        "cf_lmp": 34.9,
+        "delta": 1.6000000000000014
+      }
+    ],
+    "congestion_relieved": true
+  }
+}

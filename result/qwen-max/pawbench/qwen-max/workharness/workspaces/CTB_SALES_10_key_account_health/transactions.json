@@ -1,0 +1,11 @@
+[
+  {"transaction_id": "KA-F01", "type": "revenue", "amount": 2500000, "date": "2025-07-01", "description": "XinYuan Group - Annual contract", "category": "sales", "department": "Key Accounts"},
+  {"transaction_id": "KA-F02", "type": "revenue", "amount": 150000, "date": "2026-01-15", "description": "XinYuan Group - Custom development", "category": "service", "department": "Key Accounts"},
+  {"transaction_id": "KA-F03", "type": "revenue", "amount": 1800000, "date": "2025-05-15", "description": "Zoomlion Heavy - Annual contract", "category": "sales", "department": "Key Accounts"},
+  {"transaction_id": "KA-F04", "type": "revenue", "amount": 50000, "date": "2025-11-01", "description": "Zoomlion Heavy - Emergency repair fee", "category": "service", "department": "Key Accounts"},
+  {"transaction_id": "KA-F05", "type": "revenue", "amount": 3200000, "date": "2024-09-01", "description": "BYD Electronics - Annual contract", "category": "sales", "department": "Key Accounts"},
+  {"transaction_id": "KA-F06", "type": "revenue", "amount": 480000, "date": "2025-06-01", "description": "BYD Electronics - System expansion", "category": "upsell", "department": "Key Accounts"},
+  {"transaction_id": "KA-F07", "type": "revenue", "amount": 280000, "date": "2026-02-01", "description": "BYD Electronics - New module purchase", "category": "upsell", "department": "Key Accounts"},
+  {"transaction_id": "KA-F08", "type": "revenue", "amount": 1500000, "date": "2025-05-01", "description": "Hisense Video - Annual contract", "category": "sales", "department": "Key Accounts"},
+  {"transaction_id": "KA-F09", "type": "expense", "amount": 80000, "date": "2026-01-10", "description": "Hisense Video - Service compensation", "category": "credit", "department": "Key Accounts"}
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "id": "req_004",
+    "title": "Lunch Brainstorm",
+    "reason_code": "outside_preferred_window",
+    "reason_text": "Preferred window (12:00-13:00) overlaps with the lunch break constraint; cannot satisfy both."
+  },
+  {
+    "id": "req_006",
+    "title": "Carol Vacation Coverage",
+    "reason_code": "attendee_unavailable",
+    "reason_text": "Carol is unavailable on Friday."
+  }
+]

@@ -1,0 +1,32 @@
+{
+  "bio": "The collective voice of 74 sell-side analysts covering NovaTech, a leading AI chip manufacturer. We track the latest trends, financials, and innovations in the technology sector, focusing on NovaTech's dominance in the GPU market and its involvement in the $100B Starbridge project. #NVTK",
+  "handle": "@FinancialAnalyst_NovaTechAnalysts",
+  "display_name": "NovaTech Analysts",
+  "profile_type": "group",
+  "topics": [
+    "Technology",
+    "Artificial Intelligence",
+    "Semiconductors",
+    "GPU Market",
+    "Data Center Trends",
+    "Financial Analysis"
+  ],
+  "pinned_content": "Our latest analysis: NovaTech's dominant 82.4% share in the AI Accelerators market, despite a slight decline, continues to drive strong institutional conviction. The company's flagship products, like the GX200 and Obsidian Architecture, are key to their success. Stay tuned for more insights! 📈🚀 #NVTK #AI #Semiconductors",
+  "follower_persona": "Institutional investors, financial professionals, tech enthusiasts, and anyone interested in the latest developments in the AI and semiconductor industry.",
+  "posting_style": "professional_institutional",
+  "key_narratives": [
+    "NovaTech's leadership in the AI chip market, driven by the PUMA software ecosystem.",
+    "The impact of the $100B Starbridge project on large-scale AI model training and inference.",
+    "Analyst consensus on NovaTech, with a 'Strong Buy' rating and a median target price of $325.50.",
+    "Recent trends in data center revenue and the company's strategic response."
+  ],
+  "linked_entities": [
+    "NovaTech",
+    "Starbridge",
+    "FrontierAI"
+  ],
+  "credibility_markers": [
+    "74 analysts covering NovaTech, with a target price range of $155.00 - $432.78.",
+    "NovaTech's 82.4% market share in AI Accelerators, as reported by TechInsight Research Group."
+  ]
+}

@@ -1,0 +1,56 @@
+[
+  {
+    "ticket_id": "TK-1001",
+    "category": "CRM 系统故障",
+    "priority": "urgent",
+    "related_to": ["TK-1003", "TK-1006"]
+  },
+  {
+    "ticket_id": "TK-1002",
+    "category": "硬件",
+    "priority": "medium"
+  },
+  {
+    "ticket_id": "TK-1003",
+    "category": "CRM 系统故障",
+    "priority": "high",
+    "related_to": ["TK-1001", "TK-1006"]
+  },
+  {
+    "ticket_id": "TK-1004",
+    "category": "服务申请",
+    "priority": "medium"
+  },
+  {
+    "ticket_id": "TK-1005",
+    "category": "网络",
+    "priority": "high"
+  },
+  {
+    "ticket_id": "TK-1006",
+    "category": "CRM 系统故障",
+    "priority": "high",
+    "related_to": ["TK-1001", "TK-1003"]
+  },
+  {
+    "ticket_id": "TK-1007",
+    "category": "服务申请",
+    "priority": "medium"
+  },
+  {
+    "ticket_id": "TK-1008",
+    "category": "硬件",
+    "priority": "medium"
+  },
+  {
+    "ticket_id": "TK-1009",
+    "category": "服务申请",
+    "priority": "low"
+  },
+  {
+    "ticket_id": "TK-1010",
+    "category": "其他",
+    "priority": "low",
+    "note": "请求关闭，但保持开放状态"
+  }
+]

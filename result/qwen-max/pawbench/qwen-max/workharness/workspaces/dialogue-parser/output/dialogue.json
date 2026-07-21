@@ -1,0 +1,1602 @@
+{
+    "nodes": [
+        {
+            "id": "Start_Narrator: The tavern door creaks open",
+            "text": "Smoke and laughter fill the air.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "Start",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "TavernEntry",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "TavernChoice_1",
+            "text": "Approach the hooded stranger.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "TavernChoice_2",
+            "text": "Sit next to the merchant.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "TavernChoice_3",
+            "text": "Order a drink from the barkeep.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "TavernChoice",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "Observe",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "ObserveRoom_Narrator: You notice the stranger slipping a note to the barkeep",
+            "text": "The merchant counts gold nervously.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "ObserveRoom",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "ObserveChoice_1",
+            "text": "Intercept the note.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "ObserveChoice_2",
+            "text": "Pickpocket the merchant.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "ObserveChoice_3",
+            "text": "Pretend you saw nothing.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "ObserveChoice",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "InterceptNote_0",
+            "text": "Stranger: You dare?!",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "InterceptNote",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "PickpocketAttempt",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "Sleight of Hand",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "Distraction_3",
+            "text": "Abandon the attempt.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "Distraction",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "PickpocketSuccess_Narrator: 50 gold pieces heavier, you slip away",
+            "text": "The merchant hasn't noticed... yet.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "PickpocketSuccess",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "PickpocketDistract_0",
+            "text": "Merchant: Watch it, friend!",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "PickpocketDistract",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "MerchantAnnoyed_1",
+            "text": "Apologize profusely.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "MerchantAnnoyed",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "Intimidate_3",
+            "text": "Use the distraction to grab the gold.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "Intimidate",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "MerchantCalm_Merchant: Hmph",
+            "text": "Buy me a drink and we're even.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "MerchantCalm",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "MerchantFight_0",
+            "text": "Merchant: Why you little\u2014!",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "MerchantFight",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "PickpocketAfter_0",
+            "text": "Narrator: But where to spend your ill-gotten gains?",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "PickpocketAfter",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "PickpocketChoice_1",
+            "text": "Buy information from the barkeep.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "PickpocketChoice_2",
+            "text": "Leave before anyone notices.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "PickpocketChoice_3",
+            "text": "Approach the stranger with newfound confidence.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "PickpocketChoice",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "StrangerApproach",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "StrangerGreet_1",
+            "text": "I seek the Crimson Blade.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "StrangerGreet_2",
+            "text": "I'm looking for work.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "StrangerGreet_3",
+            "text": "Who are you?",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "StrangerGreet",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "Insight",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "CrimsonQuestStart_Stranger: The Crimson Blade? Many seek it",
+            "text": "Few survive.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "CrimsonQuestStart",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "CrimsonWarning_1",
+            "text": "I'm not like the others.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "CrimsonWarning_2",
+            "text": "What happened to them?",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "CrimsonWarning_3",
+            "text": "Perhaps I should reconsider...",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "CrimsonWarning",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "CrimsonAccept_Stranger: Then you'll need a map",
+            "text": "I have one... for a price.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "CrimsonAccept",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "CrimsonPrice_1",
+            "text": "How much?",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "CrimsonPrice",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "Persuade_3",
+            "text": "I'll find my own way.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "Persuade",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "CrimsonNegotiate",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "CrimsonDeal_1",
+            "text": "I'll pay the gold.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "CrimsonDeal_2",
+            "text": "I'll owe you a favor.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "CrimsonDeal",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "Barter",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "CrimsonGoldPath_Stranger: Wise choice",
+            "text": "No strings attached.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "CrimsonGoldPath",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "CrimsonFavorPath",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "CrimsonCompromise_Stranger: You drive a hard bargain",
+            "text": "Agreed.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "CrimsonCompromise",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "CrimsonDiscount_Stranger: Your silver tongue amuses me",
+            "text": "75 gold, final offer.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "CrimsonDiscount",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "CrimsonDiscountDeal_1",
+            "text": "Deal.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "CrimsonDiscountDeal_2",
+            "text": "Still too rich for my blood.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "CrimsonDiscountDeal",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "CrimsonRefuse_Stranger: Your loss",
+            "text": "The Blade waits for no one.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "CrimsonRefuse",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "CrimsonLore_Stranger: The mountain claims them",
+            "text": "Traps, guardians, madness itself.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "CrimsonLore",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "CrimsonLoreMore_1",
+            "text": "Guardians?",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "CrimsonLoreMore_2",
+            "text": "Madness?",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "CrimsonLoreMore_3",
+            "text": "I've heard enough.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "CrimsonLoreMore",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "GuardianInfo_Stranger: Stone sentinels that never sleep",
+            "text": "Best approached with stealth... or great power.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "GuardianInfo",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "GuardianChoice",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "Arcana",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "Stealth_3",
+            "text": "I'll figure it out when I get there.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "Stealth",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "GuardianMagic_Stranger: A mage, then",
+            "text": "You may yet survive. Take this.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "GuardianMagic",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "GuardianStealth_Stranger: A rogue's path",
+            "text": "Dangerous but possible.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "GuardianStealth",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "MadnessInfo_Stranger: The mountain whispers",
+            "text": "Those who listen too long... never leave.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "MadnessInfo",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "MadnessWarning",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "Willpower_2",
+            "text": "I'll bring ear plugs.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "Willpower_3",
+            "text": "This sounds too risky.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "Willpower",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "MadnessResist",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "StrangerLaugh_Stranger: Ha! I like you",
+            "text": "Maybe you'll be the one.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "StrangerLaugh",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "MapReceived_Stranger: The Crimson Blade awaits at the peak of Mount Sorrow",
+            "text": "Go.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "MapReceived",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "MapReceivedDebt_Stranger: Remember our deal",
+            "text": "I will find you when the time is right.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "MapReceivedDebt",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "MapReceivedHalf_Stranger: A fair trade",
+            "text": "Now go, before the trail grows cold.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "MapReceivedHalf",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "QuestAccepted_Narrator: You pocket the map",
+            "text": "Your journey begins at dawn.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "QuestAccepted",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "QuestAcceptedDebt_Narrator: The map feels heavy in your hands",
+            "text": "What have you agreed to?",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "QuestAcceptedDebt",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "QuestChoice_1",
+            "text": "Prepare for the journey.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "QuestChoice_2",
+            "text": "Seek more information first.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "QuestChoice_3",
+            "text": "Recruit allies.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "QuestChoice",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "PrepareQuest_Narrator: You gather supplies and rest",
+            "text": "Dawn breaks cold and clear.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "PrepareQuest",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "MoreInfo_0",
+            "text": "Narrator: Who might know more about Mount Sorrow?",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "MoreInfo",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "MoreInfoChoice_1",
+            "text": "Ask the barkeep.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "MoreInfoChoice_2",
+            "text": "Consult the merchant.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "MoreInfoChoice_3",
+            "text": "Return to the stranger.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "MoreInfoChoice",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "BarkeepInfo_Barkeep: Mount Sorrow? My grandfather went there once",
+            "text": "Came back without his voice. Said he traded it for wisdom.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "BarkeepInfo",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "BarkeepWisdom_1",
+            "text": "What wisdom?",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "BarkeepWisdom_2",
+            "text": "That's disturbing.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "BarkeepWisdom",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "Empathy",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "BarkeepSecret_Barkeep: He wrote it down before he died",
+            "text": "Want to see?",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "BarkeepSecret",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "BarkeepOffer_1",
+            "text": "Yes, show me.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "BarkeepOffer_2",
+            "text": "What's the catch?",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "BarkeepOffer_3",
+            "text": "I prefer to discover myself.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "BarkeepOffer",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "BarkeepJournal_Barkeep: It says: \"The silence speaks truth",
+            "text": "Listen with your heart, not your ears.\"",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "BarkeepJournal",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "JournalWisdom_Narrator: Cryptic, but perhaps useful",
+            "text": "You commit it to memory.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "JournalWisdom",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "BarkeepPrice_Barkeep: Smart",
+            "text": "20 gold for the journal.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "BarkeepPrice",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        },
+        {
+            "id": "BarkeepDeal_1",
+            "text": "Fair enough.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "BarkeepDeal_2",
+            "text": "Too expensive.",
+            "speaker": "Narrator",
+            "type": "choice"
+        },
+        {
+            "id": "BarkeepDeal",
+            "text": "",
+            "speaker": "",
+            "type": "line"
+        }
+    ],
+    "edges": [
+        {
+            "from": "Start",
+            "to": "Start_Narrator: The tavern door creaks open",
+            "text": ""
+        },
+        {
+            "from": "Start_Narrator: The tavern door creaks open",
+            "to": "TavernEntry",
+            "text": ""
+        },
+        {
+            "from": "TavernChoice",
+            "to": "TavernChoice_1",
+            "text": ""
+        },
+        {
+            "from": "TavernChoice_1",
+            "to": "StrangerApproach",
+            "text": ""
+        },
+        {
+            "from": "TavernChoice",
+            "to": "TavernChoice_2",
+            "text": ""
+        },
+        {
+            "from": "TavernChoice_2",
+            "to": "MerchantApproach",
+            "text": ""
+        },
+        {
+            "from": "TavernChoice",
+            "to": "TavernChoice_3",
+            "text": ""
+        },
+        {
+            "from": "TavernChoice_3",
+            "to": "BarkeepApproach",
+            "text": ""
+        },
+        {
+            "from": "ObserveRoom",
+            "to": "ObserveRoom_Narrator: You notice the stranger slipping a note to the barkeep",
+            "text": ""
+        },
+        {
+            "from": "ObserveRoom_Narrator: You notice the stranger slipping a note to the barkeep",
+            "to": "ObserveChoice",
+            "text": ""
+        },
+        {
+            "from": "ObserveChoice",
+            "to": "ObserveChoice_1",
+            "text": ""
+        },
+        {
+            "from": "ObserveChoice_1",
+            "to": "InterceptNote",
+            "text": ""
+        },
+        {
+            "from": "ObserveChoice",
+            "to": "ObserveChoice_2",
+            "text": ""
+        },
+        {
+            "from": "ObserveChoice_2",
+            "to": "PickpocketAttempt",
+            "text": ""
+        },
+        {
+            "from": "ObserveChoice",
+            "to": "ObserveChoice_3",
+            "text": ""
+        },
+        {
+            "from": "ObserveChoice_3",
+            "to": "TavernChoice",
+            "text": ""
+        },
+        {
+            "from": "InterceptNote",
+            "to": "InterceptNote_0",
+            "text": ""
+        },
+        {
+            "from": "InterceptNote_0",
+            "to": "StrangerHostile",
+            "text": ""
+        },
+        {
+            "from": "Distraction",
+            "to": "Distraction_3",
+            "text": ""
+        },
+        {
+            "from": "Distraction_3",
+            "to": "TavernChoice",
+            "text": ""
+        },
+        {
+            "from": "PickpocketSuccess",
+            "to": "PickpocketSuccess_Narrator: 50 gold pieces heavier, you slip away",
+            "text": ""
+        },
+        {
+            "from": "PickpocketSuccess_Narrator: 50 gold pieces heavier, you slip away",
+            "to": "PickpocketAfter",
+            "text": ""
+        },
+        {
+            "from": "PickpocketDistract",
+            "to": "PickpocketDistract_0",
+            "text": ""
+        },
+        {
+            "from": "PickpocketDistract_0",
+            "to": "MerchantAnnoyed",
+            "text": ""
+        },
+        {
+            "from": "MerchantAnnoyed",
+            "to": "MerchantAnnoyed_1",
+            "text": ""
+        },
+        {
+            "from": "MerchantAnnoyed_1",
+            "to": "MerchantCalm",
+            "text": ""
+        },
+        {
+            "from": "Intimidate",
+            "to": "Intimidate_3",
+            "text": ""
+        },
+        {
+            "from": "Intimidate_3",
+            "to": "PickpocketSuccess",
+            "text": ""
+        },
+        {
+            "from": "MerchantCalm",
+            "to": "MerchantCalm_Merchant: Hmph",
+            "text": ""
+        },
+        {
+            "from": "MerchantCalm_Merchant: Hmph",
+            "to": "MerchantFriendly",
+            "text": ""
+        },
+        {
+            "from": "MerchantFight",
+            "to": "MerchantFight_0",
+            "text": ""
+        },
+        {
+            "from": "MerchantFight_0",
+            "to": "BarFight",
+            "text": ""
+        },
+        {
+            "from": "PickpocketAfter",
+            "to": "PickpocketAfter_0",
+            "text": ""
+        },
+        {
+            "from": "PickpocketAfter_0",
+            "to": "PickpocketChoice",
+            "text": ""
+        },
+        {
+            "from": "PickpocketChoice",
+            "to": "PickpocketChoice_1",
+            "text": ""
+        },
+        {
+            "from": "PickpocketChoice_1",
+            "to": "BarkeepBribe",
+            "text": ""
+        },
+        {
+            "from": "PickpocketChoice",
+            "to": "PickpocketChoice_2",
+            "text": ""
+        },
+        {
+            "from": "PickpocketChoice_2",
+            "to": "TavernExit",
+            "text": ""
+        },
+        {
+            "from": "PickpocketChoice",
+            "to": "PickpocketChoice_3",
+            "text": ""
+        },
+        {
+            "from": "PickpocketChoice_3",
+            "to": "StrangerApproach",
+            "text": ""
+        },
+        {
+            "from": "StrangerGreet",
+            "to": "StrangerGreet_1",
+            "text": ""
+        },
+        {
+            "from": "StrangerGreet_1",
+            "to": "CrimsonQuestStart",
+            "text": ""
+        },
+        {
+            "from": "StrangerGreet",
+            "to": "StrangerGreet_2",
+            "text": ""
+        },
+        {
+            "from": "StrangerGreet_2",
+            "to": "WorkOffer",
+            "text": ""
+        },
+        {
+            "from": "StrangerGreet",
+            "to": "StrangerGreet_3",
+            "text": ""
+        },
+        {
+            "from": "StrangerGreet_3",
+            "to": "StrangerIdentity",
+            "text": ""
+        },
+        {
+            "from": "CrimsonQuestStart",
+            "to": "CrimsonQuestStart_Stranger: The Crimson Blade? Many seek it",
+            "text": ""
+        },
+        {
+            "from": "CrimsonQuestStart_Stranger: The Crimson Blade? Many seek it",
+            "to": "CrimsonWarning",
+            "text": ""
+        },
+        {
+            "from": "CrimsonWarning",
+            "to": "CrimsonWarning_1",
+            "text": ""
+        },
+        {
+            "from": "CrimsonWarning_1",
+            "to": "CrimsonAccept",
+            "text": ""
+        },
+        {
+            "from": "CrimsonWarning",
+            "to": "CrimsonWarning_2",
+            "text": ""
+        },
+        {
+            "from": "CrimsonWarning_2",
+            "to": "CrimsonLore",
+            "text": ""
+        },
+        {
+            "from": "CrimsonWarning",
+            "to": "CrimsonWarning_3",
+            "text": ""
+        },
+        {
+            "from": "CrimsonWarning_3",
+            "to": "TavernChoice",
+            "text": ""
+        },
+        {
+            "from": "CrimsonAccept",
+            "to": "CrimsonAccept_Stranger: Then you'll need a map",
+            "text": ""
+        },
+        {
+            "from": "CrimsonAccept_Stranger: Then you'll need a map",
+            "to": "CrimsonPrice",
+            "text": ""
+        },
+        {
+            "from": "CrimsonPrice",
+            "to": "CrimsonPrice_1",
+            "text": ""
+        },
+        {
+            "from": "CrimsonPrice_1",
+            "to": "CrimsonNegotiate",
+            "text": ""
+        },
+        {
+            "from": "Persuade",
+            "to": "Persuade_3",
+            "text": ""
+        },
+        {
+            "from": "Persuade_3",
+            "to": "CrimsonRefuse",
+            "text": ""
+        },
+        {
+            "from": "CrimsonDeal",
+            "to": "CrimsonDeal_1",
+            "text": ""
+        },
+        {
+            "from": "CrimsonDeal_1",
+            "to": "CrimsonGoldPath",
+            "text": ""
+        },
+        {
+            "from": "CrimsonDeal",
+            "to": "CrimsonDeal_2",
+            "text": ""
+        },
+        {
+            "from": "CrimsonDeal_2",
+            "to": "CrimsonFavorPath",
+            "text": ""
+        },
+        {
+            "from": "CrimsonGoldPath",
+            "to": "CrimsonGoldPath_Stranger: Wise choice",
+            "text": ""
+        },
+        {
+            "from": "CrimsonGoldPath_Stranger: Wise choice",
+            "to": "MapReceived",
+            "text": ""
+        },
+        {
+            "from": "CrimsonCompromise",
+            "to": "CrimsonCompromise_Stranger: You drive a hard bargain",
+            "text": ""
+        },
+        {
+            "from": "CrimsonCompromise_Stranger: You drive a hard bargain",
+            "to": "MapReceivedHalf",
+            "text": ""
+        },
+        {
+            "from": "CrimsonDiscount",
+            "to": "CrimsonDiscount_Stranger: Your silver tongue amuses me",
+            "text": ""
+        },
+        {
+            "from": "CrimsonDiscount_Stranger: Your silver tongue amuses me",
+            "to": "CrimsonDiscountDeal",
+            "text": ""
+        },
+        {
+            "from": "CrimsonDiscountDeal",
+            "to": "CrimsonDiscountDeal_1",
+            "text": ""
+        },
+        {
+            "from": "CrimsonDiscountDeal_1",
+            "to": "MapReceived",
+            "text": ""
+        },
+        {
+            "from": "CrimsonDiscountDeal",
+            "to": "CrimsonDiscountDeal_2",
+            "text": ""
+        },
+        {
+            "from": "CrimsonDiscountDeal_2",
+            "to": "CrimsonRefuse",
+            "text": ""
+        },
+        {
+            "from": "CrimsonRefuse",
+            "to": "CrimsonRefuse_Stranger: Your loss",
+            "text": ""
+        },
+        {
+            "from": "CrimsonRefuse_Stranger: Your loss",
+            "to": "TavernChoice",
+            "text": ""
+        },
+        {
+            "from": "CrimsonLore",
+            "to": "CrimsonLore_Stranger: The mountain claims them",
+            "text": ""
+        },
+        {
+            "from": "CrimsonLore_Stranger: The mountain claims them",
+            "to": "CrimsonLoreMore",
+            "text": ""
+        },
+        {
+            "from": "CrimsonLoreMore",
+            "to": "CrimsonLoreMore_1",
+            "text": ""
+        },
+        {
+            "from": "CrimsonLoreMore_1",
+            "to": "GuardianInfo",
+            "text": ""
+        },
+        {
+            "from": "CrimsonLoreMore",
+            "to": "CrimsonLoreMore_2",
+            "text": ""
+        },
+        {
+            "from": "CrimsonLoreMore_2",
+            "to": "MadnessInfo",
+            "text": ""
+        },
+        {
+            "from": "CrimsonLoreMore",
+            "to": "CrimsonLoreMore_3",
+            "text": ""
+        },
+        {
+            "from": "CrimsonLoreMore_3",
+            "to": "CrimsonWarning",
+            "text": ""
+        },
+        {
+            "from": "GuardianInfo",
+            "to": "GuardianInfo_Stranger: Stone sentinels that never sleep",
+            "text": ""
+        },
+        {
+            "from": "GuardianInfo_Stranger: Stone sentinels that never sleep",
+            "to": "GuardianChoice",
+            "text": ""
+        },
+        {
+            "from": "Stealth",
+            "to": "Stealth_3",
+            "text": ""
+        },
+        {
+            "from": "Stealth_3",
+            "to": "CrimsonWarning",
+            "text": ""
+        },
+        {
+            "from": "GuardianMagic",
+            "to": "GuardianMagic_Stranger: A mage, then",
+            "text": ""
+        },
+        {
+            "from": "GuardianMagic_Stranger: A mage, then",
+            "to": "MapReceived",
+            "text": ""
+        },
+        {
+            "from": "GuardianStealth",
+            "to": "GuardianStealth_Stranger: A rogue's path",
+            "text": ""
+        },
+        {
+            "from": "GuardianStealth_Stranger: A rogue's path",
+            "to": "MapReceived",
+            "text": ""
+        },
+        {
+            "from": "MadnessInfo",
+            "to": "MadnessInfo_Stranger: The mountain whispers",
+            "text": ""
+        },
+        {
+            "from": "MadnessInfo_Stranger: The mountain whispers",
+            "to": "MadnessWarning",
+            "text": ""
+        },
+        {
+            "from": "Willpower",
+            "to": "Willpower_2",
+            "text": ""
+        },
+        {
+            "from": "Willpower_2",
+            "to": "StrangerLaugh",
+            "text": ""
+        },
+        {
+            "from": "Willpower",
+            "to": "Willpower_3",
+            "text": ""
+        },
+        {
+            "from": "Willpower_3",
+            "to": "CrimsonRefuse",
+            "text": ""
+        },
+        {
+            "from": "StrangerLaugh",
+            "to": "StrangerLaugh_Stranger: Ha! I like you",
+            "text": ""
+        },
+        {
+            "from": "StrangerLaugh_Stranger: Ha! I like you",
+            "to": "MapReceived",
+            "text": ""
+        },
+        {
+            "from": "MapReceived",
+            "to": "MapReceived_Stranger: The Crimson Blade awaits at the peak of Mount Sorrow",
+            "text": ""
+        },
+        {
+            "from": "MapReceived_Stranger: The Crimson Blade awaits at the peak of Mount Sorrow",
+            "to": "QuestAccepted",
+            "text": ""
+        },
+        {
+            "from": "MapReceivedDebt",
+            "to": "MapReceivedDebt_Stranger: Remember our deal",
+            "text": ""
+        },
+        {
+            "from": "MapReceivedDebt_Stranger: Remember our deal",
+            "to": "QuestAcceptedDebt",
+            "text": ""
+        },
+        {
+            "from": "MapReceivedHalf",
+            "to": "MapReceivedHalf_Stranger: A fair trade",
+            "text": ""
+        },
+        {
+            "from": "MapReceivedHalf_Stranger: A fair trade",
+            "to": "QuestAccepted",
+            "text": ""
+        },
+        {
+            "from": "QuestAccepted",
+            "to": "QuestAccepted_Narrator: You pocket the map",
+            "text": ""
+        },
+        {
+            "from": "QuestAccepted_Narrator: You pocket the map",
+            "to": "QuestChoice",
+            "text": ""
+        },
+        {
+            "from": "QuestAcceptedDebt",
+            "to": "QuestAcceptedDebt_Narrator: The map feels heavy in your hands",
+            "text": ""
+        },
+        {
+            "from": "QuestAcceptedDebt_Narrator: The map feels heavy in your hands",
+            "to": "QuestChoice",
+            "text": ""
+        },
+        {
+            "from": "QuestChoice",
+            "to": "QuestChoice_1",
+            "text": ""
+        },
+        {
+            "from": "QuestChoice_1",
+            "to": "PrepareQuest",
+            "text": ""
+        },
+        {
+            "from": "QuestChoice",
+            "to": "QuestChoice_2",
+            "text": ""
+        },
+        {
+            "from": "QuestChoice_2",
+            "to": "MoreInfo",
+            "text": ""
+        },
+        {
+            "from": "QuestChoice",
+            "to": "QuestChoice_3",
+            "text": ""
+        },
+        {
+            "from": "QuestChoice_3",
+            "to": "RecruitChoice",
+            "text": ""
+        },
+        {
+            "from": "PrepareQuest",
+            "to": "PrepareQuest_Narrator: You gather supplies and rest",
+            "text": ""
+        },
+        {
+            "from": "PrepareQuest_Narrator: You gather supplies and rest",
+            "to": "JourneyBegin",
+            "text": ""
+        },
+        {
+            "from": "MoreInfo",
+            "to": "MoreInfo_0",
+            "text": ""
+        },
+        {
+            "from": "MoreInfo_0",
+            "to": "MoreInfoChoice",
+            "text": ""
+        },
+        {
+            "from": "MoreInfoChoice",
+            "to": "MoreInfoChoice_1",
+            "text": ""
+        },
+        {
+            "from": "MoreInfoChoice_1",
+            "to": "BarkeepInfo",
+            "text": ""
+        },
+        {
+            "from": "MoreInfoChoice",
+            "to": "MoreInfoChoice_2",
+            "text": ""
+        },
+        {
+            "from": "MoreInfoChoice_2",
+            "to": "MerchantInfo",
+            "text": ""
+        },
+        {
+            "from": "MoreInfoChoice",
+            "to": "MoreInfoChoice_3",
+            "text": ""
+        },
+        {
+            "from": "MoreInfoChoice_3",
+            "to": "StrangerMoreInfo",
+            "text": ""
+        },
+        {
+            "from": "BarkeepInfo",
+            "to": "BarkeepInfo_Barkeep: Mount Sorrow? My grandfather went there once",
+            "text": ""
+        },
+        {
+            "from": "BarkeepInfo_Barkeep: Mount Sorrow? My grandfather went there once",
+            "to": "BarkeepWisdom",
+            "text": ""
+        },
+        {
+            "from": "BarkeepWisdom",
+            "to": "BarkeepWisdom_1",
+            "text": ""
+        },
+        {
+            "from": "BarkeepWisdom_1",
+            "to": "BarkeepSecret",
+            "text": ""
+        },
+        {
+            "from": "BarkeepWisdom",
+            "to": "BarkeepWisdom_2",
+            "text": ""
+        },
+        {
+            "from": "BarkeepWisdom_2",
+            "to": "QuestChoice",
+            "text": ""
+        },
+        {
+            "from": "BarkeepSecret",
+            "to": "BarkeepSecret_Barkeep: He wrote it down before he died",
+            "text": ""
+        },
+        {
+            "from": "BarkeepSecret_Barkeep: He wrote it down before he died",
+            "to": "BarkeepOffer",
+            "text": ""
+        },
+        {
+            "from": "BarkeepOffer",
+            "to": "BarkeepOffer_1",
+            "text": ""
+        },
+        {
+            "from": "BarkeepOffer_1",
+            "to": "BarkeepJournal",
+            "text": ""
+        },
+        {
+            "from": "BarkeepOffer",
+            "to": "BarkeepOffer_2",
+            "text": ""
+        },
+        {
+            "from": "BarkeepOffer_2",
+            "to": "BarkeepPrice",
+            "text": ""
+        },
+        {
+            "from": "BarkeepOffer",
+            "to": "BarkeepOffer_3",
+            "text": ""
+        },
+        {
+            "from": "BarkeepOffer_3",
+            "to": "QuestChoice",
+            "text": ""
+        },
+        {
+            "from": "BarkeepJournal",
+            "to": "BarkeepJournal_Barkeep: It says: \"The silence speaks truth",
+            "text": ""
+        },
+        {
+            "from": "BarkeepJournal_Barkeep: It says: \"The silence speaks truth",
+            "to": "JournalWisdom",
+            "text": ""
+        },
+        {
+            "from": "JournalWisdom",
+            "to": "JournalWisdom_Narrator: Cryptic, but perhaps useful",
+            "text": ""
+        },
+        {
+            "from": "JournalWisdom_Narrator: Cryptic, but perhaps useful",
+            "to": "QuestChoice",
+            "text": ""
+        },
+        {
+            "from": "BarkeepPrice",
+            "to": "BarkeepPrice_Barkeep: Smart",
+            "text": ""
+        },
+        {
+            "from": "BarkeepPrice_Barkeep: Smart",
+            "to": "BarkeepDeal",
+            "text": ""
+        },
+        {
+            "from": "BarkeepDeal",
+            "to": "BarkeepDeal_1",
+            "text": ""
+        },
+        {
+            "from": "BarkeepDeal_1",
+            "to": "BarkeepJournal",
+            "text": ""
+        },
+        {
+            "from": "BarkeepDeal",
+            "to": "BarkeepDeal_2",
+            "text": ""
+        },
+        {
+            "from": "BarkeepDeal_2",
+            "to": "QuestChoice",
+            "text": ""
+        }
+    ]
+}

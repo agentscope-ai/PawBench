@@ -1,0 +1,37 @@
+[
+  {
+    "step": 1,
+    "description": "Uninstall FortiClient if still installed",
+    "source": ["kb_006"]
+  },
+  {
+    "step": 2,
+    "description": "Download and install GlobalProtect from https://vpn.company.com/downloads",
+    "source": ["kb_006"]
+  },
+  {
+    "step": 3,
+    "description": "Connect using the same server address (vpn.company.com) and credentials",
+    "source": ["kb_006"]
+  },
+  {
+    "step": 4,
+    "description": "Check your network connection and ensure the firewall is not blocking port 443 (if experiencing connection timeout)",
+    "source": ["kb_001", "kb_007"]
+  },
+  {
+    "step": 5,
+    "description": "Confirm your password has not expired; reset it at https://password.company.com if necessary (if experiencing authentication failure)",
+    "source": ["kb_001"]
+  },
+  {
+    "step": 6,
+    "description": "Try disconnecting and reconnecting, or contact IT hotline ext.8888 (if unable to access intranet after connecting)",
+    "source": ["kb_001"]
+  },
+  {
+    "step": 7,
+    "description": "Switch to 5GHz WiFi or use a wired connection (if experiencing frequent disconnections)",
+    "source": ["kb_007"]
+  }
+]

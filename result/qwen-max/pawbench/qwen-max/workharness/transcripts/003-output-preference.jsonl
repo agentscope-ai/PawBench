@@ -1,0 +1,10 @@
+{"role": "assistant", "type": "assistant_delta", "content": "了解", "message": {"role": "assistant", "content": [{"type": "text", "text": "了解"}]}, "index": 0}
+{"role": "assistant", "type": "assistant_delta", "content": "，", "message": {"role": "assistant", "content": [{"type": "text", "text": "，"}]}, "index": 1}
+{"role": "assistant", "type": "assistant_delta", "content": "我会确保", "message": {"role": "assistant", "content": [{"type": "text", "text": "我会确保"}]}, "index": 2}
+{"role": "assistant", "type": "assistant_delta", "content": "所有输出都", "message": {"role": "assistant", "content": [{"type": "text", "text": "所有输出都"}]}, "index": 3}
+{"role": "assistant", "type": "assistant_delta", "content": "使用中文，并且", "message": {"role": "assistant", "content": [{"type": "text", "text": "使用中文，并且"}]}, "index": 4}
+{"role": "assistant", "type": "assistant_delta", "content": "在适当的情况下使用Markdown", "message": {"role": "assistant", "content": [{"type": "text", "text": "在适当的情况下使用Markdown"}]}, "index": 5}
+{"role": "assistant", "type": "assistant_delta", "content": "格式来展示表格。如果有", "message": {"role": "assistant", "content": [{"type": "text", "text": "格式来展示表格。如果有"}]}, "index": 6}
+{"role": "assistant", "type": "assistant_delta", "content": "任何具体任务或问题", "message": {"role": "assistant", "content": [{"type": "text", "text": "任何具体任务或问题"}]}, "index": 7}
+{"role": "assistant", "type": "assistant_delta", "content": "需要帮助，请告诉我！", "message": {"role": "assistant", "content": [{"type": "text", "text": "需要帮助，请告诉我！"}]}, "index": 8}
+{"role": "assistant", "type": "assistant_complete", "content": "了解，我会确保所有输出都使用中文，并且在适当的情况下使用Markdown格式来展示表格。如果有任何具体任务或问题需要帮助，请告诉我！", "message": {"role": "assistant", "content": [{"type": "text", "text": "了解，我会确保所有输出都使用中文，并且在适当的情况下使用Markdown格式来展示表格。如果有任何具体任务或问题需要帮助，请告诉我！"}]}, "index": 9}

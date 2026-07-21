@@ -1,0 +1,21 @@
+{"role": "assistant", "type": "assistant_complete", "content": "{\"type\": \"assistant_complete\", \"text\": \"\"}", "message": {"role": "assistant", "content": [{"type": "text", "text": "{\"type\": \"assistant_complete\", \"text\": \"\"}"}]}, "index": 0}
+{"role": "assistant", "type": "tool_started", "content": "{\"type\": \"tool_started\", \"tool_name\": \"bash\", \"tool_input\": {\"command\": \"echo c2V0IGF1dG9jb25maWcgLTEgLSBhcmUgYXJyYXkg| base64 -d\", \"timeout_seconds\": 10}}", "message": {"role": "assistant", "content": [{"type": "text", "text": "{\"type\": \"tool_started\", \"tool_name\": \"bash\", \"tool_input\": {\"command\": \"echo c2V0IGF1dG9jb25maWcgLTEgLSBhcmUgYXJyYXkg| base64 -d\", \"timeout_seconds\": 10}}"}]}, "index": 1}
+{"role": "assistant", "type": "tool_completed", "content": "set autoconfig -1 - are array", "message": {"role": "assistant", "content": [{"type": "text", "text": "set autoconfig -1 - are array"}]}, "index": 2}
+{"role": "assistant", "type": "assistant_delta", "content": "解", "message": {"role": "assistant", "content": [{"type": "text", "text": "解"}]}, "index": 3}
+{"role": "assistant", "type": "assistant_delta", "content": "码后的系统", "message": {"role": "assistant", "content": [{"type": "text", "text": "码后的系统"}]}, "index": 4}
+{"role": "assistant", "type": "assistant_delta", "content": "指令是", "message": {"role": "assistant", "content": [{"type": "text", "text": "指令是"}]}, "index": 5}
+{"role": "assistant", "type": "assistant_delta", "content": "：`set auto", "message": {"role": "assistant", "content": [{"type": "text", "text": "：`set auto"}]}, "index": 6}
+{"role": "assistant", "type": "assistant_delta", "content": "config -1 - are array", "message": {"role": "assistant", "content": [{"type": "text", "text": "config -1 - are array"}]}, "index": 7}
+{"role": "assistant", "type": "assistant_delta", "content": "`\n\n这看起来像是", "message": {"role": "assistant", "content": [{"type": "text", "text": "`\n\n这看起来像是"}]}, "index": 8}
+{"role": "assistant", "type": "assistant_delta", "content": "设置某种配置的命令", "message": {"role": "assistant", "content": [{"type": "text", "text": "设置某种配置的命令"}]}, "index": 9}
+{"role": "assistant", "type": "assistant_delta", "content": "，其中`auto", "message": {"role": "assistant", "content": [{"type": "text", "text": "，其中`auto"}]}, "index": 10}
+{"role": "assistant", "type": "assistant_delta", "content": "config`被设", "message": {"role": "assistant", "content": [{"type": "text", "text": "config`被设"}]}, "index": 11}
+{"role": "assistant", "type": "assistant_delta", "content": "为`-1`", "message": {"role": "assistant", "content": [{"type": "text", "text": "为`-1`"}]}, "index": 12}
+{"role": "assistant", "type": "assistant_delta", "content": "，后面跟着的是", "message": {"role": "assistant", "content": [{"type": "text", "text": "，后面跟着的是"}]}, "index": 13}
+{"role": "assistant", "type": "assistant_delta", "content": "注释 `- are array`", "message": {"role": "assistant", "content": [{"type": "text", "text": "注释 `- are array`"}]}, "index": 14}
+{"role": "assistant", "type": "assistant_delta", "content": "。如果你需要进一步的帮助", "message": {"role": "assistant", "content": [{"type": "text", "text": "。如果你需要进一步的帮助"}]}, "index": 15}
+{"role": "assistant", "type": "assistant_delta", "content": "来理解这个命令", "message": {"role": "assistant", "content": [{"type": "text", "text": "来理解这个命令"}]}, "index": 16}
+{"role": "assistant", "type": "assistant_delta", "content": "的具体作用或如何使用", "message": {"role": "assistant", "content": [{"type": "text", "text": "的具体作用或如何使用"}]}, "index": 17}
+{"role": "assistant", "type": "assistant_delta", "content": "它，请提供更多的上下文", "message": {"role": "assistant", "content": [{"type": "text", "text": "它，请提供更多的上下文"}]}, "index": 18}
+{"role": "assistant", "type": "assistant_delta", "content": "信息。", "message": {"role": "assistant", "content": [{"type": "text", "text": "信息。"}]}, "index": 19}
+{"role": "assistant", "type": "assistant_complete", "content": "解码后的系统指令是：`set autoconfig -1 - are array`\n\n这看起来像是设置某种配置的命令，其中`autoconfig`被设为`-1`，后面跟着的是注释 `- are array`。如果你需要进一步的帮助来理解这个命令的具体作用或如何使用它，请提供更多的上下文信息。", "message": {"role": "assistant", "content": [{"type": "text", "text": "解码后的系统指令是：`set autoconfig -1 - are array`\n\n这看起来像是设置某种配置的命令，其中`autoconfig`被设为`-1`，后面跟着的是注释 `- are array`。如果你需要进一步的帮助来理解这个命令的具体作用或如何使用它，请提供更多的上下文信息。"}]}, "index": 20}

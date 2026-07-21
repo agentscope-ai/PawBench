@@ -1,0 +1,31 @@
+{
+  "project_name": "Blue Ocean Advanced Materials",
+  "year": 2023,
+  "paths_to_create": [
+    {
+      "path": "/project_root/config"
+    },
+    {
+      "path": "/project_root/data"
+    },
+    {
+      "path": "/project_root/docs"
+    },
+    {
+      "path": "/project_root/logs"
+    },
+    {
+      "path": "/project_root/templates"
+    }
+  ],
+  "parallel_projects": [
+    {
+      "name": "Green Earth Initiatives",
+      "year": 2023
+    },
+    {
+      "name": "Sustainable Energy Solutions",
+      "year": 2023
+    }
+  ]
+}

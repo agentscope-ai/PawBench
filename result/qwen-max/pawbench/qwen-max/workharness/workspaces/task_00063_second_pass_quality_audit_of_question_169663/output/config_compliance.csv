@@ -1,0 +1,8 @@
+rule_name,status,severity,evidence
+option_rules.check_option_format,pass,minor,All options are formatted correctly
+svg_rules.check_hidden_text,pass,critical,No hidden text found
+svg_rules.check_answer_leak,pass,critical,No answer leaks found
+answer_verification.verify_analysis_math,fail,major,Incorrectly added the diameter of the semicircle to the perimeter
+analysis_rules.check_step_by_step,pass,minor,Step-by-step analysis is provided
+analysis_rules.require_formula_citation,pass,minor,Formulas are cited
+analysis_rules.diameter_handling,pass,critical,Check for adding diameter when it is an internal/shared edge passed

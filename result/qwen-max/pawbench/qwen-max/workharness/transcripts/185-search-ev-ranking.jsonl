@@ -1,0 +1,17 @@
+{"role": "assistant", "type": "assistant_complete", "content": "{\"type\": \"assistant_complete\", \"text\": \"\"}", "message": {"role": "assistant", "content": [{"type": "text", "text": "{\"type\": \"assistant_complete\", \"text\": \"\"}"}]}, "index": 0}
+{"role": "assistant", "type": "tool_started", "content": "{\"type\": \"tool_started\", \"tool_name\": \"web_search\", \"tool_input\": {\"query\": \"2026年国内新能源汽车销量排行\"}}", "message": {"role": "assistant", "content": [{"type": "text", "text": "{\"type\": \"tool_started\", \"tool_name\": \"web_search\", \"tool_input\": {\"query\": \"2026年国内新能源汽车销量排行\"}}"}]}, "index": 1}
+{"role": "assistant", "type": "tool_completed", "content": "web_search failed: All connection attempts failed", "message": {"role": "assistant", "content": [{"type": "text", "text": "web_search failed: All connection attempts failed"}]}, "index": 2}
+{"role": "assistant", "type": "assistant_delta", "content": "目前看来", "message": {"role": "assistant", "content": [{"type": "text", "text": "目前看来"}]}, "index": 3}
+{"role": "assistant", "type": "assistant_delta", "content": "，我", "message": {"role": "assistant", "content": [{"type": "text", "text": "，我"}]}, "index": 4}
+{"role": "assistant", "type": "assistant_delta", "content": "遇到了网络连接问题，", "message": {"role": "assistant", "content": [{"type": "text", "text": "遇到了网络连接问题，"}]}, "index": 5}
+{"role": "assistant", "type": "assistant_delta", "content": "无法直接查询到2", "message": {"role": "assistant", "content": [{"type": "text", "text": "无法直接查询到2"}]}, "index": 6}
+{"role": "assistant", "type": "assistant_delta", "content": "026年国内新能源", "message": {"role": "assistant", "content": [{"type": "text", "text": "026年国内新能源"}]}, "index": 7}
+{"role": "assistant", "type": "assistant_delta", "content": "汽车销量排行的具体", "message": {"role": "assistant", "content": [{"type": "text", "text": "汽车销量排行的具体"}]}, "index": 8}
+{"role": "assistant", "type": "assistant_delta", "content": "信息。你可以尝试访问", "message": {"role": "assistant", "content": [{"type": "text", "text": "信息。你可以尝试访问"}]}, "index": 9}
+{"role": "assistant", "type": "assistant_delta", "content": "一些知名的汽车资讯", "message": {"role": "assistant", "content": [{"type": "text", "text": "一些知名的汽车资讯"}]}, "index": 10}
+{"role": "assistant", "type": "assistant_delta", "content": "网站或官方统计", "message": {"role": "assistant", "content": [{"type": "text", "text": "网站或官方统计"}]}, "index": 11}
+{"role": "assistant", "type": "assistant_delta", "content": "平台来获取最新的销售", "message": {"role": "assistant", "content": [{"type": "text", "text": "平台来获取最新的销售"}]}, "index": 12}
+{"role": "assistant", "type": "assistant_delta", "content": "数据。如果你有其他", "message": {"role": "assistant", "content": [{"type": "text", "text": "数据。如果你有其他"}]}, "index": 13}
+{"role": "assistant", "type": "assistant_delta", "content": "相关问题或者需要帮助，请", "message": {"role": "assistant", "content": [{"type": "text", "text": "相关问题或者需要帮助，请"}]}, "index": 14}
+{"role": "assistant", "type": "assistant_delta", "content": "告诉我！", "message": {"role": "assistant", "content": [{"type": "text", "text": "告诉我！"}]}, "index": 15}
+{"role": "assistant", "type": "assistant_complete", "content": "目前看来，我遇到了网络连接问题，无法直接查询到2026年国内新能源汽车销量排行的具体信息。你可以尝试访问一些知名的汽车资讯网站或官方统计平台来获取最新的销售数据。如果你有其他相关问题或者需要帮助，请告诉我！", "message": {"role": "assistant", "content": [{"type": "text", "text": "目前看来，我遇到了网络连接问题，无法直接查询到2026年国内新能源汽车销量排行的具体信息。你可以尝试访问一些知名的汽车资讯网站或官方统计平台来获取最新的销售数据。如果你有其他相关问题或者需要帮助，请告诉我！"}]}, "index": 16}

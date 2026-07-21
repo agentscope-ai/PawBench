@@ -1,0 +1,4 @@
+playwright>=1.40.0
+beautifulsoup4>=4.12.0
+pyyaml>=6.0
+markdownify>=0.11.0

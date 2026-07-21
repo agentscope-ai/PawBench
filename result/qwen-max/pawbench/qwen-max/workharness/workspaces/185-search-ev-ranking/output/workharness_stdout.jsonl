@@ -1,0 +1,17 @@
+{"type": "assistant_complete", "text": ""}
+{"type": "tool_started", "tool_name": "web_search", "tool_input": {"query": "2026\u5e74\u56fd\u5185\u65b0\u80fd\u6e90\u6c7d\u8f66\u9500\u91cf\u6392\u884c"}}
+{"type": "tool_completed", "tool_name": "web_search", "output": "web_search failed: All connection attempts failed", "is_error": true}
+{"type": "assistant_delta", "text": "\u76ee\u524d\u770b\u6765"}
+{"type": "assistant_delta", "text": "\uff0c\u6211"}
+{"type": "assistant_delta", "text": "\u9047\u5230\u4e86\u7f51\u7edc\u8fde\u63a5\u95ee\u9898\uff0c"}
+{"type": "assistant_delta", "text": "\u65e0\u6cd5\u76f4\u63a5\u67e5\u8be2\u52302"}
+{"type": "assistant_delta", "text": "026\u5e74\u56fd\u5185\u65b0\u80fd\u6e90"}
+{"type": "assistant_delta", "text": "\u6c7d\u8f66\u9500\u91cf\u6392\u884c\u7684\u5177\u4f53"}
+{"type": "assistant_delta", "text": "\u4fe1\u606f\u3002\u4f60\u53ef\u4ee5\u5c1d\u8bd5\u8bbf\u95ee"}
+{"type": "assistant_delta", "text": "\u4e00\u4e9b\u77e5\u540d\u7684\u6c7d\u8f66\u8d44\u8baf"}
+{"type": "assistant_delta", "text": "\u7f51\u7ad9\u6216\u5b98\u65b9\u7edf\u8ba1"}
+{"type": "assistant_delta", "text": "\u5e73\u53f0\u6765\u83b7\u53d6\u6700\u65b0\u7684\u9500\u552e"}
+{"type": "assistant_delta", "text": "\u6570\u636e\u3002\u5982\u679c\u4f60\u6709\u5176\u4ed6"}
+{"type": "assistant_delta", "text": "\u76f8\u5173\u95ee\u9898\u6216\u8005\u9700\u8981\u5e2e\u52a9\uff0c\u8bf7"}
+{"type": "assistant_delta", "text": "\u544a\u8bc9\u6211\uff01"}
+{"type": "assistant_complete", "text": "\u76ee\u524d\u770b\u6765\uff0c\u6211\u9047\u5230\u4e86\u7f51\u7edc\u8fde\u63a5\u95ee\u9898\uff0c\u65e0\u6cd5\u76f4\u63a5\u67e5\u8be2\u52302026\u5e74\u56fd\u5185\u65b0\u80fd\u6e90\u6c7d\u8f66\u9500\u91cf\u6392\u884c\u7684\u5177\u4f53\u4fe1\u606f\u3002\u4f60\u53ef\u4ee5\u5c1d\u8bd5\u8bbf\u95ee\u4e00\u4e9b\u77e5\u540d\u7684\u6c7d\u8f66\u8d44\u8baf\u7f51\u7ad9\u6216\u5b98\u65b9\u7edf\u8ba1\u5e73\u53f0\u6765\u83b7\u53d6\u6700\u65b0\u7684\u9500\u552e\u6570\u636e\u3002\u5982\u679c\u4f60\u6709\u5176\u4ed6\u76f8\u5173\u95ee\u9898\u6216\u8005\u9700\u8981\u5e2e\u52a9\uff0c\u8bf7\u544a\u8bc9\u6211\uff01"}

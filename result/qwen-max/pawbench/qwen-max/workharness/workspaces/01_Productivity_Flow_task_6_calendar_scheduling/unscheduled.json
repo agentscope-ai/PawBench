@@ -1,0 +1,26 @@
+[
+  {
+    "id": "req_004",
+    "title": "Lunch Brainstorm",
+    "reason_code": "time_conflict",
+    "reason_text": "The meeting overlaps with the lunch break (12:00-13:00)"
+  },
+  {
+    "id": "req_006",
+    "title": "Carol Vacation Coverage",
+    "reason_code": "attendee_unavailable",
+    "reason_text": "Carol is unavailable on Friday, which is a preferred window for this meeting"
+  },
+  {
+    "id": "req_007",
+    "title": "Skip Level",
+    "reason_code": "daily_limit_exceeded",
+    "reason_text": "Bob has already reached the maximum number of meetings per day (4)"
+  },
+  {
+    "id": "req_008",
+    "title": "Customer Sync",
+    "reason_code": "lower_priority_than_competing_request",
+    "reason_text": "This meeting was not scheduled due to a higher-priority meeting (Quarterly Planning) taking place at the same time"
+  }
+]

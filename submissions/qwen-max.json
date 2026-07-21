@@ -1,0 +1,14 @@
+{
+  "run": "pawbench-qwen-max-20260720",
+  "model": "qwen-max",
+  "harness": "workharness",
+  "overall": 0.4151,
+  "tasks": 150,
+  "tasks_errored": 12,
+  "updated": "2026-07-20",
+  "by_complexity": {
+    "L1": 0.0,
+    "L2": 0.2094,
+    "L3": 0.175
+  }
+}

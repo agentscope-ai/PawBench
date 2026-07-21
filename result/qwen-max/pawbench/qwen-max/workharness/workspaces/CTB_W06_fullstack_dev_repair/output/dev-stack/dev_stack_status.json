@@ -1,0 +1,9 @@
+{
+  "backend_mode": "dev",
+  "backend_port": 9101,
+  "db_host": "postgres-dev",
+  "frontend_port": 3000,
+  "public_api_path": "/api",
+  "session_mode": "local",
+  "status": "healthy"
+}

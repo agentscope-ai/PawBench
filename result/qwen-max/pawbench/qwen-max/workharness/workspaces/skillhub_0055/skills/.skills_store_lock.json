@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "java-audit-skill": {
+      "name": "Java Security Audit - AI驱动的Java代码审计",
+      "zip_url": "https://lightmake.site/api/v1/download?slug=java-audit-skill",
+      "source": "skillhub",
+      "version": "1.0.1"
+    }
+  }
+}

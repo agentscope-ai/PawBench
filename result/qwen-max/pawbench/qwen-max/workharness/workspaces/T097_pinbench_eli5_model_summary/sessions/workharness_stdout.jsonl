@@ -1,0 +1,63 @@
+{"type": "assistant_complete", "text": ""}
+{"type": "tool_started", "tool_name": "read_file", "tool_input": {"path": "docs/GPT4.txt", "limit": 2000}}
+{"type": "tool_completed", "tool_name": "read_file", "output": "     1\tGPT-4 Technical Report (excerpt)\n     2\t=================================\n     3\t\n     4\tGPT-4 is a large multimodal model that can accept image and text inputs\n     5\tand produce text outputs. While less capable than humans in many real-world\n     6\tscenarios, GPT-4 exhibits human-level performance on various professional\n     7\tand academic benchmarks. For example, it passes a simulated bar exam with\n     8\ta score around the top 10% of test takers. GPT-4 was trained using both\n     9\tpublicly available data and data licensed from third-party providers, and\n    10\tthen fine-tuned with reinforcement learning from human feedback (RLHF).\n    11\t\n    12\tCapabilities\n    13\t------------\n    14\tGPT-4 demonstrates strong abilities across a wide variety of tasks:\n    15\t- writing, summarization, translation\n    16\t- answering questions in multiple subjects (law, medicine, biology, etc.)\n    17\t- solving math word problems\n    18\t- writing and explaining code in many programming languages\n    19\t- reasoning over images and tables (multimodal input)\n    20\t- following complex multi-step instructions\n    21\t\n    22\tThe researchers think GPT-4 is important because it represents a significant\n    23\tadvance over GPT-3.5: it scores higher on standardized tests, makes fewer\n    24\tfactual mistakes, and can handle longer context windows. They also developed\n    25\ta predictable scaling methodology, where smaller models can be used to\n    26\tforecast certain capabilities of the much larger model.\n    27\t\n    28\tLimitations\n    29\t-----------\n    30\tGPT-4 is not perfect. Like earlier systems, it can:\n    31\t- \"hallucinate\" facts (generate confident but incorrect statements)\n    32\t- make reasoning errors and fail at simple math\n    33\t- be sensitive to small changes in prompts\n    34\t- lack knowledge of events after its training cutoff\n    35\t- exhibit social biases or be persuaded into harmful outputs\n    36\t\n    37\tThe authors stress that GPT-4 should be used carefully, with humans in the\n    38\tloop for high-stakes decisions, and that more research is needed to make\n    39\tthe model safer and more reliable.", "is_error": false}
+{"type": "assistant_complete", "text": ""}
+{"type": "tool_started", "tool_name": "write_file", "tool_input": {"path": "output/eli5.md", "content": "## GPT-4 for 5-Year-Olds\n\n**What is GPT-4?**\nGPT-4 is like a super smart robot that can understand and talk to you, even about pictures! It's not as clever as a real person in everything, but it knows a lot of things.\n\n**What is it good at?**\nIt's really good at writing stories, answering questions about different subjects (like the rules of a game or how plants grow), solving math problems, and even looking at pictures and telling you what's in them. It can also follow tricky instructions with lots of steps.\n\n**Why is it important?**\nThe people who made GPT-4 think it's a big step forward. It's better at tests than its older brother, GPT-3.5, and makes fewer mistakes. It can also remember more of what you tell it, which helps it do an even better job.\n\n**Does it have limits?**\nYes, it does! Sometimes, it can say things that aren't true, or get confused by simple math. It might also change its mind if you ask the same question in a slightly different way. It doesn't know about new things that happened after it was taught, and sometimes it can say things that aren't nice. So, it's important to use it carefully, especially when making big decisions, and always have a grown-up check what it says."}}
+{"type": "tool_completed", "tool_name": "write_file", "output": "Wrote /app/working/workspaces/default/output/eli5.md", "is_error": false}
+{"type": "assistant_delta", "text": "I"}
+{"type": "assistant_delta", "text": "'ve created"}
+{"type": "assistant_delta", "text": " a"}
+{"type": "assistant_delta", "text": " simple explanation of GPT-"}
+{"type": "assistant_delta", "text": "4 and saved it to"}
+{"type": "assistant_delta", "text": " `output/eli5.md"}
+{"type": "assistant_delta", "text": "`. Here's what it"}
+{"type": "assistant_delta", "text": " says:\n\n## GPT-"}
+{"type": "assistant_delta", "text": "4 for 5-Year-"}
+{"type": "assistant_delta", "text": "Olds\n\n**What is"}
+{"type": "assistant_delta", "text": " GPT-4?**"}
+{"type": "assistant_delta", "text": "\nGPT-4 is like"}
+{"type": "assistant_delta", "text": " a super smart robot that can"}
+{"type": "assistant_delta", "text": " understand and talk to you,"}
+{"type": "assistant_delta", "text": " even about pictures! It's"}
+{"type": "assistant_delta", "text": " not as clever as a real"}
+{"type": "assistant_delta", "text": " person in everything, but it"}
+{"type": "assistant_delta", "text": " knows a lot of things."}
+{"type": "assistant_delta", "text": "\n\n**What is it good at"}
+{"type": "assistant_delta", "text": "?**\nIt's really good"}
+{"type": "assistant_delta", "text": " at writing stories, answering questions"}
+{"type": "assistant_delta", "text": " about different subjects (like the"}
+{"type": "assistant_delta", "text": " rules of a game or how"}
+{"type": "assistant_delta", "text": " plants grow), solving math problems"}
+{"type": "assistant_delta", "text": ", and even looking at pictures"}
+{"type": "assistant_delta", "text": " and telling you what's in"}
+{"type": "assistant_delta", "text": " them. It can also follow"}
+{"type": "assistant_delta", "text": " tricky instructions with lots of steps"}
+{"type": "assistant_delta", "text": ".\n\n**Why is it important"}
+{"type": "assistant_delta", "text": "?**\nThe people who made"}
+{"type": "assistant_delta", "text": " GPT-4 think it"}
+{"type": "assistant_delta", "text": "'s a big step forward."}
+{"type": "assistant_delta", "text": " It's better at tests than"}
+{"type": "assistant_delta", "text": " its older brother, GPT"}
+{"type": "assistant_delta", "text": "-3.5, and"}
+{"type": "assistant_delta", "text": " makes fewer mistakes. It can"}
+{"type": "assistant_delta", "text": " also remember more of what you"}
+{"type": "assistant_delta", "text": " tell it, which helps it"}
+{"type": "assistant_delta", "text": " do an even better job."}
+{"type": "assistant_delta", "text": "\n\n**Does it have limits?"}
+{"type": "assistant_delta", "text": "**\nYes, it does!"}
+{"type": "assistant_delta", "text": " Sometimes, it can say things"}
+{"type": "assistant_delta", "text": " that aren't true, or"}
+{"type": "assistant_delta", "text": " get confused by simple math."}
+{"type": "assistant_delta", "text": " It might also change its mind"}
+{"type": "assistant_delta", "text": " if you ask the same question"}
+{"type": "assistant_delta", "text": " in a slightly different way."}
+{"type": "assistant_delta", "text": " It doesn't know about new"}
+{"type": "assistant_delta", "text": " things that happened after it was"}
+{"type": "assistant_delta", "text": " taught, and sometimes it can"}
+{"type": "assistant_delta", "text": " say things that aren't nice"}
+{"type": "assistant_delta", "text": ". So, it's important"}
+{"type": "assistant_delta", "text": " to use it carefully, especially"}
+{"type": "assistant_delta", "text": " when making big decisions, and"}
+{"type": "assistant_delta", "text": " always have a grown-up check"}
+{"type": "assistant_delta", "text": " what it says."}
+{"type": "assistant_complete", "text": "I've created a simple explanation of GPT-4 and saved it to `output/eli5.md`. Here's what it says:\n\n## GPT-4 for 5-Year-Olds\n\n**What is GPT-4?**\nGPT-4 is like a super smart robot that can understand and talk to you, even about pictures! It's not as clever as a real person in everything, but it knows a lot of things.\n\n**What is it good at?**\nIt's really good at writing stories, answering questions about different subjects (like the rules of a game or how plants grow), solving math problems, and even looking at pictures and telling you what's in them. It can also follow tricky instructions with lots of steps.\n\n**Why is it important?**\nThe people who made GPT-4 think it's a big step forward. It's better at tests than its older brother, GPT-3.5, and makes fewer mistakes. It can also remember more of what you tell it, which helps it do an even better job.\n\n**Does it have limits?**\nYes, it does! Sometimes, it can say things that aren't true, or get confused by simple math. It might also change its mind if you ask the same question in a slightly different way. It doesn't know about new things that happened after it was taught, and sometimes it can say things that aren't nice. So, it's important to use it carefully, especially when making big decisions, and always have a grown-up check what it says."}

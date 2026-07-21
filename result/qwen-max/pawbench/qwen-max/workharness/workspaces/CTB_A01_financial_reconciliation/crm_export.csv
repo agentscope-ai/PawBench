@@ -1,0 +1,7 @@
+transaction_id,invoice_id,account_name,booked_date,amount,status
+TX-1001,INV-9001,Red Maple Retail,2026-02-02,1250.50,paid
+TX-1002,INV-9002,Blue Harbor Supply,2026-02-03,980.00,paid
+TX-1003,INV-9003,Northwind Labs,2026-02-05,1499.00,paid
+TX-1004,,Green Field Studio,2026-02-07,730.00,paid
+TX-1005,INV-9005,Silver Kite Foods,2026-02-09,2200.00,paid
+TX-1006,INV-9006,Amber Point Health,2026-02-12,645.00,paid

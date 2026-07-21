@@ -1,0 +1,8 @@
+{
+  "snapshot_id": "base_20260310",
+  "kind": "full",
+  "files": {
+    "app/config.yml": "backups/snapshots/base_20260310/payloads/app_config_v1.yml",
+    "data/customers.csv": "backups/snapshots/base_20260310/payloads/customers_base.csv"
+  }
+}

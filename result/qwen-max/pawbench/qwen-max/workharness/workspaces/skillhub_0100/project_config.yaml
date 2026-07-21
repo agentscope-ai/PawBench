@@ -1,0 +1,46 @@
+# 彩虹科普视频项目
+
+project_name: rainbow_for_kids
+version: 0.1.0
+created: 2024-03-15
+
+# 项目目标
+goal: 为 3 岁儿童制作 1 分钟彩虹科普动画
+
+# 目标受众
+audience:
+  age_range: 3-4 岁
+  characteristics:
+    - 注意力集中时间短
+    - 喜欢鲜艳颜色
+    - 对动物和卡通形象感兴趣
+    - 语言理解能力有限
+
+# 内容要求
+content_requirements:
+  duration: 60s
+  language: 简体中文
+  tone: 温柔、亲切、有趣
+  complexity: 极简（3 岁可理解）
+  
+# 技术要求
+technical:
+  output_format: HTML 可预览
+  script_format: YAML/JSON
+  include:
+    - 画面描述
+    - 旁白文案
+    - 时长标注
+    - 场景类型
+
+# 参考文件
+references:
+  - references/rainbow_science.md
+  - references/children_content_guide.md
+  - references/example_script_blue_sky.md
+
+# 待完成
+pending:
+  - 生成正式分镜脚本
+  - 审核内容适合性
+  - 准备后续视频生成

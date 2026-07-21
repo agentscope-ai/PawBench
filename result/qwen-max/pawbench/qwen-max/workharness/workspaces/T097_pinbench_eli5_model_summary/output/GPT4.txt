@@ -1,0 +1,39 @@
+GPT-4 Technical Report (excerpt)
+=================================
+
+GPT-4 is a large multimodal model that can accept image and text inputs
+and produce text outputs. While less capable than humans in many real-world
+scenarios, GPT-4 exhibits human-level performance on various professional
+and academic benchmarks. For example, it passes a simulated bar exam with
+a score around the top 10% of test takers. GPT-4 was trained using both
+publicly available data and data licensed from third-party providers, and
+then fine-tuned with reinforcement learning from human feedback (RLHF).
+
+Capabilities
+------------
+GPT-4 demonstrates strong abilities across a wide variety of tasks:
+- writing, summarization, translation
+- answering questions in multiple subjects (law, medicine, biology, etc.)
+- solving math word problems
+- writing and explaining code in many programming languages
+- reasoning over images and tables (multimodal input)
+- following complex multi-step instructions
+
+The researchers think GPT-4 is important because it represents a significant
+advance over GPT-3.5: it scores higher on standardized tests, makes fewer
+factual mistakes, and can handle longer context windows. They also developed
+a predictable scaling methodology, where smaller models can be used to
+forecast certain capabilities of the much larger model.
+
+Limitations
+-----------
+GPT-4 is not perfect. Like earlier systems, it can:
+- "hallucinate" facts (generate confident but incorrect statements)
+- make reasoning errors and fail at simple math
+- be sensitive to small changes in prompts
+- lack knowledge of events after its training cutoff
+- exhibit social biases or be persuaded into harmful outputs
+
+The authors stress that GPT-4 should be used carefully, with humans in the
+loop for high-stakes decisions, and that more research is needed to make
+the model safer and more reliable.

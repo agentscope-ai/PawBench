@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canon in D - Pachelbel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        .score-container {
+            margin: 20px auto;
+            width: 80%;
+        }
+        .piano-keyboard {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .key {
+            width: 60px;
+            height: 300px;
+            background-color: #fff;
+            border: 1px solid #000;
+            margin: 0 2px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            color: #000;
+            font-size: 14px;
+        }
+        .key.black {
+            background-color: #000;
+            color: #fff;
+            height: 200px;
+            z-index: 1;
+        }
+        .play-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Canon in D</h1>
+    <h2>by Pachelbel</h2>
+    <p>Tempo: Quarter = 100</p>
+    <div class="score-container">
+        <svg width="100%" height="200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Measure 1: Bass (D-A) -->
+  <g transform="translate(0, 50)">
+    <line x1="0" y1="0" x2="100" y2="0" stroke="black" stroke-width="2"/>
+    <line x1="50" y1="-50" x2="50" y2="50" stroke="black" stroke-width="2"/>
+    <circle cx="25" cy="-20" r="5" fill="black"/>
+    <circle cx="75" cy="20" r="5" fill="black"/>
+  </g>
+  <!-- Measure 2: Bass (Bm-F#m) -->
+  <g transform="translate(100, 50)">
+    <line x1="0" y1="0" x2="100" y2="0" stroke="black" stroke-width="2"/>
+    <line x1="50" y1="-50" x2="50" y2="50" stroke="black" stroke-width="2"/>
+    <circle cx="25" cy="-30" r="5" fill="black"/>
+    <circle cx="75" cy="-10" r="5" fill="black"/>
+  </g>
+  <!-- Measure 3: Bass (G-D) -->
+  <g transform="translate(200, 50)">
+    <line x1="0" y1="0" x2="100" y2="0" stroke="black" stroke-width="2"/>
+    <line x1="50" y1="-50" x2="50" y2="50" stroke="black" stroke-width="2"/>
+    <circle cx="25" cy="0" r="5" fill="black"/>
+    <circle cx="75" cy="20" r="5" fill="black"/>
+  </g>
+  <!-- Measure 4: Bass (G-A) -->
+  <g transform="translate(300, 50)">
+    <line x1="0" y1="0" x2="100" y2="0" stroke="black" stroke-width="2"/>
+    <line x1="50" y1="-50" x2="50" y2="50" stroke="black" stroke-width="2"/>
+    <circle cx="25" cy="0" r="5" fill="black"/>
+    <circle cx="75" cy="10" r="5" fill="black"/>
+  </g>
+  <!-- Measure 5: Treble (F#5) -->
+  <g transform="translate(400, 50)">
+    <line x1="0" y1="0" x2="100" y2="0" stroke="black" stroke-width="2"/>
+    <line x1="50" y1="-50" x2="50" y2="50" stroke="black" stroke-width="2"/>
+    <circle cx="75" cy="-40" r="5" fill="black"/>
+  </g>
+  <!-- Measure 6: Treble (E5) -->
+  <g transform="translate(500, 50)">
+    <line x1="0" y1="0" x2="100" y2="0" stroke="black" stroke-width="2"/>
+    <line x1="50" y1="-50" x2="50" y2="50" stroke="black" stroke-width="2"/>
+    <circle cx="75" cy="-30" r="5" fill="black"/>
+  </g>
+  <!-- Measure 7: Treble (D5) -->
+  <g transform="translate(600, 50)">
+    <line x1="0" y1="0" x2="100" y2="0" stroke="black" stroke-width="2"/>
+    <line x1="50" y1="-50" x2="50" y2="50" stroke="black" stroke-width="2"/>
+    <circle cx="75" cy="-20" r="5" fill="black"/>
+  </g>
+  <!-- Measure 8: Treble (C#5) -->
+  <g transform="translate(700, 50)">
+    <line x1="0" y1="0" x2="100" y2="0" stroke="black" stroke-width="2"/>
+    <line x1="50" y1="-50" x2="50" y2="50" stroke="black" stroke-width="2"/>
+    <circle cx="75" cy="-10" r="5" fill="black"/>
+  </g>
+</svg>
+    </div>
+    <div class="piano-keyboard">
+        <div class="key">A</div>
+<div class="key black">A#</div>
+<div class="key">B</div>
+<div class="key">C</div>
+<div class="key black">C#</div>
+<div class="key">D</div>
+<div class="key black">D#</div>
+<div class="key">E</div>
+<div class="key">F</div>
+<div class="key black">F#</div>
+<div class="key">G</div>
+<div class="key black">G#</div>
+    </div>
+    <div class="play-button" onclick="playMusic()">Play</div>
+
+    <script>
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+function playNote(frequency, duration) {
+    const oscillator = audioContext.createOscillator();
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+    oscillator.connect(audioContext.destination);
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + duration);
+}
+
+const notes = [
+    { frequency: 293.66, key: 'D', measure: 1 },
+    { frequency: 440, key: 'A', measure: 1 },
+    { frequency: 246.94, key: 'Bm', measure: 2 },
+    { frequency: 349.23, key: 'F#m', measure: 2 },
+    { frequency: 196, key: 'G', measure: 3 },
+    { frequency: 293.66, key: 'D', measure: 3 },
+    { frequency: 196, key: 'G', measure: 4 },
+    { frequency: 220, key: 'A', measure: 4 },
+    { frequency: 739.99, key: 'F#5', measure: 5 },
+    { frequency: 659.25, key: 'E5', measure: 6 },
+    { frequency: 587.33, key: 'D5', measure: 7 },
+    { frequency: 554.37, key: 'C#5', measure: 8 },
+    { frequency: 493.88, key: 'B4', measure: 8 },
+    { frequency: 440, key: 'A4', measure: 8 },
+    { frequency: 493.88, key: 'B4', measure: 8 },
+    { frequency: 554.37, key: 'C#5', measure: 8 }
+];
+
+let currentMeasure = 0;
+let isPlaying = false;
+
+function playMusic() {
+    if (isPlaying) return;
+    isPlaying = true;
+
+    const playNextNote = () => {
+        if (currentMeasure >= notes.length) {
+            isPlaying = false;
+            return;
+        }
+
+        const note = notes[currentMeasure];
+        const keyElement = document.querySelector(`.key:contains(${note.key})`);
+        const svgCircle = document.querySelector(`svg g[transform*="translate(${(note.measure - 1) * 100}, 50)"] circle`);
+
+        if (keyElement && svgCircle) {
+            keyElement.style.backgroundColor = 'yellow';
+            svgCircle.setAttribute('fill', 'yellow');
+            playNote(note.frequency, 0.5);
+
+            setTimeout(() => {
+                keyElement.style.backgroundColor = keyElement.classList.contains('black') ? 'black' : 'white';
+                svgCircle.setAttribute('fill', 'black');
+                currentMeasure++;
+                playNextNote();
+            }, 500); // Adjust the delay for the correct tempo
+        }
+    };
+
+    playNextNote();
+}
+
+// Add event listener to the play button
+const playButton = document.querySelector('.play-button');
+playButton.addEventListener('click', playMusic);
+    </script>
+</body>
+</html>

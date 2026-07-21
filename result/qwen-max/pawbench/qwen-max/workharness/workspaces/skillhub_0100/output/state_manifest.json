@@ -1,0 +1,31 @@
+{
+  "last_updated": "2026-04-15T09:33:09Z",
+  "description": "AIGC 视频创作学习资料和彩虹科普项目文件",
+  "directories": {
+    "notes": {
+      "description": "用户学习笔记和待办事项",
+      "files": ["aigc_learning_notes.md"]
+    },
+    "references": {
+      "description": "科普参考资料和创作指南",
+      "files": [
+        "rainbow_science.md",
+        "children_content_guide.md",
+        "example_script_blue_sky.md"
+      ]
+    },
+    "workspace": {
+      "description": "项目工作文件和草稿",
+      "files": [
+        "rainbow_video_draft.md",
+        "project_config.yaml"
+      ]
+    },
+    "downloads": {
+      "description": "下载的外部资源",
+      "files": []
+    }
+  },
+  "total_files": 6,
+  "notes": "文件用于支持儿童科普视频创作，特别是彩虹主题的分镜脚本生成"
+}

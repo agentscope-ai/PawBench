@@ -1,0 +1,14 @@
+PREFIX : <http://www.example.org/product-review#>
+
+SELECT ?reviewId ?reviewTitle ?reviewText ?reviewDate ?productName WHERE {
+  ?review a :Review ;
+          :forProduct ?product ;
+          :reviewId ?reviewId ;
+          :reviewTitle ?reviewTitle ;
+          :reviewText ?reviewText ;
+          :reviewDate ?reviewDate ;
+          :reviewerName ?reviewerName .
+  ?product a :Product ;
+           :productName ?productName .
+  FILTER(CONTAINS(?productName, "iPhone"))
+}

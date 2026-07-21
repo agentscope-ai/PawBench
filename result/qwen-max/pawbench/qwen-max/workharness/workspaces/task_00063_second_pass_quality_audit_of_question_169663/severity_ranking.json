@@ -1,0 +1,12 @@
+[
+  {
+    "issue": "math_error_in_analysis",
+    "severity": "major",
+    "description": "Incorrectly added the diameter of the semicircle to the perimeter."
+  },
+  {
+    "issue": "incorrect_labeled_answer",
+    "severity": "major",
+    "description": "The labeled answer B (33.85 cm) is incorrect."
+  }
+]

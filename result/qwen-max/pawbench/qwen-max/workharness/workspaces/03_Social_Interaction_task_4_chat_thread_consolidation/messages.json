@@ -1,0 +1,86 @@
+[
+  {
+    "id": "msg_2001",
+    "from": "alice@company.com",
+    "ts": "2026-03-10T09:15:00",
+    "channel": "phoenix-project",
+    "text": "Phoenix Project status: auth module 75% complete. ETA March 12. Backend budget so far ~$180K."
+  },
+  {
+    "id": "msg_2002",
+    "from": "bob@company.com",
+    "ts": "2026-03-10T11:00:00",
+    "channel": "phoenix-project",
+    "text": "Actually auth is closer to 60% — Alice didn't account for the rate-limiting work. ETA more like March 18. Backend total is $215K (we have $35K contractor expense from the contingency line)."
+  },
+  {
+    "id": "msg_2003",
+    "from": "carol@company.com",
+    "ts": "2026-03-11T10:30:00",
+    "channel": "phoenix-project",
+    "text": "Frontend on payment integration is blocked — I need 3 API endpoints from Bob's team. Sent email yesterday, no reply yet."
+  },
+  {
+    "id": "msg_2004",
+    "from": "finance@company.com",
+    "ts": "2026-03-11T16:00:00",
+    "channel": "phoenix-project",
+    "text": "Confirming: Phoenix backend line item is $180K + $35K contractor (from contingency) = $215K effective. Total project budget remaining: $400K, spent so far $312K = 78%."
+  },
+  {
+    "id": "msg_2005",
+    "from": "director.zhao@client.com",
+    "ts": "2026-03-12T08:00:00",
+    "channel": "phoenix-project",
+    "text": "Looking forward to the demo on March 22. Board presentation is March 23. Please confirm timeline."
+  },
+  {
+    "id": "msg_2006",
+    "from": "alice@company.com",
+    "ts": "2026-03-13T14:00:00",
+    "channel": "phoenix-project",
+    "text": "Internal buffer date is March 25 - we have 3 days slack from the client's March 22."
+  },
+  {
+    "id": "msg_2007",
+    "from": "bob@company.com",
+    "ts": "2026-03-14T09:00:00",
+    "channel": "phoenix-project",
+    "text": "Carol, sorry - the API endpoints have been ready since Monday. I forgot to share the credentials. Sending now."
+  },
+  {
+    "id": "msg_2008",
+    "from": "carol@company.com",
+    "ts": "2026-03-14T11:00:00",
+    "channel": "phoenix-project",
+    "text": "Got the credentials, payment integration unblocked. Need ~5 days for full integration."
+  },
+  {
+    "id": "msg_2009",
+    "from": "alice@company.com",
+    "ts": "2026-03-15T10:00:00",
+    "channel": "nebula-project",
+    "text": "[NEBULA PROJECT] Sprint 4 update: backend API done, frontend in QA."
+  },
+  {
+    "id": "msg_2010",
+    "from": "alice@company.com",
+    "ts": "2026-03-16T13:00:00",
+    "channel": "phoenix-project",
+    "text": "Update: auth is actually 70% (I miscounted before). Date corrected to March 15. Budget update: $192K not $180K. My apologies for the mixup."
+  },
+  {
+    "id": "msg_2011",
+    "from": "qa@company.com",
+    "ts": "2026-03-17T09:00:00",
+    "channel": "phoenix-project",
+    "text": "[P0 SECURITY] auth module has brute force vulnerability + session tokens are NOT invalidated on password change. Must fix before release."
+  },
+  {
+    "id": "msg_2012",
+    "from": "bob@company.com",
+    "ts": "2026-03-17T15:00:00",
+    "channel": "phoenix-project",
+    "text": "Re Alice's update: 70% is still wrong - actual is 60%. With QA's security findings, auth ETA pushes to March 19 (+1.5 days). The session token format change means Carol needs ~1 day to update frontend auth integration AFTER my fix. New critical path: auth Mar 19 + frontend update 1d + payment 5d = March 25. We miss client deadline (Mar 22) by 3 days."
+  }
+]

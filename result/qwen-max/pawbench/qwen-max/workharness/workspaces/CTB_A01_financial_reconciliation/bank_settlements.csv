@@ -1,0 +1,7 @@
+settlement_id,settled_date,external_ref,amount_received,notes
+B-501,2026-02-03,TX-1001,1250.50,card batch
+B-502,2026-02-04,TX-1002,980.00,wire settlement
+B-503,2026-02-08,TX-1004,730.00,wire settlement
+B-504,2026-02-10,TX-1005,2150.00,merchant reserve retained
+B-505,2026-02-11,UNMAPPED-7781,560.00,manual transfer from legacy client
+B-506,2026-02-12,TX-1006,645.00,card batch

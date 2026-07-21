@@ -1,0 +1,24 @@
+timezone: Asia/Shanghai
+
+hard_constraints:
+  lunch_break:
+    start: "12:00"
+    end: "13:00"
+  max_meetings_per_attendee_per_day: 4
+  schedule_only_within_preferred_windows: true
+  require_all_required_attendees: true
+
+attendee_unavailability:
+  carol@company.com:
+    - weekday: Friday
+      start: "00:00"
+      end: "23:59"
+
+allowed_reason_codes:
+  - attendee_unavailable
+  - time_conflict
+  - daily_limit_exceeded
+  - outside_preferred_window
+  - lower_priority_than_competing_request
+  - insufficient_duration_slot
+  - unknown

@@ -1,0 +1,40 @@
+# Java Audit Skill - Python Dependencies
+# Install: pip install -r requirements.txt
+
+# ============================================
+# Core Dependencies (Required)
+# ============================================
+# No external dependencies required for basic usage.
+# The scripts use Python standard library only.
+
+# ============================================
+# Optional Dependencies
+# ============================================
+
+# For enhanced Layer 1 scanning with Semgrep
+# semgrep>=1.0.0
+
+# For AST parsing (advanced analysis)
+# tree-sitter>=0.20.0
+
+# ============================================
+# Development Dependencies
+# ============================================
+
+# Testing
+# pytest>=7.0.0
+# pytest-cov>=4.0.0
+
+# Code formatting
+# black>=23.0.0
+
+# Linting
+# flake8>=6.0.0
+# mypy>=1.0.0
+
+# ============================================
+# System Requirements
+# ============================================
+# - Python 3.8+
+# - For shell scripts: bash, grep, find, wc
+# - For tier-classify.sh: python3 OR bc (for calculations)

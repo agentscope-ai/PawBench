@@ -1,0 +1,65 @@
+[
+  {
+    "source_meeting": "Product Requirements Review 2026-03-20",
+    "assignee": "Wang Ming",
+    "due_date": "3/28",
+    "description": "Complete Q2 product roadmap document",
+    "existing_todo": "TODO-401 (in_progress)"
+  },
+  {
+    "source_meeting": "Product Requirements Review 2026-03-20",
+    "assignee": "Li Hua",
+    "due_date": "3/30",
+    "description": "Research competitor new features and produce report",
+    "existing_todo": "No"
+  },
+  {
+    "source_meeting": "Product Requirements Review 2026-03-20",
+    "assignee": "Zhao Lei",
+    "due_date": "3/27",
+    "description": "Compile Top 10 customer requirements list",
+    "existing_todo": "TODO-402 (pending)"
+  },
+  {
+    "source_meeting": "Product Requirements Review 2026-03-20",
+    "assignee": "Zhang Wei",
+    "due_date": "3/31",
+    "description": "Complete security compliance assessment report",
+    "existing_todo": "No"
+  },
+  {
+    "source_meeting": "Technical Architecture Review 2026-03-21",
+    "assignee": "Li Hua",
+    "due_date": "4/3",
+    "description": "Write microservice decomposition technical plan",
+    "existing_todo": "No"
+  },
+  {
+    "source_meeting": "Technical Architecture Review 2026-03-21",
+    "assignee": "Ma Qiang",
+    "due_date": "3/28",
+    "description": "Prepare database migration test environment",
+    "existing_todo": "TODO-403 (in_progress)"
+  },
+  {
+    "source_meeting": "Technical Architecture Review 2026-03-21",
+    "assignee": "Zhou Ming",
+    "due_date": "4/5",
+    "description": "Upgrade frontend component library to v3.0",
+    "existing_todo": "No"
+  },
+  {
+    "source_meeting": "Management Weekly Meeting 2026-03-22",
+    "assignee": "Wang Ming",
+    "due_date": "3/29",
+    "description": "Prepare Q1 technical team performance summary",
+    "existing_todo": "No"
+  },
+  {
+    "source_meeting": "Management Weekly Meeting 2026-03-22",
+    "assignee": "Zhao Lei",
+    "due_date": "3/30",
+    "description": "Submit key customer renewal strategy proposal",
+    "existing_todo": "No"
+  }
+]

@@ -1,0 +1,9 @@
+image_to_text: vision model not configured. Set vision.model and vision.api_key in settings.
+image_generation failed
+Traceback (most recent call last):
+  File "/opt/workharness/src/workharness/tools/image_generation_tool.py", line 112, in execute
+    image_b64 = await self._generate_with_openai(arguments, config)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/workharness/src/workharness/tools/image_generation_tool.py", line 133, in _generate_with_openai
+    raise RuntimeError(
+RuntimeError: OpenAI image generation API key is not configured. Set image_generation.api_key or WORKHARNESS_IMAGE_GENERATION_API_KEY, or choose provider='codex'.

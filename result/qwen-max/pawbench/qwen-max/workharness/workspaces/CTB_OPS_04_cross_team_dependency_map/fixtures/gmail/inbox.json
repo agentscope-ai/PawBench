@@ -1,0 +1,52 @@
+[
+  {
+    "message_id": "msg_801",
+    "thread_id": "thread_801",
+    "subject": "API Interface Change Notice - User Service",
+    "from": "backend@company.com",
+    "to": "frontend@company.com",
+    "date": "2026-03-22T09:00:00Z",
+    "body": "Frontend team, the User Service API will be refactored on March 28. The /api/v1/users endpoint response format will change. Please have the frontend team complete the adaptation by March 30. This change depends on the database team completing the user table migration first (expected March 26).",
+    "is_read": true
+  },
+  {
+    "message_id": "msg_802",
+    "thread_id": "thread_801",
+    "subject": "Re: API Interface Change Notice - User Service",
+    "from": "frontend@company.com",
+    "to": "backend@company.com",
+    "date": "2026-03-22T11:00:00Z",
+    "body": "Acknowledged. Our frontend adaptation requires the design team to provide the new user profile page mockups first. @design When can the design team deliver them?",
+    "is_read": true
+  },
+  {
+    "message_id": "msg_803",
+    "thread_id": "thread_802",
+    "subject": "Payment Module Launch Blocked",
+    "from": "pm@company.com",
+    "to": "backend@company.com",
+    "date": "2026-03-23T10:00:00Z",
+    "body": "The payment module launch is currently blocked by the following items:\n1. Security team's penetration test report not yet completed (waiting on security@company.com)\n2. Ops team's production environment configuration not yet complete (waiting on ops@company.com)\n3. QA team's regression testing still has 5 failing cases (waiting on qa@company.com)\n\nPlease all teams expedite progress. Target launch date is April 1.",
+    "is_read": true
+  },
+  {
+    "message_id": "msg_804",
+    "thread_id": "thread_803",
+    "subject": "Database Migration Progress Update",
+    "from": "dba@company.com",
+    "to": "backend@company.com",
+    "date": "2026-03-24T14:00:00Z",
+    "body": "The user table migration has encountered issues. Originally planned for March 26 completion, now estimated to be delayed to March 29. The reason is we need to wait for the ops team to finish deploying the new database cluster (ops@company.com committed to March 27). This will impact the backend API refactoring timeline.",
+    "is_read": false
+  },
+  {
+    "message_id": "msg_805",
+    "thread_id": "thread_804",
+    "subject": "Design Mockup Delay Notice",
+    "from": "design@company.com",
+    "to": "frontend@company.com",
+    "date": "2026-03-25T09:00:00Z",
+    "body": "Frontend team, the user profile page mockups require the product manager to confirm final requirements before we can deliver. The product requirements document is still under review, expected to be finalized on March 28. Design mockups are estimated for March 31 completion.",
+    "is_read": false
+  }
+]

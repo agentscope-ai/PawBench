@@ -1,0 +1,8 @@
+{
+  "listen": 3000,
+  "routes": {
+    "/api": "http://backend:9101/api",
+    "/auth": "http://backend:9101/auth"
+  },
+  "websocket": "ws://backend:9101/socket"
+}

@@ -1,0 +1,8 @@
+{
+  "snapshot_id": "inc_20260311",
+  "kind": "incremental",
+  "files": {
+    "app/config.yml": "backups/snapshots/inc_20260311/payloads/app_config_v2.yml",
+    "reports/daily_20260311.csv": "backups/snapshots/inc_20260311/payloads/daily_20260311.csv"
+  }
+}
