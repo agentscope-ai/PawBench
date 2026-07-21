@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harness-core.local/schemas/harbor-result-v1.json",
+  "title": "Harness-core AgentScope Harbor result",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "task_id",
+        "success",
+        "accepted",
+        "completion_ok",
+        "verification_gated",
+        "verifier",
+        "agent",
+        "taxonomy_version",
+        "enabled_features",
+        "disabled_features",
+        "files"
+      ],
+      "properties": {
+        "schema_version": {"const": "harness-core-harbor-result/v1"},
+        "task_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "success": {"const": true},
+        "accepted": {"type": "boolean"},
+        "completion_ok": {"type": "boolean"},
+        "verification_gated": {"type": "boolean"},
+        "verifier": {
+          "type": "object",
+          "required": ["ok"],
+          "properties": {
+            "ok": {"type": "boolean"},
+            "missing_artifacts": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "empty_artifacts": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "failed_tests": {
+              "type": "array",
+              "items": {"type": "string"}
+            }
+          },
+          "additionalProperties": false
+        },
+        "agent": {
+          "type": "object",
+          "required": ["name", "version", "runtime", "model_name"],
+          "properties": {
+            "name": {"const": "agentscope-lab"},
+            "version": {"type": "string"},
+            "runtime": {"const": "AgentScope"},
+            "model_name": {"type": "string"}
+          },
+          "additionalProperties": false
+        },
+        "taxonomy_version": {"const": "harness_core_v2_20260710"},
+        "enabled_features": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/feature_id"},
+          "uniqueItems": true
+        },
+        "disabled_features": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/feature_id"},
+          "uniqueItems": true
+        },
+        "final_text": {"type": "string"},
+        "event_count": {"type": "integer", "minimum": 0},
+        "runtime_summary": {"type": "object"},
+        "files": {
+          "type": "object",
+          "required": ["result", "trace", "trajectory", "provenance"],
+          "properties": {
+            "result": {"type": "string"},
+            "trace": {"type": "string"},
+            "trajectory": {"type": "string"},
+            "provenance": {"type": "string"}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "task_id",
+        "success",
+        "error_type",
+        "error"
+      ],
+      "properties": {
+        "schema_version": {"const": "harness-core-harbor-result/v1"},
+        "task_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "success": {"const": false},
+        "error_type": {"type": "string", "minLength": 1},
+        "error": {"type": "string", "minLength": 1},
+        "error_schema_version": {"const": "harness-core-error-codes/v1"},
+        "error_code": {
+          "enum": [
+            "HC_CONFIG_INVALID_FEATURE",
+            "HC_INPUT_CONTRACT_INVALID",
+            "HC_PREFLIGHT_FAILED",
+            "HC_PROVIDER_MODEL_NOT_FOUND",
+            "HC_PROVIDER_AUTH",
+            "HC_PROVIDER_RATE_LIMIT",
+            "HC_PROVIDER_UNAVAILABLE",
+            "HC_RUNTIME_TIMEOUT",
+            "HC_RUNTIME_ERROR"
+          ]
+        },
+        "failure_scope": {
+          "enum": ["configuration", "external_provider", "harness_runtime"]
+        },
+        "retryable": {"type": "boolean"},
+        "cause_type": {"type": "string"}
+      },
+      "dependentRequired": {
+        "error_schema_version": ["error_code", "failure_scope", "retryable", "cause_type"],
+        "error_code": ["error_schema_version", "failure_scope", "retryable", "cause_type"],
+        "failure_scope": ["error_schema_version", "error_code", "retryable", "cause_type"],
+        "retryable": ["error_schema_version", "error_code", "failure_scope", "cause_type"],
+        "cause_type": ["error_schema_version", "error_code", "failure_scope", "retryable"]
+      },
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "feature_id": {
+      "enum": [
+        "F1.1", "F1.2", "F1.3",
+        "F2.1", "F2.2", "F2.3",
+        "F3.1", "F3.2", "F3.3",
+        "F4.1", "F4.2", "F4.3",
+        "F5.1", "F5.2", "F5.3"
+      ]
+    }
+  }
+}

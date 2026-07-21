@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harness-core.local/schemas/ablation-experiment-v1.json",
+  "title": "Harness-core Feature ablation experiment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "status",
+    "claim_level",
+    "taxonomy_version",
+    "hypothesis",
+    "task_set",
+    "runtime_identity",
+    "budget",
+    "variants",
+    "evaluation",
+    "governance"
+  ],
+  "properties": {
+    "schema_version": {"const": "harness-core-ablation-experiment/v1"},
+    "experiment_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"},
+    "status": {"enum": ["proposed", "approved"]},
+    "claim_level": {"enum": ["contract", "reproduction", "reliability", "generalization"]},
+    "taxonomy_version": {"const": "harness_core_v2_20260710"},
+    "hypothesis": {"$ref": "#/$defs/hypothesis"},
+    "task_set": {"$ref": "#/$defs/taskSet"},
+    "runtime_identity": {"$ref": "#/$defs/runtimeIdentity"},
+    "budget": {"$ref": "#/$defs/budget"},
+    "variants": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {"$ref": "#/$defs/variant"}
+    },
+    "evaluation": {"$ref": "#/$defs/evaluation"},
+    "governance": {"$ref": "#/$defs/governance"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "taskIds": {
+      "type": "array",
+      "maxItems": 10000,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 256}
+    },
+    "featureIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "F1.1", "F1.2", "F1.3", "F2.1", "F2.2", "F2.3",
+          "F3.1", "F3.2", "F3.3", "F4.1", "F4.2", "F4.3",
+          "F5.1", "F5.2", "F5.3"
+        ]
+      }
+    },
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "sha256"],
+      "properties": {
+        "kind": {"enum": ["reasoning", "trace", "judge", "artifact", "prior_experiment"]},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "hypothesis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "attribution_code",
+        "feature_id",
+        "statement",
+        "evidence_receipts",
+        "expected_fix_task_ids",
+        "regression_risk_task_ids"
+      ],
+      "properties": {
+        "attribution_code": {"enum": ["H1", "H2", "H3", "H4", "H5"]},
+        "feature_id": {"pattern": "^F[1-5]\\.[1-3]$", "type": "string"},
+        "statement": {"type": "string", "minLength": 1, "maxLength": 2000},
+        "evidence_receipts": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {"$ref": "#/$defs/receipt"}
+        },
+        "expected_fix_task_ids": {"$ref": "#/$defs/taskIds"},
+        "regression_risk_task_ids": {"$ref": "#/$defs/taskIds"}
+      }
+    },
+    "taskSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["snapshot_sha256", "calibration_task_ids", "validation_task_ids", "held_out_task_ids", "domain_by_task_id"],
+      "properties": {
+        "snapshot_sha256": {"$ref": "#/$defs/sha256"},
+        "calibration_task_ids": {"$ref": "#/$defs/taskIds"},
+        "validation_task_ids": {"$ref": "#/$defs/taskIds"},
+        "held_out_task_ids": {"$ref": "#/$defs/taskIds"},
+        "domain_by_task_id": {
+          "type": "object",
+          "maxProperties": 10000,
+          "propertyNames": {"minLength": 1, "maxLength": 256},
+          "additionalProperties": {"enum": ["UA", "WS", "MA"]}
+        }
+      }
+    },
+    "runtimeIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "harness_name",
+        "harness_version",
+        "feature_manifest_sha256",
+        "model_provider",
+        "model_id",
+        "model_config_sha256",
+        "environment",
+        "environment_config_sha256"
+      ],
+      "properties": {
+        "harness_name": {"const": "AgentScope-Lab"},
+        "harness_version": {"type": "string", "minLength": 1, "maxLength": 64},
+        "feature_manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "model_provider": {"type": "string", "minLength": 1, "maxLength": 128},
+        "model_id": {"type": "string", "minLength": 1, "maxLength": 256},
+        "model_config_sha256": {"$ref": "#/$defs/sha256"},
+        "environment": {"enum": ["local", "harbor"]},
+        "environment_config_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trials_per_task_variant",
+        "max_model_calls_per_trial",
+        "max_input_tokens_per_trial",
+        "max_output_tokens_per_trial",
+        "timeout_seconds_per_trial"
+      ],
+      "properties": {
+        "trials_per_task_variant": {"type": "integer", "minimum": 1, "maximum": 1000},
+        "max_model_calls_per_trial": {"type": "integer", "minimum": 1, "maximum": 10000},
+        "max_input_tokens_per_trial": {"type": "integer", "minimum": 1, "maximum": 10000000},
+        "max_output_tokens_per_trial": {"type": "integer", "minimum": 1, "maximum": 10000000},
+        "timeout_seconds_per_trial": {"type": "number", "exclusiveMinimum": 0, "maximum": 86400}
+      }
+    },
+    "variant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "enabled_feature_ids", "disabled_feature_ids"],
+      "properties": {
+        "id": {"enum": ["all_features_on", "single_feature_off"]},
+        "enabled_feature_ids": {"$ref": "#/$defs/featureIds"},
+        "disabled_feature_ids": {"$ref": "#/$defs/featureIds"}
+      }
+    },
+    "evaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primary_metric",
+        "minimum_trials",
+        "decisive_wilson_lower_bound",
+        "matched_task_level_baseline",
+        "require_zero_false_acceptance_regressions"
+      ],
+      "properties": {
+        "primary_metric": {"enum": ["task_acceptance", "judge_score", "verifier_score"]},
+        "minimum_trials": {"type": "integer", "minimum": 1, "maximum": 1000},
+        "decisive_wilson_lower_bound": {"type": "number", "minimum": 0, "exclusiveMaximum": 1},
+        "matched_task_level_baseline": {"enum": ["none", "parallel_sampling", "sequential_refinement"]},
+        "require_zero_false_acceptance_regressions": {"const": true}
+      }
+    },
+    "governance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "human_approval_required",
+        "approval_receipt_sha256",
+        "core_mutation_allowed",
+        "reasoning_read_only",
+        "analyzers_authoritative"
+      ],
+      "properties": {
+        "human_approval_required": {"const": true},
+        "approval_receipt_sha256": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/sha256"}
+          ]
+        },
+        "core_mutation_allowed": {"const": false},
+        "reasoning_read_only": {"const": true},
+        "analyzers_authoritative": {"const": false}
+      }
+    }
+  }
+}
