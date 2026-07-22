@@ -55,6 +55,8 @@ from pawbench.agents.base import ContainerAgent
 from pawbench.agents.constants import AGENT_WORKSPACE, PAWBENCH_BASE_IMAGE
 from pawbench.envs.base import BaseEnvironment
 
+from ..claude_code_guidance import quoted_claude_code_guidance
+
 _logger = logging.getLogger(__name__)
 
 # ── Harbor agent registry ─────────────────────────────────────────────────────
@@ -68,7 +70,10 @@ _REGISTRY: dict[str, tuple[str, str]] = {
     "openclaw":     ("harbor.agents.installed.openclaw",      "OpenClaw"),
     "aider":        ("harbor.agents.installed.aider",         "Aider"),
     "codex":        ("harbor.agents.installed.codex",         "Codex"),
-    "claude-code":  ("harbor.agents.installed.claude_code",   "ClaudeCode"),
+    "claude-code":  (
+        "pawbench.agents.impl.pawbench_claude_code",
+        "PawBenchClaudeCode",
+    ),
     "gemini-cli":   ("harbor.agents.installed.gemini_cli",    "GeminiCli"),
     "goose":        ("harbor.agents.installed.goose",         "Goose"),
     "qwen-code":    ("harbor.agents.installed.qwen_code",     "QwenCode"),
@@ -276,6 +281,8 @@ class HarborBridgeAgent(ContainerAgent):
         module_path, class_name = _REGISTRY[self._harbor_agent_name]
         HarborAgentCls = _import_harbor_class(module_path, class_name)
         ctor_kwargs: dict[str, Any] = {}
+        if self._harbor_agent_name == "claude-code":
+            ctor_kwargs["append_system_prompt"] = quoted_claude_code_guidance()
         if self._harbor_agent_name in _THINKING_FLAG_AGENTS:
             # OpenClaw's Harbor CliFlag defaults thinking to "high", which many
             # non-reasoning models (e.g. the default DashScope qwen3.6-plus)
