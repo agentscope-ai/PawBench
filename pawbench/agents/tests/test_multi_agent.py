@@ -99,9 +99,18 @@ def test_harness_mode_mapping() -> None:
     assert openclaw_forced["multi_agent_force_delegation"] is True
     assert "multi_agent_force_delegation" not in openclaw_adaptive
 
+    qwenpaw_forced, _ = build_harbor_kwargs("qwenpaw", forced)
+    qwenpaw_adaptive, _ = build_harbor_kwargs("qwenpaw", adaptive)
+    assert qwenpaw_forced["multi_agent"] is True
+    assert qwenpaw_adaptive["multi_agent"] is True
+    assert qwenpaw_forced["multi_agent_force_delegation"] is True
+    assert "multi_agent_force_delegation" not in qwenpaw_adaptive
+    assert qwenpaw_forced["multi_agent_max_agents"] == forced.max_agents
+    assert qwenpaw_forced["multi_agent_max_depth"] == forced.max_depth
+
 
 def test_unsupported_harness_falls_back_to_single() -> None:
-    cfg = resolve_for_harness(_config("forced"), "harbor:qwenpaw")
+    cfg = resolve_for_harness(_config("forced"), "harbor:aider")
     assert cfg.requested_mode == "forced"
     assert cfg.effective_mode == "single"
     assert cfg.enabled is False
@@ -117,6 +126,27 @@ def test_forced_prompt_instruction_is_only_added_for_forced() -> None:
     assert adaptive == "Do the task."
 
 
+def test_harbor_v2_forced_instruction_is_prepended(tmp_path: Path) -> None:
+    task_dir = tmp_path / "task"
+    task_dir.mkdir()
+    (task_dir / "instruction.md").write_text(
+        "Original task.",
+        encoding="utf-8",
+    )
+
+    materialized = HarborV2Backend._materialize_forced_task(
+        task_dir,
+        tmp_path / "trials",
+        "forced-test",
+    )
+    instruction = (materialized / "instruction.md").read_text(
+        encoding="utf-8",
+    )
+
+    assert instruction.startswith(FORCED_DELEGATION_INSTRUCTION)
+    assert instruction.endswith("Original task.")
+
+
 @pytest.mark.parametrize(
     ("harness", "tool"),
     [
@@ -124,6 +154,7 @@ def test_forced_prompt_instruction_is_only_added_for_forced() -> None:
         ("claude-code", "Agent"),
         ("codex", "spawn_agent"),
         ("openclaw", "sessions_spawn"),
+        ("qwenpaw", "spawn_subagent"),
     ],
 )
 def test_detects_real_delegation_tool_calls(harness: str, tool: str) -> None:
@@ -201,12 +232,38 @@ def test_tool_schema_is_not_counted_as_delegation() -> None:
     )["delegation_count"] == 0
 
 
+def test_detects_qwenpaw_delegation_from_pretty_session(tmp_path: Path) -> None:
+    session = {
+        "agent": {
+            "state": {
+                "context": [{
+                    "role": "assistant",
+                    "content": [{
+                        "type": "tool_call",
+                        "name": "spawn_subagent",
+                        "input": {"task": "analyze"},
+                    }],
+                }],
+            },
+        },
+    }
+    (tmp_path / "qwenpaw.session.json").write_text(
+        json.dumps(session, indent=2),
+        encoding="utf-8",
+    )
+
+    result = detect_delegation([], "qwenpaw", tmp_path)
+
+    assert result["delegation_count"] == 1
+    assert result["delegation_tools"] == ["spawn_subagent"]
+
+
 def test_forced_violation_requires_supported_harness() -> None:
     supported = evaluate_multi_agent_run(
-        _config("forced"), "codex", [], None
+        _config("forced"), "qwenpaw", [], None
     )
     unsupported = evaluate_multi_agent_run(
-        _config("forced"), "qwenpaw", [], None
+        _config("forced"), "aider", [], None
     )
     assert supported["forced_violation"] is True
     assert unsupported["effective_mode"] == "single"

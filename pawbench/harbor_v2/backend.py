@@ -33,6 +33,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from pawbench.agents.claude_code_guidance import quoted_claude_code_guidance
 from pawbench.backend import BenchmarkBackend, TaskResult
 from pawbench.agents.delegation import evaluate_multi_agent_run
 from pawbench.agents.multi_agent import (
@@ -55,6 +56,7 @@ from .scripted_user import (
     scripted_user_image_name,
 )
 from .task_loader import HarborV2Loader, HarborV2Task
+from .verifier import materialize_openjudge_task, uses_openjudge
 
 
 logger = logging.getLogger(__name__)
@@ -71,6 +73,9 @@ _AGENT_NAME_ALIASES: Dict[str, str] = {
 # rejects them by name).  Passing a ``module:Class`` import path bypasses the
 # enum check — see harbor.agents.factory.create_agent_from_config.
 _AGENT_IMPORT_PATHS: Dict[str, str] = {
+    "claude-code": (
+        "pawbench.agents.impl.pawbench_claude_code:PawBenchClaudeCode"
+    ),
     "qwenpaw": "harbor.agents.installed.qwenpaw:QwenPaw",
 }
 
@@ -166,7 +171,9 @@ class HarborV2Backend(BenchmarkBackend):
         agent_name = short_agent_name
         # Names not in Harbor's AgentName enum must be passed as a module:Class
         # import path (e.g. the pawbench-bundled qwenpaw agent).
-        if agent_name not in AgentName.values():
+        if agent_name in _AGENT_IMPORT_PATHS:
+            agent_name = _AGENT_IMPORT_PATHS[agent_name]
+        elif agent_name not in AgentName.values():
             agent_name = _AGENT_IMPORT_PATHS.get(agent_name, agent_name)
         model = agent_config.get("model", "")
         verbose = bool(agent_config.get("verbose", False))
@@ -203,8 +210,14 @@ class HarborV2Backend(BenchmarkBackend):
         # HarborBridgeAgent: force "off" unless the caller explicitly passed
         # --thinking (agent_config["thinking_level"]).
         agent_kwargs: Dict[str, Any] = {}
+        if agent_config.get("version"):
+            agent_kwargs["version"] = str(agent_config["version"])
         if short_agent_name == "openclaw":
             agent_kwargs["thinking"] = agent_config.get("thinking_level") or "off"
+        elif short_agent_name == "claude-code":
+            agent_kwargs["append_system_prompt"] = quoted_claude_code_guidance(
+                agent_config.get("append_system_prompt")
+            )
         multi_agent_kwargs, multi_agent_env = self._build_multi_agent_inputs(
             short_agent_name, agent_config
         )
@@ -221,12 +234,11 @@ class HarborV2Backend(BenchmarkBackend):
             or tempfile.mkdtemp(prefix=f"harborv2_{task.task_id}_")
         ).resolve()
         run_id = agent_config.get("run_id") or uuid.uuid4().hex[:8]
-        trial_name = f"{task.task_id}__{run_id}"
-        if self._uses_runtime_user_sim(task):
-            # Docker Compose uses the trial name as its project name. Repeated
-            # benchmark runs commonly reuse ``<task>_r1``; a unique suffix keeps
-            # concurrent/retried multi-turn trials from sharing project locks.
-            trial_name = f"{trial_name}__{uuid.uuid4().hex[:8]}"
+        # Docker Compose uses the trial name as its project name. Repeated or
+        # concurrent benchmark runs commonly reuse ``<task>_r1``; a unique
+        # suffix keeps every harness/mode/retry from sharing and tearing down
+        # another trial's containers.
+        trial_name = f"{task.task_id}__{run_id}__{uuid.uuid4().hex[:8]}"
         runtime_task_dir = task.task_dir
         if self._uses_generative_user(task):
             trials_dir.mkdir(parents=True, exist_ok=True)
@@ -272,7 +284,22 @@ class HarborV2Backend(BenchmarkBackend):
                 trial_name,
             )
 
-        agent_env = self._build_agent_env(agent_name, model, agent_config)
+        if uses_openjudge(runtime_task_dir):
+            runtime_task_dir = materialize_openjudge_task(
+                runtime_task_dir,
+                trials_dir
+                / ".pawbench-runtime-tasks"
+                / f"{trial_name}-openjudge",
+            )
+            logger.info(
+                "Injected centralized OpenJudge verifier for %s at %s",
+                task.task_id,
+                runtime_task_dir,
+            )
+
+        # Environment routing depends on the public harness name, not a custom
+        # ``module:Class`` import path used by Harbor's AgentFactory.
+        agent_env = self._build_agent_env(short_agent_name, model, agent_config)
         agent_env.update(multi_agent_env)
         verifier_env = self._build_verifier_env(agent_config)
         # Multi-turn tasks (Strategy A) run a user-sim MCP sidecar in the
@@ -324,7 +351,7 @@ class HarborV2Backend(BenchmarkBackend):
         trials_dir: Path,
         trial_name: str,
     ) -> Path:
-        """Copy a Harbor task and append the strict delegation instruction."""
+        """Copy a Harbor task and prepend the strict delegation instruction."""
         parent = trials_dir / ".pawbench-runtime-tasks"
         parent.mkdir(parents=True, exist_ok=True)
         target = Path(
@@ -338,7 +365,7 @@ class HarborV2Backend(BenchmarkBackend):
             else ""
         )
         instruction_path.write_text(
-            existing.rstrip() + FORCED_DELEGATION_INSTRUCTION,
+            FORCED_DELEGATION_INSTRUCTION + existing.lstrip(),
             encoding="utf-8",
         )
         return target
@@ -567,6 +594,40 @@ class HarborV2Backend(BenchmarkBackend):
             env["JUDGE_PROVIDER"] = judge_provider
         else:
             env["JUDGE_PROVIDER"] = "openai"
+
+        # ── OpenJudge / Claude-Code agent-judge contract ──────────────────────
+        # ``*-openjudge`` tasks shell out to a coding-agent CLI (default:
+        # Claude Code). Those CLIs read ANTHROPIC_* / OPENAI_* directly, and
+        # ``run_openjudge.py`` additionally honours REWARDKIT_JUDGE /
+        # REWARDKIT_MODEL. Forward host / judge credentials so non-claude
+        # agents-under-test still have a working judge harness.
+        anthropic_key = (
+            os.environ.get("ANTHROPIC_API_KEY")
+            or judge_api_key
+            or os.environ.get("OPENAI_API_KEY")
+        )
+        anthropic_base = (
+            os.environ.get("ANTHROPIC_BASE_URL")
+            or (judge_base_url or "").removesuffix("/v1")
+            or ""
+        )
+        if anthropic_key:
+            env.setdefault("ANTHROPIC_API_KEY", anthropic_key)
+        if anthropic_base:
+            env.setdefault("ANTHROPIC_BASE_URL", anthropic_base)
+        if judge_model:
+            env.setdefault("OPENJUDGE_MODEL", judge_model)
+        for key in (
+            "REWARDKIT_JUDGE",
+            "REWARDKIT_MODEL",
+            "OPENJUDGE_HARNESS",
+            "OPENJUDGE_MODEL",
+        ):
+            value = os.environ.get(key)
+            if value:
+                env.setdefault(key, value)
+        if judge_model and "REWARDKIT_MODEL" not in env:
+            env["REWARDKIT_MODEL"] = judge_model
         return env
 
     # ── multi-turn / user-sim wiring ──────────────────────────────────────────────
