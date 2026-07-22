@@ -159,8 +159,8 @@ PawBench 支持三种可比较的执行模式：
 - `single`：不向 harness 暴露子 Agent 编排能力（默认）。
 - `adaptive`：开放子 Agent 工具，由主 Agent 自行决定是否委派。
 - `forced`：要求至少进行一次真实子 Agent 委派；如果轨迹中没有检测到
-  Claude Code `Task`、Codex `spawn_agent` 或 OpenClaw `sessions_spawn` 调用，
-  该任务会以 `score=0`、`passed=false` 记录。
+  Claude Code `Task`、Codex `spawn_agent`、OpenClaw `sessions_spawn` 或 QwenPaw
+  `spawn_subagent` 调用，该任务会以 `score=0`、`passed=false` 记录。
 
 ```bash
 # 单 Agent（默认）
@@ -173,9 +173,9 @@ python run_bench.py --agents harbor:openclaw --multi-agent-mode adaptive ...
 python run_bench.py --agents harbor:codex --multi-agent-mode forced ...
 ```
 
-目前原生支持 Multi-Agent 的 harness 是 `claude-code`、`codex` 和
-`openclaw`。对 `qwenpaw`、`hermes` 等其他 harness 请求 `forced` 或
-`adaptive` 时，框架会明确警告并降级为 `single`。结果 JSON 的
+目前原生支持 Multi-Agent 的 harness 是 `claude-code`、`codex`、`openclaw`
+和 QwenPaw 2.0.0.post3+（`qwenpaw`）。对 `hermes` 等其他 harness 请求
+`forced` 或 `adaptive` 时，框架会明确警告并降级为 `single`。结果 JSON 的
 `run_config.multi_agent` 和每条结果的 `multi_agent` 字段会分别记录请求/实际
 模式、委派次数和 forced 违规状态。
 

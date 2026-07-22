@@ -8,6 +8,8 @@
 #   provider so the configured base_url is honoured. The builtin openai
 #   provider hardcodes api.openai.com -> HTTP 403 -> MODEL_UNAUTHORIZED_ACCESS
 #   -> empty run for DashScope-compatible / relay endpoints.
+#   Pin QwenPaw 2.0.0.post3 and expose/disable its native spawn_subagent tool
+#   according to PawBench's adaptive/forced/single execution mode.
 # Fix 2 (hermes.py): drop the broken `--source cli` filter from
 #   `hermes sessions export`, which matched 0 sessions and produced an empty
 #   hermes-session.jsonl -> EMPTY_TRANSCRIPT at grading time.
@@ -56,6 +58,86 @@
          is_v1 = self._qwenpaw_is_v1()
  
 
+--- a/harbor/src/harbor/agents/installed/qwenpaw.py
++++ b/harbor/src/harbor/agents/installed/qwenpaw.py
+@@ -76,4 +76,4 @@
+ # both the legacy 1.x API (``/api/agent/process``) and the new 2.x API
+ # (``/api/console/chat``) work from the same agent class.
+-_DEFAULT_QWENPAW_VERSION = "2.0.0b3"
++_DEFAULT_QWENPAW_VERSION = "2.0.0.post3"
+ 
+@@ -240,6 +240,23 @@ class QwenPaw(BaseInstalledAgent):
+     # QwenPaw persists a qwenpaw-native session JSON, not an ATIF trajectory.
+     SUPPORTS_ATIF: bool = False
+ 
++    def __init__(
++        self,
++        *args: Any,
++        multi_agent: bool = False,
++        multi_agent_force_delegation: bool = False,
++        multi_agent_max_agents: int | None = None,
++        multi_agent_max_depth: int | None = None,
++        **kwargs: Any,
++    ) -> None:
++        self._multi_agent = bool(multi_agent)
++        self._multi_agent_force_delegation = bool(
++            multi_agent_force_delegation
++        )
++        self._multi_agent_max_agents = multi_agent_max_agents
++        self._multi_agent_max_depth = multi_agent_max_depth
++        super().__init__(*args, **kwargs)
++
+     @staticmethod
+     @override
+     def name() -> str:
+@@ -439,5 +456,6 @@ class QwenPaw(BaseInstalledAgent):
+                 inner_timeout=inner_timeout,
+                 is_v1=is_v1,
++                multi_agent=self._multi_agent,
+             ),
+             encoding="utf-8",
+         )
+@@ -578,3 +596,4 @@ class QwenPaw(BaseInstalledAgent):
+         inner_timeout: int,
+         is_v1: bool,
++        multi_agent: bool,
+     ) -> str:
+@@ -608,3 +627,4 @@ class QwenPaw(BaseInstalledAgent):
+             f"IS_BUILTIN   = {is_builtin!r}\n"
+             f"IS_V1        = {is_v1!r}\n"
++            f"MULTI_AGENT  = {multi_agent!r}\n"
+             f"TIMEOUT      = {inner_timeout}\n"
+@@ -624,5 +644,30 @@ class QwenPaw(BaseInstalledAgent):
+             "except Exception as e:\n"
+             "    print(f'[tool-guard] FAILED: {e}', flush=True)\n"
+             "\n"
++            "# QwenPaw 2.0.0.post3 exposes spawn_subagent as a built-in tool.\n"
++            "# Keep it absent in PawBench single-agent mode and enabled in\n"
++            "# adaptive/forced modes. The toggle endpoint persists the tool\n"
++            "# setting and hot-reloads the active agent.\n"
++            "if not IS_V1:\n"
++            "    try:\n"
++            "        r = requests.get(f'{API_BASE}/tools', headers=headers, timeout=10)\n"
++            "        r.raise_for_status()\n"
++            "        tools = r.json()\n"
++            "        spawn = next((t for t in tools if t.get('name') == 'spawn_subagent'), None)\n"
++            "        if spawn is None:\n"
++            "            print('[multi-agent] spawn_subagent unavailable', flush=True)\n"
++            "        elif bool(spawn.get('enabled')) != MULTI_AGENT:\n"
++            "            r = requests.patch(\n"
++            "                f'{API_BASE}/tools/spawn_subagent/toggle',\n"
++            "                headers=headers, timeout=20,\n"
++            "            )\n"
++            "            r.raise_for_status()\n"
++            "            print(f'[multi-agent] spawn_subagent enabled={MULTI_AGENT}', flush=True)\n"
++            "            time.sleep(2)\n"
++            "        else:\n"
++            "            print(f'[multi-agent] spawn_subagent already enabled={MULTI_AGENT}', flush=True)\n"
++            "    except Exception as e:\n"
++            "        print(f'[multi-agent] tool configuration FAILED: {e}', flush=True)\n"
++            "\n"
+             "generate_kwargs = dict(GEN_KWARGS_CONFIG)\n"
+ 
 --- a/harbor/src/harbor/agents/installed/hermes.py
 +++ b/harbor/src/harbor/agents/installed/hermes.py
 @@ -487,9 +487,18 @@

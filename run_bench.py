@@ -201,7 +201,8 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Legacy shorthand for --multi-agent-mode adaptive. "
             "Supported harnesses: harbor:claude-code (agent teams + sub-agents), "
-            "harbor:codex (delegation modes), harbor:openclaw (sessions_spawn). "
+            "harbor:codex (delegation modes), harbor:openclaw (sessions_spawn), "
+            "harbor:qwenpaw (spawn_subagent). "
             "Other harnesses warn and fall back to single-agent."
         ),
     )

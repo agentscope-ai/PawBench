@@ -14,6 +14,8 @@ mode — the orchestrator + sub-agent / delegation feature each CLI ships:
 * **openclaw** — *sub-agents* via the ``sessions_spawn`` tool, which requires the
   ``coding`` tool profile and ``subagents.maxSpawnDepth`` in ``openclaw.json``.
   See https://docs.openclaw.ai/tools/subagents.
+* **qwenpaw** — ephemeral in-workspace sub-agents via the native
+  ``spawn_subagent`` tool (QwenPaw 2.0.0.post3+).
 
 The rest of PawBench does not need to know any of these details: it hands a
 single normalized :class:`MultiAgentConfig` to
@@ -51,7 +53,7 @@ from typing import Any
 # Harness short-names (matching HARBOR_AGENT_REGISTRY keys) that support a
 # multi-agent / sub-agent launch mode through this module.
 SUPPORTED_MULTI_AGENT_HARNESSES: frozenset[str] = frozenset(
-    {"claude-code", "codex", "openclaw"}
+    {"claude-code", "codex", "openclaw", "qwenpaw"}
 )
 
 MULTI_AGENT_RUN_MODES: frozenset[str] = frozenset(
@@ -78,7 +80,8 @@ FORCED_DELEGATION_INSTRUCTION = (
     "using this harness's native delegation tool, incorporate that sub-agent's "
     "result, and then complete the task. Merely describing a delegation does not "
     "satisfy this requirement. Use the actual tool exposed by the harness: "
-    "Codex `spawn_agent`, OpenClaw `sessions_spawn`, or Claude Code `Agent`/`Task`. "
+    "Codex `spawn_agent`, OpenClaw `sessions_spawn`, QwenPaw `spawn_subagent`, "
+    "or Claude Code `Agent`/`Task`. "
     "Your first tool call must be that native delegation tool; do not inspect files "
     "or start the delegated work before launching the sub-agent.\n\n"
 )
@@ -267,6 +270,8 @@ def build_harbor_kwargs(
         return _build_codex(cfg)
     if name == "openclaw":
         return _build_openclaw(cfg)
+    if name == "qwenpaw":
+        return _build_qwenpaw(cfg)
     return {}, {}
 
 
@@ -366,6 +371,21 @@ def _build_openclaw(cfg: MultiAgentConfig) -> tuple[dict[str, Any], dict[str, st
     return ctor, {}
 
 
+def _build_qwenpaw(cfg: MultiAgentConfig) -> tuple[dict[str, Any], dict[str, str]]:
+    """QwenPaw 2.0.0.post3+: expose native ``spawn_subagent`` delegation."""
+    ctor: dict[str, Any] = {
+        "multi_agent": True,
+        "multi_agent_max_agents": int(cfg.max_agents),
+        "multi_agent_max_depth": max(1, int(cfg.max_depth)),
+    }
+    env: dict[str, str] = {}
+    if cfg.effective_mode == "forced":
+        ctor["multi_agent_force_delegation"] = True
+
+    _merge_raw(ctor, env, cfg.raw.get("qwenpaw"))
+    return ctor, env
+
+
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 
@@ -452,6 +472,7 @@ def default_multi_agent_config() -> MultiAgentConfig:
     * claude-code: agent teams enabled (in-process), no custom sub-agents.
     * codex: proactive delegation, up to 4 threads / depth 2.
     * openclaw: coding profile + maxSpawnDepth 2 (orchestrator pattern).
+    * qwenpaw: native in-workspace ``spawn_subagent`` delegation.
     """
     return MultiAgentConfig(
         enabled=True,

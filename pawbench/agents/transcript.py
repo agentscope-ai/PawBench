@@ -178,7 +178,7 @@ def _events_from_session_dir(sessions_dir: Path) -> "list[dict[str, Any]]":
 
     # ── 2 & 3. Session JSON (qwenpaw / openclaw-native / openai-chat) ─────────
     candidates = sorted(
-        (p for p in sessions_dir.glob("*.json") if p.is_file()),
+        (p for p in sessions_dir.rglob("*.json") if p.is_file()),
         key=lambda p: p.stat().st_mtime,
         reverse=True,
     )
@@ -242,6 +242,8 @@ _RAW_LOG_NAMES = (
     "hermes-session.jsonl",
     "hermes.txt",
     "openclaw.txt",
+    "qwenpaw.txt",
+    "qwenpaw.session.json",
     "agent.txt",
 )
 

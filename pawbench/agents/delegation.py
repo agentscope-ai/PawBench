@@ -20,6 +20,7 @@ _DELEGATION_TOOLS: dict[str, frozenset[str]] = {
     "claude-code": frozenset({"Agent", "Task", "SendMessage"}),
     "codex": frozenset({"spawn_agent", "spawn_agents_on_csv"}),
     "openclaw": frozenset({"sessions_spawn"}),
+    "qwenpaw": frozenset({"spawn_subagent"}),
 }
 
 
@@ -166,6 +167,11 @@ def _evidence_from_artifacts(
             "openclaw.session.jsonl",
             "sessions/openclaw.session.jsonl",
         ),
+        "qwenpaw": (
+            "qwenpaw.session.json",
+            "sessions/qwenpaw.session.json",
+            "sessions/**/*.json",
+        ),
     }.get(harness, ())
 
     for pattern in patterns:
@@ -185,6 +191,12 @@ def _evidence_from_artifacts(
                         line_numbers.append(line_number)
             except OSError:
                 continue
+            if not objects:
+                try:
+                    objects.append(json.loads(path.read_text(encoding="utf-8")))
+                    line_numbers.append(1)
+                except (OSError, TypeError, json.JSONDecodeError):
+                    continue
             evidence = _evidence_from_objects(objects, tools, str(path))
             for item in evidence:
                 location = str(item.get("location") or "")
