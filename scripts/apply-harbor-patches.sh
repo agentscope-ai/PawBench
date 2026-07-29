@@ -28,7 +28,17 @@ if [ ! -f "$PATCH" ]; then
   exit 1
 fi
 
-if git apply --reverse --check "$PATCH" 2>/dev/null; then
+patch_semantics_present() {
+  rg -q 'urlparse\(base_url\)' harbor/src/harbor/agents/installed/qwenpaw.py &&
+  rg -q '_DEFAULT_QWENPAW_VERSION = "2\.0\.0\.post3"' harbor/src/harbor/agents/installed/qwenpaw.py &&
+  rg -q 'MULTI_AGENT' harbor/src/harbor/agents/installed/qwenpaw.py &&
+  rg -q 'hermes sessions export /logs/agent/hermes-session\.jsonl' harbor/src/harbor/agents/installed/hermes.py &&
+  ! rg -q 'sessions export .*--source cli' harbor/src/harbor/agents/installed/hermes.py &&
+  rg -q '_build_multi_agent_args' harbor/src/harbor/agents/installed/codex.py &&
+  rg -q 'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS' harbor/src/harbor/agents/installed/claude_code.py
+}
+
+if git apply --reverse --check "$PATCH" 2>/dev/null || patch_semantics_present; then
   echo "[apply-harbor-patches] already applied — skipping."
 elif git apply --check "$PATCH" 2>/dev/null; then
   git apply "$PATCH"

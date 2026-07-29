@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import json
 import hashlib
+import json
 import shutil
 import subprocess
 from pathlib import Path
 from typing import Any
-
 
 _MCP_SERVER_TOML = """
 
@@ -62,6 +61,7 @@ This benchmark contains an authored multi-turn user conversation.
 Use the `user-sim` MCP tools to conduct it:
 1. Your FIRST task action MUST be `start_conversation()`. Do not inspect files,
    run commands, edit the workspace, or answer the task before this call.
+   It returns JSON; read `user_message` as the authoritative opening request.
 2. A normal assistant response is NOT delivered to the user. After completing
    each turn, call `send_message_to_user(message)` with your complete response
    instead of ending the run.

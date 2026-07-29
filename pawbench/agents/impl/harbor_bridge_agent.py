@@ -299,7 +299,10 @@ class HarborBridgeAgent(ContainerAgent):
         #   * codex       → delegation_mode / agents_max_threads / agents_max_depth
         #   * openclaw    → openclaw_config overlay (coding profile + maxSpawnDepth)
         # Agents that do not support a multi-agent mode receive nothing (no-op).
-        if self._multi_agent is not None and self._multi_agent.enabled:
+        if (
+            self._multi_agent is not None
+            and self._multi_agent.effective_mode != "native"
+        ):
             from pawbench.agents.multi_agent import (
                 SUPPORTED_MULTI_AGENT_HARNESSES,
                 build_harbor_kwargs,
@@ -312,7 +315,7 @@ class HarborBridgeAgent(ContainerAgent):
                 ctor_kwargs.update(ma_kwargs)
                 extra_env.update(ma_env)
                 _logger.info(
-                    "Harbor agent '%s': multi-agent mode enabled (mode=%s, "
+                    "Harbor agent '%s': agent mode configured (mode=%s, "
                     "max_agents=%d, max_depth=%d, subagents=%d).",
                     self._harbor_agent_name,
                     self._multi_agent.mode,

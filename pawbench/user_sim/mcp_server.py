@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """FastMCP sidecar exposing a simulated user over MCP tools.
 
 Runs *inside a Harbor environment sidecar container* (Strategy A of
@@ -6,7 +5,7 @@ docs/multi-turn-user-agent-integration.md). The Harbor agent-under-test talks
 to the simulated user through MCP tools:
 
 * ``start_conversation()`` — begin the dialogue; returns the user's opening
-  message.
+  message in the same JSON status envelope used by later turns.
 * ``send_message_to_user(message)`` — send one assistant message; returns a
   JSON string with the user's reply plus ``conversation_over`` / ``turn``.
 * ``end_conversation()`` — end the dialogue early.
@@ -39,11 +38,13 @@ runtime = UserSimRuntime(default_task_dir(), max_turns=default_max_turns())
 
 @mcp.tool()
 async def start_conversation() -> str:
-    """Required first task action; returns the user's authoritative opening request.
+    """Required first task action; returns the opening request as status JSON.
 
     Do not inspect or edit the workspace before calling this tool. After handling
     the returned request, reply through ``send_message_to_user`` rather than a
-    normal final response.
+    normal final response. Read ``user_message`` as the authoritative request;
+    ``conversation_over`` and turn counters use the same contract as subsequent
+    ``send_message_to_user`` results.
     """
     return await runtime.start_conversation()
 
@@ -63,7 +64,7 @@ async def send_message_to_user(message: str) -> str:
 
 @mcp.tool()
 def end_conversation() -> str:
-    """End the conversation early once the user's need is resolved."""
+    """End early after at least one response has been delivered to the user."""
     return runtime.end_conversation()
 
 

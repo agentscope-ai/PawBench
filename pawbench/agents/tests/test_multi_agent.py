@@ -26,7 +26,7 @@ from run_bench import _build_multi_agent_config
 
 def _config(mode: str) -> MultiAgentConfig:
     return MultiAgentConfig(
-        enabled=mode != "single",
+        enabled=mode in {"adaptive", "forced"},
         mode=mode,
         run_mode=mode,
         requested_mode=mode,
@@ -48,8 +48,8 @@ def test_legacy_modes_are_normalized(legacy: str, expected: str) -> None:
     assert cfg.run_mode == expected
 
 
-def test_empty_config_is_single_and_limits_are_validated() -> None:
-    assert MultiAgentConfig.from_dict({}).effective_mode == "single"
+def test_empty_config_is_native_and_limits_are_validated() -> None:
+    assert MultiAgentConfig.from_dict({}).effective_mode == "native"
     disabled = MultiAgentConfig.from_dict({"enabled": False, "mode": "auto"})
     assert disabled.effective_mode == "single"
     with pytest.raises(ValueError, match="max_agents"):
@@ -67,7 +67,7 @@ def test_cli_defaults_and_legacy_flag() -> None:
     )
     assert _build_multi_agent_config(
         Namespace(**base, multi_agent=False)
-    ).run_mode == "single"
+    ).run_mode == "native"
     assert _build_multi_agent_config(
         Namespace(**base, multi_agent=True)
     ).run_mode == "adaptive"
@@ -76,20 +76,31 @@ def test_cli_defaults_and_legacy_flag() -> None:
 def test_harness_mode_mapping() -> None:
     forced = _config("forced")
     adaptive = _config("adaptive")
+    single = _config("single")
+    native = _config("native")
+
+    for harness in ("claude-code", "codex", "openclaw", "qwenpaw"):
+        assert build_harbor_kwargs(harness, native) == ({}, {})
 
     claude_forced, _ = build_harbor_kwargs("claude-code", forced)
     claude_adaptive, _ = build_harbor_kwargs("claude-code", adaptive)
+    claude_single, _ = build_harbor_kwargs("claude-code", single)
     assert claude_forced["agent_teams"] is True
     assert "agent_teams" not in claude_adaptive
+    assert claude_single["agent_teams"] is False
+    assert set(claude_single["disallowed_tools"].split()) == {"Agent", "Task"}
 
     codex_forced, _ = build_harbor_kwargs("codex", forced)
     codex_adaptive, _ = build_harbor_kwargs("codex", adaptive)
+    codex_single, _ = build_harbor_kwargs("codex", single)
     assert codex_forced["multi_agent"] is True
     assert codex_forced["multi_agent_force_delegation"] is True
     assert "multi_agent_force_delegation" not in codex_adaptive
+    assert codex_single["multi_agent"] is False
 
     openclaw_forced, _ = build_harbor_kwargs("openclaw", forced)
     openclaw_adaptive, _ = build_harbor_kwargs("openclaw", adaptive)
+    openclaw_single, _ = build_harbor_kwargs("openclaw", single)
     forced_subagents = openclaw_forced["openclaw_config"]["agents"]["defaults"]["subagents"]
     adaptive_subagents = openclaw_adaptive["openclaw_config"]["agents"]["defaults"]["subagents"]
     assert openclaw_forced["multi_agent"] is True
@@ -98,15 +109,22 @@ def test_harness_mode_mapping() -> None:
     assert adaptive_subagents["delegationMode"] == "suggest"
     assert openclaw_forced["multi_agent_force_delegation"] is True
     assert "multi_agent_force_delegation" not in openclaw_adaptive
+    assert openclaw_single["multi_agent"] is False
+    assert (
+        "sessions_spawn"
+        in openclaw_single["openclaw_config"]["tools"]["deny"]
+    )
 
     qwenpaw_forced, _ = build_harbor_kwargs("qwenpaw", forced)
     qwenpaw_adaptive, _ = build_harbor_kwargs("qwenpaw", adaptive)
+    qwenpaw_single, _ = build_harbor_kwargs("qwenpaw", single)
     assert qwenpaw_forced["multi_agent"] is True
     assert qwenpaw_adaptive["multi_agent"] is True
     assert qwenpaw_forced["multi_agent_force_delegation"] is True
     assert "multi_agent_force_delegation" not in qwenpaw_adaptive
     assert qwenpaw_forced["multi_agent_max_agents"] == forced.max_agents
     assert qwenpaw_forced["multi_agent_max_depth"] == forced.max_depth
+    assert qwenpaw_single["multi_agent"] is False
 
 
 def test_unsupported_harness_falls_back_to_single() -> None:
@@ -117,6 +135,13 @@ def test_unsupported_harness_falls_back_to_single() -> None:
     restored = MultiAgentConfig.from_dict(cfg.to_dict())
     assert restored.requested_mode == "forced"
     assert restored.effective_mode == "single"
+
+
+def test_native_mode_preserves_unsupported_harness_default() -> None:
+    cfg = resolve_for_harness(_config("native"), "harbor:aider")
+    assert cfg.requested_mode == "native"
+    assert cfg.effective_mode == "native"
+    assert cfg.enabled is False
 
 
 def test_forced_prompt_instruction_is_only_added_for_forced() -> None:

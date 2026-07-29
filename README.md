@@ -153,18 +153,23 @@ python run_bench.py \
 
 See `python run_bench.py --help` for all flags, including `--no-results-version-path`, `--save-workspace`, and `--save-docker-image`.
 
-### Single / Forced / Adaptive Agent Modes
+### Native / Single / Forced / Adaptive Agent Modes
 
-PawBench provides three comparable execution modes:
+PawBench provides four execution modes:
 
-- `single`: do not expose sub-agent orchestration to the harness (default).
+- `native`: preserve the harness's own configuration without injecting any
+  PawBench multi-agent override (default when the option is omitted).
+- `single`: explicitly disable native sub-agent delegation.
 - `adaptive`: expose delegation tools and let the main agent decide whether to delegate.
 - `forced`: require at least one real sub-agent delegation. If the trace contains no
   Claude Code `Task`, Codex `spawn_agent`, OpenClaw `sessions_spawn`, or QwenPaw
   `spawn_subagent` call, the task is recorded with `score=0` and `passed=false`.
 
 ```bash
-# Single agent (default)
+# Harness-native defaults (also selected when the option is omitted)
+python run_bench.py --agents harbor:openclaw --multi-agent-mode native ...
+
+# Strict single agent
 python run_bench.py --agents harbor:openclaw --multi-agent-mode single ...
 
 # Adaptive multi-agent

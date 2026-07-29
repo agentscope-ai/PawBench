@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Offline tests for the user simulator (no network, no real LLM).
 
 Run with:  python -m pytest pawbench/user_sim/tests -q
@@ -169,12 +168,12 @@ def test_load_user_context_reads_user_dir(tmp_path: Path):
 def test_runtime_full_conversation_and_persistence(tmp_path: Path):
     state_path = tmp_path / "state.json"
     agent = _agent(["开场白", "继续聊", "好的，再见\n[DONE]"])
-    rt = UserSimRuntime(
-        tmp_path, max_turns=10, agent=agent, state_path=state_path
-    )
+    rt = UserSimRuntime(tmp_path, max_turns=10, agent=agent, state_path=state_path)
 
-    opening = _run(rt.start_conversation())
-    assert opening == "开场白"
+    opening = json.loads(_run(rt.start_conversation()))
+    assert opening["user_message"] == "开场白"
+    assert opening["conversation_over"] is False
+    assert opening["turn"] == 0
 
     r1 = json.loads(_run(rt.send_message_to_user("助手回复1")))
     assert r1["user_message"] == "继续聊"
@@ -194,9 +193,7 @@ def test_runtime_full_conversation_and_persistence(tmp_path: Path):
 
 def test_runtime_max_turns_forces_stop(tmp_path: Path):
     agent = _agent(["开场", "a", "b", "c", "d"])
-    rt = UserSimRuntime(
-        tmp_path, max_turns=2, agent=agent, state_path=tmp_path / "s.json"
-    )
+    rt = UserSimRuntime(tmp_path, max_turns=2, agent=agent, state_path=tmp_path / "s.json")
     _run(rt.start_conversation())
     _run(rt.send_message_to_user("m1"))
     res = json.loads(_run(rt.send_message_to_user("m2")))
@@ -218,6 +215,41 @@ def test_runtime_send_before_start_raises(tmp_path: Path):
         raise AssertionError("expected RuntimeError")
 
 
+def test_runtime_rejects_end_before_first_delivered_response(tmp_path: Path):
+    state_path = tmp_path / "s.json"
+    rt = UserSimRuntime(
+        tmp_path,
+        agent=_agent(["opening", "done\n[DONE]"]),
+        state_path=state_path,
+    )
+
+    first = json.loads(_run(rt.start_conversation()))
+    assert first["user_message"] == "opening"
+    rejected = json.loads(rt.end_conversation())
+    assert "error" in rejected
+    assert rejected["conversation_over"] is False
+    assert json.loads(state_path.read_text())["done"] is False
+
+    _run(rt.send_message_to_user("delivered response"))
+    ended = json.loads(rt.end_conversation())
+    assert ended["conversation_over"] is True
+
+
+def test_runtime_opening_done_still_requires_one_agent_response(tmp_path: Path):
+    state_path = tmp_path / "s.json"
+    agent = _agent(["opening\n[DONE]"])
+    rt = UserSimRuntime(tmp_path, agent=agent, state_path=state_path)
+
+    started = json.loads(_run(rt.start_conversation()))
+    assert started["conversation_over"] is False
+    assert json.loads(state_path.read_text())["done"] is False
+
+    completed = json.loads(_run(rt.send_message_to_user("acknowledged")))
+    assert completed["conversation_over"] is True
+    assert completed["termination_reason"] == "user_done"
+    assert [turn["source"] for turn in rt.transcript] == ["user", "agent"]
+
+
 def test_cowork_patches_apply_before_corresponding_user_turn(tmp_path: Path):
     task_dir = tmp_path / "task"
     patch_dir = task_dir / ".user" / "patches"
@@ -235,7 +267,7 @@ def test_cowork_patches_apply_before_corresponding_user_turn(tmp_path: Path):
         "files:\n"
         "  - path: workspace/index.html\n"
         "    action: edit\n"
-        "    old: \"<html>\"\n"
+        '    old: "<html>"\n'
         "    new: '<html lang=\"zh-CN\">'\n"
         "---\nsecond turn\n",
         encoding="utf-8",
@@ -245,7 +277,7 @@ def test_cowork_patches_apply_before_corresponding_user_turn(tmp_path: Path):
         "files:\n"
         "  - path: workspace/draft.md\n"
         "    action: create\n"
-        "    content: \"draft\\n\"\n"
+        '    content: "draft\\n"\n'
         "---\nthird turn\n",
         encoding="utf-8",
     )
@@ -274,12 +306,7 @@ def test_workspace_patch_rejects_path_escape(tmp_path: Path):
     patch_dir = task_dir / ".patch"
     patch_dir.mkdir(parents=True)
     (patch_dir / "turn_01.md").write_text(
-        "---\n"
-        "files:\n"
-        "  - path: ../escape.txt\n"
-        "    action: create\n"
-        "    content: nope\n"
-        "---\n",
+        "---\nfiles:\n  - path: ../escape.txt\n    action: create\n    content: nope\n---\n",
         encoding="utf-8",
     )
     applier = WorkspacePatchApplier(task_dir, tmp_path / "workspace")

@@ -152,18 +152,23 @@ python run_bench.py \
 
 其他参数（`--no-results-version-path`、`--save-workspace`、`--save-docker-image` 等）见 `python run_bench.py --help`。
 
-### Single / Forced / Adaptive Agent 模式
+### Native / Single / Forced / Adaptive Agent 模式
 
-PawBench 支持三种可比较的执行模式：
+PawBench 支持四种执行模式：
 
-- `single`：不向 harness 暴露子 Agent 编排能力（默认）。
+- `native`：不注入 PawBench 的 Multi-Agent 配置，完整沿用 harness 自身默认
+  配置（不传该参数时的默认行为）。
+- `single`：显式禁用 harness 的原生子 Agent 委派能力。
 - `adaptive`：开放子 Agent 工具，由主 Agent 自行决定是否委派。
 - `forced`：要求至少进行一次真实子 Agent 委派；如果轨迹中没有检测到
   Claude Code `Task`、Codex `spawn_agent`、OpenClaw `sessions_spawn` 或 QwenPaw
   `spawn_subagent` 调用，该任务会以 `score=0`、`passed=false` 记录。
 
 ```bash
-# 单 Agent（默认）
+# Harness 原生默认配置（省略该参数时也是此模式）
+python run_bench.py --agents harbor:openclaw --multi-agent-mode native ...
+
+# 严格单 Agent
 python run_bench.py --agents harbor:openclaw --multi-agent-mode single ...
 
 # 自适应 Multi-Agent

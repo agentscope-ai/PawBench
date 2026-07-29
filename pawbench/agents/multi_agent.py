@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """Multi-agent (sub-agent / agent-team) configuration for Harbor harnesses.
 
-PawBench normally runs each harness as a **single** agent process. This module
-adds a harness-agnostic way to launch the same harness in its **multi-agent**
+PawBench preserves each harness's native agent configuration unless the caller
+selects an explicit mode. This module adds a harness-agnostic way to enforce
+strict single-agent execution or launch the same harness in its **multi-agent**
 mode — the orchestrator + sub-agent / delegation feature each CLI ships:
 
 * **claude-code** — *sub-agents* (``--agents '<json>'``, session-only definitions)
@@ -27,8 +28,10 @@ Design
 ------
 The normalized config is intentionally small and provider-neutral:
 
-``run_mode``     benchmark semantics: ``"single"``, ``"forced"``, or
-                 ``"adaptive"``. Legacy ``mode`` values are normalized.
+``run_mode``     benchmark semantics: ``"native"``, ``"single"``,
+                 ``"forced"``, or ``"adaptive"``. ``native`` leaves the
+                 harness configuration untouched. Legacy ``mode`` values are
+                 normalized.
 ``enabled``      compatibility flag derived from the effective run mode.
 ``max_agents``   max concurrent sub-agents / worker threads.
 ``max_depth``    max nesting depth (orchestrator → worker → …).
@@ -57,10 +60,13 @@ SUPPORTED_MULTI_AGENT_HARNESSES: frozenset[str] = frozenset(
 )
 
 MULTI_AGENT_RUN_MODES: frozenset[str] = frozenset(
-    {"single", "forced", "adaptive"}
+    {"native", "single", "forced", "adaptive"}
 )
 
 _MODE_ALIASES: dict[str, str] = {
+    "native": "native",
+    "default": "native",
+    "harness-default": "native",
     "single": "single",
     "disabled": "single",
     "adaptive": "adaptive",
@@ -138,7 +144,7 @@ class MultiAgentConfig:
     """Normalized, harness-agnostic multi-agent launch spec."""
 
     enabled: bool = False
-    mode: str = "auto"
+    mode: str = "native"
     run_mode: str | None = None
     requested_mode: str | None = None
     effective_mode: str | None = None
@@ -150,14 +156,14 @@ class MultiAgentConfig:
     def __post_init__(self) -> None:
         candidate = self.run_mode or self.requested_mode or self.mode
         normalized = normalize_run_mode(candidate)
-        if not self.enabled:
+        if not self.enabled and normalized not in {"native", "single"}:
             normalized = "single"
         self.run_mode = normalized
         self.requested_mode = normalize_run_mode(self.requested_mode or candidate)
         self.effective_mode = normalize_run_mode(
             self.effective_mode or normalized
         )
-        self.enabled = self.effective_mode != "single"
+        self.enabled = self.effective_mode in {"adaptive", "forced"}
         self.mode = self.run_mode
         self.max_agents = int(self.max_agents)
         self.max_depth = int(self.max_depth)
@@ -186,7 +192,7 @@ class MultiAgentConfig:
         requested = (
             requested_value
             if requested_value is not None
-            else ("adaptive" if data.get("enabled", False) else "single")
+            else ("adaptive" if data.get("enabled", False) else "native")
         )
         enabled = (
             bool(data["enabled"])
@@ -260,10 +266,14 @@ def build_harbor_kwargs(
 
     Unknown / unsupported harnesses return empty dicts (multi-agent is a no-op).
     """
-    if not cfg.enabled or cfg.effective_mode == "single":
+    if cfg.effective_mode == "native":
         return {}, {}
 
     name = harbor_agent_name.strip().lower()
+    if cfg.effective_mode == "single":
+        return _build_strict_single(name, cfg)
+    if not cfg.enabled:
+        return {}, {}
     if name == "claude-code":
         return _build_claude_code(cfg)
     if name == "codex":
@@ -272,6 +282,81 @@ def build_harbor_kwargs(
         return _build_openclaw(cfg)
     if name == "qwenpaw":
         return _build_qwenpaw(cfg)
+    return {}, {}
+
+
+def _build_strict_single(
+    harbor_agent_name: str,
+    cfg: MultiAgentConfig,
+) -> tuple[dict[str, Any], dict[str, str]]:
+    """Explicitly disable native delegation for a supported harness.
+
+    This is intentionally different from ``native``. Merely omitting
+    multi-agent enablement is insufficient for Claude Code because its built-in
+    Agent/Task delegation tools can still be available by default.
+    """
+    ctor: dict[str, Any] = {}
+    env: dict[str, str] = {}
+    raw = cfg.raw.get(harbor_agent_name)
+
+    if harbor_agent_name == "claude-code":
+        _merge_raw(ctor, env, raw)
+        denied = str(ctor.get("disallowed_tools") or "").split()
+        for tool in ("Agent", "Task"):
+            if tool not in denied:
+                denied.append(tool)
+        ctor.update(
+            {
+                "agent_teams": False,
+                "subagents": [],
+                # Claude's CLI accepts a space-separated variadic tool list.
+                "disallowed_tools": " ".join(denied),
+            }
+        )
+        return ctor, env
+
+    if harbor_agent_name == "codex":
+        _merge_raw(ctor, env, raw)
+        ctor.update(
+            {
+                "multi_agent": False,
+                "multi_agent_force_delegation": False,
+            }
+        )
+        return ctor, env
+
+    if harbor_agent_name == "openclaw":
+        _merge_raw(ctor, env, raw)
+        configured = ctor.get("openclaw_config")
+        overlay: dict[str, Any] = (
+            configured if isinstance(configured, dict) else {}
+        )
+        tools = overlay.setdefault("tools", {})
+        denied = tools.get("deny")
+        if not isinstance(denied, list):
+            denied = []
+        if "sessions_spawn" not in denied:
+            denied.append("sessions_spawn")
+        tools["deny"] = denied
+        ctor.update(
+            {
+                "multi_agent": False,
+                "multi_agent_force_delegation": False,
+                "openclaw_config": overlay,
+            }
+        )
+        return ctor, env
+
+    if harbor_agent_name == "qwenpaw":
+        _merge_raw(ctor, env, raw)
+        ctor.update(
+            {
+                "multi_agent": False,
+                "multi_agent_force_delegation": False,
+            }
+        )
+        return ctor, env
+
     return {}, {}
 
 
@@ -391,7 +476,7 @@ def _build_qwenpaw(cfg: MultiAgentConfig) -> tuple[dict[str, Any], dict[str, str
 
 def normalize_run_mode(value: str | None) -> str:
     """Return the canonical execution mode, accepting legacy mode names."""
-    key = str(value or "single").strip().lower()
+    key = str(value or "native").strip().lower()
     try:
         return _MODE_ALIASES[key]
     except KeyError as exc:
@@ -415,10 +500,14 @@ def resolve_for_harness(
     """Resolve requested mode to the mode that a harness can actually execute."""
     requested = normalize_run_mode(cfg.requested_mode or cfg.run_mode)
     supported = normalize_harness_name(harness) in SUPPORTED_MULTI_AGENT_HARNESSES
-    effective = requested if supported else "single"
+    effective = (
+        requested
+        if requested in {"native", "single"} or supported
+        else "single"
+    )
     return replace(
         cfg,
-        enabled=effective != "single",
+        enabled=effective in {"adaptive", "forced"},
         mode=requested,
         run_mode=requested,
         requested_mode=requested,

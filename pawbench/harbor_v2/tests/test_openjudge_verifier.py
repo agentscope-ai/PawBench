@@ -1,12 +1,13 @@
+import json
 from pathlib import Path
 
 import pytest
-
 from pawbench.harbor_v2.verifier import (
     load_agent_judge_framework,
     materialize_openjudge_task,
     uses_openjudge,
 )
+from pawbench.harbor_v2.verifier.input_contract import validate_atif
 
 
 def _write_agent_judge_task(
@@ -46,7 +47,11 @@ def test_materialize_injects_central_openjudge_files(tmp_path: Path):
     )
     destination = tmp_path / "runtime" / "openjudge-task"
 
-    runtime = materialize_openjudge_task(task, destination)
+    runtime = materialize_openjudge_task(
+        task,
+        destination,
+        provenance={"dataset": "data/full", "task_id": "task-1"},
+    )
 
     assert runtime == destination
     assert uses_openjudge(runtime)
@@ -59,6 +64,15 @@ def test_materialize_injects_central_openjudge_files(tmp_path: Path):
     assert "openjudge-judge-result.json" in runner
     assert "openjudge-harness.json" in runner
     assert "def _persist_harness_logs(" in runner
+    assert "from input_contract import validate_atif" in runner
+    assert (runtime / "tests" / "quality" / "input_contract.py").is_file()
+    provenance = json.loads(
+        (runtime / "tests" / "quality" / "pawbench-provenance.json").read_text()
+    )
+    assert provenance["dataset"] == "data/full"
+    assert provenance["task_id"] == "task-1"
+    assert len(provenance["task_contract_sha256"]) == 64
+    assert len(provenance["openjudge_adapter_sha256"]) == 64
     dispatcher = (runtime / "tests" / "test.sh").read_text(encoding="utf-8")
     assert 'case "${FRAMEWORK:-rewardkit}"' in dispatcher
     assert "py-openjudge" in dispatcher
@@ -76,3 +90,19 @@ def test_materialize_rejects_rewardkit_task(tmp_path: Path):
 
     with pytest.raises(ValueError, match="does not declare"):
         materialize_openjudge_task(task, tmp_path / "runtime")
+
+
+def test_openjudge_input_contract_rejects_native_session() -> None:
+    with pytest.raises(ValueError, match="schema_version"):
+        validate_atif({"agent": {"state": {"context": []}}})
+
+
+def test_openjudge_input_contract_accepts_atif() -> None:
+    payload = {
+        "schema_version": "ATIF-v1.7",
+        "session_id": "session",
+        "agent": {"name": "qwenpaw", "version": "2.0"},
+        "steps": [{"step_id": 1, "source": "user", "message": "hello"}],
+    }
+
+    assert validate_atif(payload) is payload

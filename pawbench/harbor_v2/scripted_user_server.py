@@ -9,11 +9,8 @@ from typing import Any
 
 from fastmcp import FastMCP  # pyright: ignore[reportMissingImports]
 
-
 MESSAGES_PATH = Path(os.environ.get("SCRIPTED_MESSAGES_PATH", "/app/task/messages.jsonl"))
-STATE_PATH = Path(
-    os.environ.get("USER_SIM_STATE_PATH", "/logs/agent/user_sim_state.json")
-)
+STATE_PATH = Path(os.environ.get("USER_SIM_STATE_PATH", "/logs/agent/user_sim_state.json"))
 
 
 def _load_messages() -> list[str]:
@@ -64,13 +61,21 @@ class ScriptedConversation:
 
     def start(self) -> str:
         if self.started:
-            return self.messages[0]
+            return json.dumps(
+                self._status(user_message=self.messages[0]),
+                ensure_ascii=False,
+                sort_keys=True,
+            )
         self.started = True
         opening = self.messages[0]
         self.next_message_index = 1
         self.transcript.append({"source": "user", "text": opening})
         self._write_state()
-        return opening
+        return json.dumps(
+            self._status(user_message=opening),
+            ensure_ascii=False,
+            sort_keys=True,
+        )
 
     def send(self, message: str) -> str:
         if not self.started:
@@ -99,10 +104,22 @@ class ScriptedConversation:
         )
 
     def end(self) -> str:
+        if not any(turn.get("source") == "agent" for turn in self.transcript):
+            return json.dumps(
+                {
+                    **self._status(),
+                    "error": (
+                        "Cannot end the conversation before delivering at least "
+                        "one send_message_to_user response."
+                    ),
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            )
         if self.termination_reason is None:
             self.termination_reason = "agent_ended"
         self._write_state()
-        return "Conversation ended."
+        return json.dumps(self._status(), ensure_ascii=False, sort_keys=True)
 
     def _status(self, *, user_message: str | None = None) -> dict[str, Any]:
         return {
@@ -120,10 +137,12 @@ mcp = FastMCP("pawbench-scripted-user")
 
 @mcp.tool()
 def start_conversation() -> str:
-    """Required first task action; return the authoritative first user request.
+    """Required first task action; return the first request as status JSON.
 
     Do not inspect or edit task files before this call. Reply to the returned
-    request through ``send_message_to_user`` instead of a normal final response.
+    ``user_message`` through ``send_message_to_user`` instead of a normal final
+    response. The response uses the same ``conversation_over`` / turn contract
+    as later tool calls.
     """
     return runtime.start()
 
@@ -140,7 +159,7 @@ def send_message_to_user(message: str) -> str:
 
 @mcp.tool()
 def end_conversation() -> str:
-    """End the conversation before the authored script is exhausted."""
+    """End early after at least one response has been delivered to the user."""
     return runtime.end()
 
 

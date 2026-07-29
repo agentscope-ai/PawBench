@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """HarborV2Backend — run + grade Harbor-native (v2) tasks via Harbor's Trial.
 
 This backend keeps pawbench's orchestration/reporting (``BenchmarkRunner`` →
@@ -23,24 +22,29 @@ task discovery) load fine on hosts without harbor installed.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
 import os
 import shutil
 import tempfile
 import time
+import tomllib
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from pawbench.agents.claude_code_guidance import quoted_claude_code_guidance
-from pawbench.backend import BenchmarkBackend, TaskResult
+from pawbench.agents.claude_code_guidance import (
+    merge_claude_code_guidance,
+    quoted_claude_code_guidance,
+)
 from pawbench.agents.delegation import evaluate_multi_agent_run
 from pawbench.agents.multi_agent import (
     FORCED_DELEGATION_INSTRUCTION,
     MultiAgentConfig,
     resolve_for_harness,
 )
+from pawbench.backend import BenchmarkBackend, TaskResult
 from pawbench.utils.anomalies import detect_anomalies
 
 from .generative_user import (
@@ -58,13 +62,12 @@ from .scripted_user import (
 from .task_loader import HarborV2Loader, HarborV2Task
 from .verifier import materialize_openjudge_task, uses_openjudge
 
-
 logger = logging.getLogger(__name__)
 
 
 # Aliases: pawbench ``harbor:<name>`` values → Harbor AgentName registry names.
 # Most names match verbatim; only the handful that diverge are listed here.
-_AGENT_NAME_ALIASES: Dict[str, str] = {
+_AGENT_NAME_ALIASES: dict[str, str] = {
     "qwen-code": "qwen-coder",
 }
 
@@ -72,12 +75,14 @@ _AGENT_NAME_ALIASES: Dict[str, str] = {
 # registered in Harbor's ``AgentName`` enum (so the native Trial AgentFactory
 # rejects them by name).  Passing a ``module:Class`` import path bypasses the
 # enum check — see harbor.agents.factory.create_agent_from_config.
-_AGENT_IMPORT_PATHS: Dict[str, str] = {
-    "claude-code": (
-        "pawbench.agents.impl.pawbench_claude_code:PawBenchClaudeCode"
-    ),
-    "qwenpaw": "harbor.agents.installed.qwenpaw:QwenPaw",
+_AGENT_IMPORT_PATHS: dict[str, str] = {
+    "claude-code": ("pawbench.agents.impl.pawbench_claude_code:PawBenchClaudeCode"),
+    "hermes": "pawbench.agents.impl.harbor_reliability_agents:PawBenchHermes",
+    "qwenpaw": "pawbench.agents.impl.harbor_reliability_agents:PawBenchQwenPaw",
 }
+
+_QWENPAW_SETUP_TIMEOUT_SECONDS = 1500.0
+_HERMES_SETUP_TIMEOUT_SECONDS = 1200.0
 
 
 class HarborV2Backend(BenchmarkBackend):
@@ -91,7 +96,7 @@ class HarborV2Backend(BenchmarkBackend):
 
     # ── task discovery ─────────────────────────────────────────────────────────
 
-    def _dataset_root(self, dataset: Optional[str]) -> Path:
+    def _dataset_root(self, dataset: str | None) -> Path:
         ds = dataset or self.DEFAULT_DATASET
         root = self.benchmark_path / "data" / ds
         if not root.exists():
@@ -104,18 +109,20 @@ class HarborV2Backend(BenchmarkBackend):
 
     def load_tasks(
         self,
-        task_filter: Optional[List[str]] = None,
-        dataset: Optional[str] = None,
+        task_filter: list[str] | None = None,
+        dataset: str | None = None,
         **_kwargs: Any,
-    ) -> List[Any]:
+    ) -> list[Any]:
         loader = HarborV2Loader(self._dataset_root(dataset))
         tasks = loader.load_all_tasks()
         if task_filter:
-            def _matches(t: HarborV2Task, filters: List[str]) -> bool:
+
+            def _matches(t: HarborV2Task, filters: list[str]) -> bool:
                 for f in filters:
                     if t.task_id == f or t.task_id.startswith(f):
                         return True
                 return False
+
             tasks = [t for t in tasks if _matches(t, task_filter)]
         return tasks
 
@@ -124,7 +131,7 @@ class HarborV2Backend(BenchmarkBackend):
     def run_and_grade(
         self,
         task: Any,
-        agent_config: Dict[str, Any],
+        agent_config: dict[str, Any],
     ) -> TaskResult:
         timeout_multiplier = float(agent_config.get("timeout_multiplier", 1.0))
         hard_limit = int(getattr(task, "timeout_seconds", 1200) * timeout_multiplier) + 600
@@ -136,7 +143,7 @@ class HarborV2Backend(BenchmarkBackend):
                     timeout=hard_limit,
                 )
             )
-        except (asyncio.TimeoutError, TimeoutError):
+        except TimeoutError:
             return self._error_result(
                 task,
                 f"Trial exceeded hard wall-clock limit of {hard_limit}s",
@@ -145,6 +152,7 @@ class HarborV2Backend(BenchmarkBackend):
             )
         except Exception as exc:  # noqa: BLE001
             import traceback
+
             return self._error_result(
                 task,
                 f"{exc}\nTraceback:\n{traceback.format_exc()}",
@@ -154,9 +162,10 @@ class HarborV2Backend(BenchmarkBackend):
     async def _run_trial_async(
         self,
         task: HarborV2Task,
-        agent_config: Dict[str, Any],
+        agent_config: dict[str, Any],
     ) -> TaskResult:
         # Deferred harbor import — only needed when actually running a trial.
+        from harbor.models.agent.name import AgentName
         from harbor.models.trial.config import (
             AgentConfig,
             EnvironmentConfig,
@@ -165,7 +174,6 @@ class HarborV2Backend(BenchmarkBackend):
             VerifierConfig,
         )
         from harbor.trial.trial import Trial
-        from harbor.models.agent.name import AgentName
 
         short_agent_name = self._resolve_agent_name(agent_config.get("agent_type", ""))
         agent_name = short_agent_name
@@ -200,6 +208,8 @@ class HarborV2Backend(BenchmarkBackend):
             **agent_config,
             "multi_agent": multi_agent_cfg.to_dict(),
         }
+        requires_user_sim = self._requires_user_sim(task)
+        self._validate_user_sim_wiring(task)
 
         # Extra kwargs forwarded to the native agent constructor via
         # AgentConfig.kwargs (harbor.agents.factory merges these into the
@@ -209,14 +219,20 @@ class HarborV2Backend(BenchmarkBackend):
         # off."), crashing the CLI with an empty transcript. Mirror
         # HarborBridgeAgent: force "off" unless the caller explicitly passed
         # --thinking (agent_config["thinking_level"]).
-        agent_kwargs: Dict[str, Any] = {}
+        agent_kwargs: dict[str, Any] = {}
+        effective_system_prompt: str | None = None
         if agent_config.get("version"):
             agent_kwargs["version"] = str(agent_config["version"])
         if short_agent_name == "openclaw":
             agent_kwargs["thinking"] = agent_config.get("thinking_level") or "off"
         elif short_agent_name == "claude-code":
+            effective_system_prompt = merge_claude_code_guidance(
+                agent_config.get("append_system_prompt"),
+                multi_turn=requires_user_sim,
+            )
             agent_kwargs["append_system_prompt"] = quoted_claude_code_guidance(
-                agent_config.get("append_system_prompt")
+                agent_config.get("append_system_prompt"),
+                multi_turn=requires_user_sim,
             )
         multi_agent_kwargs, multi_agent_env = self._build_multi_agent_inputs(
             short_agent_name, agent_config
@@ -230,8 +246,7 @@ class HarborV2Backend(BenchmarkBackend):
         # agent's declared artifacts (e.g. /app/summary_*.md) never reach the
         # separate verifier — silently scoring structure=0 / reward=0.
         trials_dir = Path(
-            agent_config.get("trials_dir")
-            or tempfile.mkdtemp(prefix=f"harborv2_{task.task_id}_")
+            agent_config.get("trials_dir") or tempfile.mkdtemp(prefix=f"harborv2_{task.task_id}_")
         ).resolve()
         run_id = agent_config.get("run_id") or uuid.uuid4().hex[:8]
         # Docker Compose uses the trial name as its project name. Repeated or
@@ -284,12 +299,41 @@ class HarborV2Backend(BenchmarkBackend):
                 trial_name,
             )
 
+        try:
+            dataset_id = str(task.task_dir.parent.relative_to(self.benchmark_path / "data"))
+        except ValueError:
+            dataset_id = task.task_dir.parent.name
+        run_provenance = {
+            "schema_version": 1,
+            "dataset": dataset_id,
+            "task_id": task.task_id,
+            "task_config_sha256": hashlib.sha256(
+                json.dumps(
+                    task.raw_config,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            ).hexdigest(),
+            "run_id": str(run_id),
+            "agent": {
+                "name": short_agent_name,
+                "model": model,
+                "version": agent_config.get("version"),
+            },
+            "judge": {
+                "framework": (
+                    "openjudge" if uses_openjudge(runtime_task_dir) else "rewardkit"
+                ),
+                "model": agent_config.get("judge_model"),
+                "api_format": agent_config.get("judge_api_format"),
+            },
+            "multi_agent_mode": multi_agent_cfg.effective_mode,
+        }
         if uses_openjudge(runtime_task_dir):
             runtime_task_dir = materialize_openjudge_task(
                 runtime_task_dir,
-                trials_dir
-                / ".pawbench-runtime-tasks"
-                / f"{trial_name}-openjudge",
+                trials_dir / ".pawbench-runtime-tasks" / f"{trial_name}-openjudge",
+                provenance=run_provenance,
             )
             logger.info(
                 "Injected centralized OpenJudge verifier for %s at %s",
@@ -311,6 +355,17 @@ class HarborV2Backend(BenchmarkBackend):
 
         timeout_multiplier = float(agent_config.get("timeout_multiplier", 1.0))
 
+        artifacts = []
+        if agent_config.get("save_workspace"):
+            from harbor.models.task.config import ArtifactConfig
+
+            artifacts.append(
+                ArtifactConfig(
+                    source=str(agent_config.get("workspace_path") or "/home/node/workspace"),
+                    destination="workspace",
+                )
+            )
+
         config = TrialConfig(
             task=TaskConfig(path=runtime_task_dir),
             trial_name=trial_name,
@@ -321,6 +376,11 @@ class HarborV2Backend(BenchmarkBackend):
                 model_name=model,
                 env=agent_env,
                 kwargs=agent_kwargs,
+                # QwenPaw creates an isolated venv and may need to download its
+                # package in task images that do not include it. Its own install
+                # command allows 1200s, so Harbor's generic 360s outer setup
+                # timeout must not terminate a healthy installation first.
+                override_setup_timeout_sec=self._agent_setup_timeout_seconds(short_agent_name),
             ),
             environment=(
                 EnvironmentConfig(env=environment_env)
@@ -328,12 +388,24 @@ class HarborV2Backend(BenchmarkBackend):
                 else EnvironmentConfig()  # provider defaults to docker
             ),
             verifier=VerifierConfig(env=verifier_env) if verifier_env else VerifierConfig(),
+            artifacts=artifacts,
         )
 
         t0 = time.time()
         trial = await Trial.create(config)
+        if effective_system_prompt is not None:
+            self._save_system_prompt(
+                trials_dir / trial_name,
+                effective_system_prompt,
+            )
         result = await trial.run()
         elapsed = time.time() - t0
+        self._save_run_provenance(trials_dir / trial_name, run_provenance)
+        self._copy_saved_workspace(
+            trials_dir / trial_name,
+            task.task_id,
+            agent_config.get("workspace_save_dir"),
+        )
 
         return self._map_trial_result(
             task=task,
@@ -346,6 +418,55 @@ class HarborV2Backend(BenchmarkBackend):
         )
 
     @staticmethod
+    def _save_system_prompt(trial_dir: Path, prompt: str) -> None:
+        """Persist the effective PawBench append-system-prompt for reproducibility.
+
+        Claude Code's built-in vendor prompt is not exposed by its CLI. This file
+        records the complete prompt supplied through ``--append-system-prompt``.
+        """
+        agent_dir = trial_dir / "agent"
+        agent_dir.mkdir(parents=True, exist_ok=True)
+        (agent_dir / "system_prompt.txt").write_text(prompt + "\n", encoding="utf-8")
+
+    @staticmethod
+    def _save_run_provenance(trial_dir: Path, provenance: dict[str, Any]) -> None:
+        """Persist the immutable evaluation contract used for this trial."""
+        trial_dir.mkdir(parents=True, exist_ok=True)
+        (trial_dir / "provenance.json").write_text(
+            json.dumps(provenance, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+
+    @staticmethod
+    def _copy_saved_workspace(
+        trial_dir: Path,
+        task_id: str,
+        workspace_save_dir: str | Path | None,
+    ) -> None:
+        """Copy Harbor's collected final workspace to the public results tree."""
+        if not workspace_save_dir:
+            return
+        source = trial_dir / "artifacts" / "workspace"
+        if not source.is_dir():
+            logger.warning("Requested workspace archive was not collected: %s", source)
+            return
+        destination = Path(workspace_save_dir) / task_id
+        try:
+            shutil.copytree(
+                source,
+                destination,
+                dirs_exist_ok=True,
+                ignore_dangling_symlinks=True,
+            )
+            logger.info("Workspace saved to %s", destination)
+        except (OSError, shutil.Error):
+            logger.warning(
+                "Failed to copy collected workspace to %s",
+                destination,
+                exc_info=True,
+            )
+
+    @staticmethod
     def _materialize_forced_task(
         task_dir: Path,
         trials_dir: Path,
@@ -354,15 +475,11 @@ class HarborV2Backend(BenchmarkBackend):
         """Copy a Harbor task and prepend the strict delegation instruction."""
         parent = trials_dir / ".pawbench-runtime-tasks"
         parent.mkdir(parents=True, exist_ok=True)
-        target = Path(
-            tempfile.mkdtemp(prefix=f"{trial_name}-forced-", dir=parent)
-        )
+        target = Path(tempfile.mkdtemp(prefix=f"{trial_name}-forced-", dir=parent))
         shutil.copytree(task_dir, target, dirs_exist_ok=True, symlinks=True)
         instruction_path = target / "instruction.md"
         existing = (
-            instruction_path.read_text(encoding="utf-8")
-            if instruction_path.is_file()
-            else ""
+            instruction_path.read_text(encoding="utf-8") if instruction_path.is_file() else ""
         )
         instruction_path.write_text(
             FORCED_DELEGATION_INSTRUCTION + existing.lstrip(),
@@ -371,10 +488,19 @@ class HarborV2Backend(BenchmarkBackend):
         return target
 
     @staticmethod
+    def _agent_setup_timeout_seconds(agent_name: str) -> float | None:
+        """Return per-agent setup overrides for cold task environments."""
+        if agent_name == "qwenpaw":
+            return _QWENPAW_SETUP_TIMEOUT_SECONDS
+        if agent_name == "hermes":
+            return _HERMES_SETUP_TIMEOUT_SECONDS
+        return None
+
+    @staticmethod
     def _build_multi_agent_inputs(
         short_agent_name: str,
-        agent_config: Dict[str, Any],
-    ) -> tuple[Dict[str, Any], Dict[str, str]]:
+        agent_config: dict[str, Any],
+    ) -> tuple[dict[str, Any], dict[str, str]]:
         """Translate normalized multi-agent config for native Harbor trials.
 
         The legacy ``HarborBridgeAgent`` already performs this translation, but
@@ -386,8 +512,8 @@ class HarborV2Backend(BenchmarkBackend):
             return {}, {}
 
         from pawbench.agents.multi_agent import (
-            MultiAgentConfig,
             SUPPORTED_MULTI_AGENT_HARNESSES,
+            MultiAgentConfig,
             build_harbor_kwargs,
         )
 
@@ -396,9 +522,7 @@ class HarborV2Backend(BenchmarkBackend):
         elif isinstance(raw_config, dict):
             config = MultiAgentConfig.from_dict(raw_config)
         else:
-            raise TypeError(
-                "agent_config['multi_agent'] must be a mapping or MultiAgentConfig"
-            )
+            raise TypeError("agent_config['multi_agent'] must be a mapping or MultiAgentConfig")
 
         kwargs, env = build_harbor_kwargs(short_agent_name, config)
         if config.enabled and short_agent_name not in SUPPORTED_MULTI_AGENT_HARNESSES:
@@ -431,8 +555,8 @@ class HarborV2Backend(BenchmarkBackend):
         self,
         agent_name: str,
         model: str,
-        agent_config: Dict[str, Any],
-    ) -> Dict[str, str]:
+        agent_config: dict[str, Any],
+    ) -> dict[str, str]:
         """Build the env dict handed to the Harbor agent (scoped to its container).
 
         Mirrors HarborBridgeAgent._build_extra_env: pick the provider-appropriate
@@ -440,7 +564,7 @@ class HarborV2Backend(BenchmarkBackend):
         reach its LLM without extra configuration, plus a claude-code-specific
         adaptation for proxied Anthropic endpoints.
         """
-        env: Dict[str, str] = {}
+        env: dict[str, str] = {}
         api_key = agent_config.get("api_key") or ""
         base_url = agent_config.get("base_url") or ""
         provider = model.split("/", 1)[0].lower() if "/" in model else ""
@@ -462,10 +586,16 @@ class HarborV2Backend(BenchmarkBackend):
 
         # Pass through commonly-read provider vars already set on the host.
         for key in (
-            "ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL",
-            "OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_API_BASE",
-            "GOOGLE_API_KEY", "OPENROUTER_API_KEY",
-            "DASHSCOPE_API_KEY", "KIMI_API_KEY", "GLM_API_KEY",
+            "ANTHROPIC_API_KEY",
+            "ANTHROPIC_BASE_URL",
+            "OPENAI_API_KEY",
+            "OPENAI_BASE_URL",
+            "OPENAI_API_BASE",
+            "GOOGLE_API_KEY",
+            "OPENROUTER_API_KEY",
+            "DASHSCOPE_API_KEY",
+            "KIMI_API_KEY",
+            "GLM_API_KEY",
         ):
             if key not in env and os.environ.get(key):
                 env[key] = os.environ[key]
@@ -475,7 +605,7 @@ class HarborV2Backend(BenchmarkBackend):
         return env
 
     @staticmethod
-    def _apply_claude_code_proxy_env(env: Dict[str, str], model: str) -> None:
+    def _apply_claude_code_proxy_env(env: dict[str, str], model: str) -> None:
         """Adapt claude-code for a proxied Anthropic (messages-format) endpoint.
 
         Harbor's native ClaudeCode agent, when a custom ``ANTHROPIC_BASE_URL`` is
@@ -513,7 +643,7 @@ class HarborV2Backend(BenchmarkBackend):
         if os.environ.get("NODE_TLS_REJECT_UNAUTHORIZED"):
             env["NODE_TLS_REJECT_UNAUTHORIZED"] = os.environ["NODE_TLS_REJECT_UNAUTHORIZED"]
 
-    def _build_verifier_env(self, agent_config: Dict[str, Any]) -> Dict[str, str]:
+    def _build_verifier_env(self, agent_config: dict[str, Any]) -> dict[str, str]:
         """Inject judge credentials for the (separate) verifier's LLM judge.
 
         The v2 task verifiers read a standardized env contract (see each task's
@@ -533,7 +663,7 @@ class HarborV2Backend(BenchmarkBackend):
         These are injected via ``TrialConfig.verifier.env`` which overrides the
         task's ``[verifier.env]`` declarations at trial time.
         """
-        env: Dict[str, str] = {}
+        env: dict[str, str] = {}
         judge_api_key = agent_config.get("judge_api_key")
         judge_base_url = agent_config.get("judge_base_url")
         judge_model_raw = agent_config.get("judge_model")
@@ -550,8 +680,15 @@ class HarborV2Backend(BenchmarkBackend):
         if judge_model and "/" in judge_model:
             prefix, rest = judge_model.split("/", 1)
             if prefix.lower() in {
-                "openai", "dashscope", "anthropic", "google", "gemini",
-                "custom", "deepseek", "azure", "qwen",
+                "openai",
+                "dashscope",
+                "anthropic",
+                "google",
+                "gemini",
+                "custom",
+                "deepseek",
+                "azure",
+                "qwen",
             }:
                 judge_provider = prefix.lower()
                 judge_model = rest
@@ -602,14 +739,10 @@ class HarborV2Backend(BenchmarkBackend):
         # REWARDKIT_MODEL. Forward host / judge credentials so non-claude
         # agents-under-test still have a working judge harness.
         anthropic_key = (
-            os.environ.get("ANTHROPIC_API_KEY")
-            or judge_api_key
-            or os.environ.get("OPENAI_API_KEY")
+            os.environ.get("ANTHROPIC_API_KEY") or judge_api_key or os.environ.get("OPENAI_API_KEY")
         )
         anthropic_base = (
-            os.environ.get("ANTHROPIC_BASE_URL")
-            or (judge_base_url or "").removesuffix("/v1")
-            or ""
+            os.environ.get("ANTHROPIC_BASE_URL") or (judge_base_url or "").removesuffix("/v1") or ""
         )
         if anthropic_key:
             env.setdefault("ANTHROPIC_API_KEY", anthropic_key)
@@ -687,6 +820,11 @@ class HarborV2Backend(BenchmarkBackend):
         if mode in cls._MULTI_TURN_MODES:
             return True
 
+        return cls._has_user_sim_mcp(task)
+
+    @classmethod
+    def _has_user_sim_mcp(cls, task: HarborV2Task) -> bool:
+        """Whether the task already declares a user-sim MCP server."""
         raw = getattr(task, "raw_config", {}) or {}
         env_cfg = raw.get("environment", {}) or {}
         for server in env_cfg.get("mcp_servers", []) or []:
@@ -697,11 +835,30 @@ class HarborV2Backend(BenchmarkBackend):
                 return True
         return False
 
+    @classmethod
+    def _validate_user_sim_wiring(cls, task: HarborV2Task) -> None:
+        """Fail before running when metadata requests multi-turn without a sidecar.
+
+        Runtime-wrapped tasks and task-authored user-sim MCP declarations are
+        valid.  A metadata-only ``mode=multi-turn`` declaration used to run the
+        full trial and fail later with a misleading missing-state violation.
+        """
+        if not cls._requires_user_sim(task):
+            return
+        if cls._uses_runtime_user_sim(task) or cls._has_user_sim_mcp(task):
+            return
+        raise ValueError(
+            f"Multi-turn task {task.task_id!r} has no user-sim sidecar wiring. "
+            "Provide at least two authored user turns in messages.jsonl so "
+            "PawBench can materialize the sidecar, or declare a user-sim MCP "
+            "server under [[environment.mcp_servers]]."
+        )
+
     def _build_environment_env(
         self,
         task: HarborV2Task,
-        agent_config: Dict[str, Any],
-    ) -> Dict[str, str]:
+        agent_config: dict[str, Any],
+    ) -> dict[str, str]:
         """Build the env injected into the environment (sidecar) container(s).
 
         Only populated for multi-turn tasks. Generative user simulators use a
@@ -714,10 +871,9 @@ class HarborV2Backend(BenchmarkBackend):
             return {}
 
         if self._uses_scripted_user(task):
-            env: Dict[str, str] = {}
-            max_turns = (
-                agent_config.get("user_sim_max_turns")
-                or os.environ.get("USER_SIM_MAX_TURNS")
+            env: dict[str, str] = {}
+            max_turns = agent_config.get("user_sim_max_turns") or os.environ.get(
+                "USER_SIM_MAX_TURNS"
             )
             if max_turns:
                 env["USER_SIM_MAX_TURNS"] = str(max_turns)
@@ -743,7 +899,7 @@ class HarborV2Backend(BenchmarkBackend):
                 f"the agent-under-test / judge credentials."
             )
 
-        env: Dict[str, str] = {
+        env: dict[str, str] = {
             "USER_SIM_API_KEY": api_key,
             "USER_SIM_MODEL": model,
         }
@@ -769,19 +925,27 @@ class HarborV2Backend(BenchmarkBackend):
         result: Any,
         trials_dir: Path,
         trial_name: str,
-        agent_config: Dict[str, Any],
+        agent_config: dict[str, Any],
         elapsed: float,
         verbose: bool,
     ) -> TaskResult:
-        rewards: Dict[str, float] = {}
+        rewards: dict[str, float] = {}
         vr = getattr(result, "verifier_result", None)
         if vr is not None and getattr(vr, "rewards", None):
             rewards = {str(k): float(v) for k, v in vr.rewards.items()}
 
+        rewards = self._apply_reward_spec(
+            rewards,
+            (
+                Path(task.task_dir) / "tests" / "reward.toml"
+                if getattr(task, "task_dir", None)
+                else None
+            ),
+        )
         score = self._score_from_rewards(rewards)
 
         # Token usage from the trial's aggregated totals.
-        usage: Dict[str, Any] = {}
+        usage: dict[str, Any] = {}
         try:
             n_in, _n_cache, n_out, cost = result.compute_token_cost_totals()
             if n_in or n_out:
@@ -807,9 +971,7 @@ class HarborV2Backend(BenchmarkBackend):
         if requires_user_sim:
             trial_dir = trials_dir / trial_name
             transcript.extend(self._load_user_sim_turns(trial_dir))
-            protocol_complete, protocol_violation = (
-                self._multi_turn_protocol_complete(trial_dir)
-            )
+            protocol_complete, protocol_violation = self._multi_turn_protocol_complete(trial_dir)
             if protocol_complete:
                 protocol_violation = ""
         multi_agent_result = evaluate_multi_agent_run(
@@ -825,7 +987,7 @@ class HarborV2Backend(BenchmarkBackend):
         if exception_info is not None:
             error_msg = str(getattr(exception_info, "message", exception_info))
 
-        execution_result: Dict[str, Any] = {
+        execution_result: dict[str, Any] = {
             "status": status,
             "transcript": transcript,
             "transcript_length": len(transcript),
@@ -850,43 +1012,32 @@ class HarborV2Backend(BenchmarkBackend):
 
         breakdown = dict(rewards)
         if multi_agent_result["effective_mode"] == "forced":
-            breakdown["multi_agent_forced_compliance"] = (
-                0.0 if forced_violation else 1.0
-            )
+            breakdown["multi_agent_forced_compliance"] = 0.0 if forced_violation else 1.0
         if requires_user_sim:
-            breakdown["multi_turn_protocol_compliance"] = (
-                0.0 if protocol_violation else 1.0
-            )
+            breakdown["multi_turn_protocol_compliance"] = 0.0 if protocol_violation else 1.0
         labels = dict(task.frontmatter)
         # Tag the run mode so the label report separates multi-turn user-sim
         # tasks from single-turn ones (non-regression visibility).
-        labels.setdefault(
-            "mode", "multi-turn" if self._requires_user_sim(task) else "single-turn"
-        )
+        labels.setdefault("mode", "multi-turn" if self._requires_user_sim(task) else "single-turn")
         return TaskResult(
             task_id=task.task_id,
             task_name=task.name,
             score=0.0 if forced_violation or protocol_violation else score,
             max_score=1.0,
-            passed=(
-                False
-                if forced_violation or protocol_violation
-                else score >= 1.0 - 1e-9
-            ),
+            passed=(False if forced_violation or protocol_violation else score >= 1.0 - 1e-9),
             grading_type="harbor_rewardkit",
             breakdown=breakdown,
             notes=(
-                (
-                    "; ".join(f"{k}={v}" for k, v in rewards.items())
-                    if rewards else error_msg
-                )
+                ("; ".join(f"{k}={v}" for k, v in rewards.items()) if rewards else error_msg)
                 + (
                     "; Forced multi-agent mode required at least one real delegation."
-                    if forced_violation else ""
+                    if forced_violation
+                    else ""
                 )
                 + (
                     f"; Multi-turn protocol violation: {protocol_violation}"
-                    if protocol_violation else ""
+                    if protocol_violation
+                    else ""
                 )
             ).strip("; "),
             execution_time=elapsed,
@@ -902,7 +1053,7 @@ class HarborV2Backend(BenchmarkBackend):
         )
 
     @staticmethod
-    def _score_from_rewards(rewards: Dict[str, float]) -> float:
+    def _score_from_rewards(rewards: dict[str, float]) -> float:
         """Collapse the RewardKit reward dict into a single 0..1 score.
 
         Preference order: an explicit ``reward`` key (Harbor's 1-D convention),
@@ -917,7 +1068,67 @@ class HarborV2Backend(BenchmarkBackend):
         return sum(vals) / len(vals) if vals else 0.0
 
     @staticmethod
-    def _load_trajectory(trial_dir: Path) -> List[Dict[str, Any]]:
+    def _apply_reward_spec(
+        rewards: dict[str, float],
+        reward_toml: Path | None,
+    ) -> dict[str, float]:
+        """Recover top-level RewardKit aggregation when an old CLI omits it.
+
+        Some task images invoke ``harbor-rewardkit@0.1`` versions that emit only
+        dimension scores even though ``tests/reward.toml`` defines a top-level
+        reward.  Reproduce RewardKit's collapse semantics so task-defined
+        threshold/all-pass policy is not silently replaced by a plain mean.
+        Explicit aggregate keys from RewardKit always win.
+        """
+        if not rewards or reward_toml is None or not reward_toml.is_file():
+            return dict(rewards)
+        try:
+            config = tomllib.loads(reward_toml.read_text(encoding="utf-8"))
+        except (OSError, tomllib.TOMLDecodeError):
+            logger.warning("Unable to parse reward aggregation spec: %s", reward_toml)
+            return dict(rewards)
+
+        specs = config.get("reward", [])
+        if not isinstance(specs, list) or not specs:
+            return dict(rewards)
+        spec_names = {
+            str(spec.get("name")) for spec in specs if isinstance(spec, dict) and spec.get("name")
+        }
+        dimensions = [float(value) for name, value in rewards.items() if name not in spec_names]
+        if not dimensions:
+            return dict(rewards)
+
+        collapsed = dict(rewards)
+        mean = sum(dimensions) / len(dimensions)
+        for spec in specs:
+            if not isinstance(spec, dict):
+                continue
+            name = str(spec.get("name") or "").strip()
+            if not name or name in collapsed:
+                continue
+            aggregation = str(spec.get("aggregation") or "weighted_mean")
+            threshold = float(spec.get("threshold", 0.5))
+            if aggregation == "all_pass" or aggregation == "required_pass":
+                value = 1.0 if all(score > 0 for score in dimensions) else 0.0
+            elif aggregation == "any_pass":
+                value = 1.0 if any(score > 0 for score in dimensions) else 0.0
+            elif aggregation == "threshold":
+                value = 1.0 if mean >= threshold else 0.0
+            elif aggregation == "weighted_mean":
+                value = mean
+            else:
+                logger.warning(
+                    "Unsupported reward aggregation %r in %s; leaving %r unset",
+                    aggregation,
+                    reward_toml,
+                    name,
+                )
+                continue
+            collapsed[name] = round(value, 4)
+        return collapsed
+
+    @staticmethod
+    def _load_trajectory(trial_dir: Path) -> list[dict[str, Any]]:
         """Load the ATIF trajectory and convert it to pawbench transcript shape.
 
         pawbench's anomaly detection / transcript persistence expect a list of
@@ -944,13 +1155,15 @@ class HarborV2Backend(BenchmarkBackend):
         if not isinstance(steps, list):
             return []
 
-        transcript: List[Dict[str, Any]] = []
+        transcript: list[dict[str, Any]] = []
         for step in steps:
             if not isinstance(step, dict):
                 continue
             source = step.get("source", "agent")
-            role = {"agent": "assistant", "user": "user", "system": "system"}.get(source, "assistant")
-            content: List[Dict[str, Any]] = []
+            role = {"agent": "assistant", "user": "user", "system": "system"}.get(
+                source, "assistant"
+            )
+            content: list[dict[str, Any]] = []
             message = step.get("message")
             if isinstance(message, str) and message:
                 content.append({"type": "text", "text": message})
@@ -958,11 +1171,13 @@ class HarborV2Backend(BenchmarkBackend):
                 content.append({"type": "text", "text": message["text"]})
             for call in step.get("tool_calls", []) or []:
                 if isinstance(call, dict):
-                    content.append({
-                        "type": "toolCall",
-                        "name": call.get("name", ""),
-                        "arguments": call.get("arguments", {}),
-                    })
+                    content.append(
+                        {
+                            "type": "toolCall",
+                            "name": call.get("name", ""),
+                            "arguments": call.get("arguments", {}),
+                        }
+                    )
             metrics = step.get("metrics") or {}
             usage = {}
             if isinstance(metrics, dict):
@@ -970,14 +1185,16 @@ class HarborV2Backend(BenchmarkBackend):
                     "prompt_tokens": metrics.get("prompt_tokens", 0),
                     "completion_tokens": metrics.get("completion_tokens", 0),
                 }
-            transcript.append({
-                "type": "message",
-                "message": {"role": role, "content": content, "usage": usage},
-            })
+            transcript.append(
+                {
+                    "type": "message",
+                    "message": {"role": role, "content": content, "usage": usage},
+                }
+            )
         return transcript
 
     @staticmethod
-    def _load_qwenpaw_session(trial_dir: Path) -> List[Dict[str, Any]]:
+    def _load_qwenpaw_session(trial_dir: Path) -> list[dict[str, Any]]:
         """Convert a QwenPaw-native ``qwenpaw.session.json`` to pawbench shape.
 
         QwenPaw (agentscope) does not emit an ATIF ``trajectory.json``; it
@@ -1004,13 +1221,15 @@ class HarborV2Backend(BenchmarkBackend):
         if not isinstance(context, list):
             return []
 
-        transcript: List[Dict[str, Any]] = []
+        transcript: list[dict[str, Any]] = []
 
-        def _emit(role: str, content: List[Dict[str, Any]], usage: Dict[str, Any]) -> None:
-            transcript.append({
-                "type": "message",
-                "message": {"role": role, "content": content, "usage": usage or {}},
-            })
+        def _emit(role: str, content: list[dict[str, Any]], usage: dict[str, Any]) -> None:
+            transcript.append(
+                {
+                    "type": "message",
+                    "message": {"role": role, "content": content, "usage": usage or {}},
+                }
+            )
 
         for msg in context:
             if not isinstance(msg, dict):
@@ -1021,7 +1240,7 @@ class HarborV2Backend(BenchmarkBackend):
 
             # Non-assistant turns (user/system) collapse into a single message.
             if role != "assistant":
-                content: List[Dict[str, Any]] = []
+                content: list[dict[str, Any]] = []
                 if isinstance(parts, str) and parts:
                     content.append({"type": "text", "text": parts})
                 elif isinstance(parts, list):
@@ -1047,21 +1266,33 @@ class HarborV2Backend(BenchmarkBackend):
                     elif ptype == "thinking" and part.get("thinking"):
                         _emit("assistant", [{"type": "text", "text": part["thinking"]}], {})
                     elif ptype == "tool_call":
-                        _emit("assistant", [{
-                            "type": "toolCall",
-                            "name": part.get("name", ""),
-                            "arguments": part.get("input", part.get("arguments", "")),
-                        }], {})
+                        _emit(
+                            "assistant",
+                            [
+                                {
+                                    "type": "toolCall",
+                                    "name": part.get("name", ""),
+                                    "arguments": part.get("input", part.get("arguments", "")),
+                                }
+                            ],
+                            {},
+                        )
                     elif ptype == "tool_result":
-                        _emit("tool", [{
-                            "type": "toolResult",
-                            "name": part.get("name", ""),
-                            "output": part.get("output", ""),
-                        }], {})
+                        _emit(
+                            "tool",
+                            [
+                                {
+                                    "type": "toolResult",
+                                    "name": part.get("name", ""),
+                                    "output": part.get("output", ""),
+                                }
+                            ],
+                            {},
+                        )
         return transcript
 
     @staticmethod
-    def _load_user_sim_state(trial_dir: Path) -> Dict[str, Any] | None:
+    def _load_user_sim_state(trial_dir: Path) -> dict[str, Any] | None:
         state_path = trial_dir / "agent" / "user_sim_state.json"
         if not state_path.is_file():
             return None
@@ -1084,8 +1315,7 @@ class HarborV2Backend(BenchmarkBackend):
             return False, "start_conversation was never called"
         transcript = state.get("transcript")
         if not isinstance(transcript, list) or not any(
-            isinstance(turn, dict) and turn.get("source") == "agent"
-            for turn in transcript
+            isinstance(turn, dict) and turn.get("source") == "agent" for turn in transcript
         ):
             return False, "send_message_to_user was never called"
         if not state.get("done") or not state.get("termination_reason"):
@@ -1093,7 +1323,7 @@ class HarborV2Backend(BenchmarkBackend):
         return True, ""
 
     @staticmethod
-    def _load_user_sim_turns(trial_dir: Path) -> List[Dict[str, Any]]:
+    def _load_user_sim_turns(trial_dir: Path) -> list[dict[str, Any]]:
         """Convert the user-sim sidecar transcript to pawbench transcript shape.
 
         Multi-turn tasks run the user simulator as a sidecar which persists the
@@ -1109,7 +1339,7 @@ class HarborV2Backend(BenchmarkBackend):
         if not isinstance(turns, list):
             return []
 
-        out: List[Dict[str, Any]] = []
+        out: list[dict[str, Any]] = []
         for turn in turns:
             if not isinstance(turn, dict):
                 continue
@@ -1117,15 +1347,17 @@ class HarborV2Backend(BenchmarkBackend):
             if not text:
                 continue
             role = "user" if turn.get("source") == "user" else "assistant"
-            out.append({
-                "type": "message",
-                "message": {
-                    "role": role,
-                    "content": [{"type": "text", "text": text}],
-                    "usage": {},
-                    "source": "user_sim",
-                },
-            })
+            out.append(
+                {
+                    "type": "message",
+                    "message": {
+                        "role": role,
+                        "content": [{"type": "text", "text": text}],
+                        "usage": {},
+                        "source": "user_sim",
+                    },
+                }
+            )
         return out
 
     # ── helpers ──────────────────────────────────────────────────────────────────
@@ -1140,10 +1372,17 @@ class HarborV2Backend(BenchmarkBackend):
         return TaskResult(
             task_id=task.task_id,
             task_name=getattr(task, "name", task.task_id),
-            score=0.0, max_score=1.0, passed=False,
-            grading_type="error", breakdown={}, notes="",
+            score=0.0,
+            max_score=1.0,
+            passed=False,
+            grading_type="error",
+            breakdown={},
+            notes="",
             execution_time=elapsed,
-            status="error", usage={}, transcript_length=0,
-            timed_out=timed_out, error=error,
+            status="error",
+            usage={},
+            transcript_length=0,
+            timed_out=timed_out,
+            error=error,
             labels=dict(getattr(task, "frontmatter", {}) or {}),
         )

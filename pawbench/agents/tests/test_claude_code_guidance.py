@@ -6,6 +6,9 @@ import zipfile
 
 from pawbench.agents.claude_code_guidance import (
     CLAUDE_CODE_EXECUTION_GUIDANCE,
+    CLAUDE_USER_SIM_SEND_TOOL,
+    CLAUDE_USER_SIM_START_TOOL,
+    MULTI_TURN_EXECUTION_GUIDANCE,
     merge_claude_code_guidance,
     quoted_claude_code_guidance,
 )
@@ -27,6 +30,17 @@ def test_merge_preserves_caller_prompt() -> None:
 
     assert merged.startswith("Keep the user's terminology.")
     assert merged.count("PawBench task execution rules:") == 1
+
+
+def test_multi_turn_guidance_is_opt_in_and_preserves_protocol() -> None:
+    single_turn = merge_claude_code_guidance()
+    multi_turn = merge_claude_code_guidance(multi_turn=True)
+
+    assert MULTI_TURN_EXECUTION_GUIDANCE.strip() not in single_turn
+    assert CLAUDE_USER_SIM_START_TOOL in multi_turn
+    assert CLAUDE_USER_SIM_SEND_TOOL in multi_turn
+    assert "not valid Claude Code tools" in multi_turn
+    assert "conversation_over" in multi_turn
 
 
 def test_harbor_claude_code_accepts_guidance_flag(tmp_path) -> None:

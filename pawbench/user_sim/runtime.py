@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Conversation runtime for the user simulator.
 
 This module deliberately has **no** dependency on ``fastmcp`` so it can be unit
@@ -120,9 +119,7 @@ class UserSimRuntime:
             context = load_user_context(self.task_dir)
             self.agent = UserAgent(
                 context=context,
-                temperature=(
-                    temperature if temperature is not None else _resolve_temperature()
-                ),
+                temperature=(temperature if temperature is not None else _resolve_temperature()),
                 authored_turns=load_authored_user_turns(self.task_dir),
             )
         self._write_state()
@@ -145,7 +142,10 @@ class UserSimRuntime:
             "started": self.started,
             "turn": self.turn,
             "max_turns": self.max_turns,
-            "done": self.agent.done,
+            # ``agent.done`` is an internal persona signal.  The externally
+            # visible protocol is complete only after the runtime records an
+            # explicit termination reason.
+            "done": self.termination_reason is not None,
             "termination_reason": self.termination_reason,
             "transcript": self.transcript,
             "workspace_events": self.workspace_events,
@@ -163,9 +163,7 @@ class UserSimRuntime:
             return
         events = self.patch_applier.apply_turn(authored_turn)
         for event in events:
-            self.workspace_events.append(
-                {"turn": authored_turn, **event}
-            )
+            self.workspace_events.append({"turn": authored_turn, **event})
 
     def _status_payload(self, *, user_message: str | None = None) -> dict[str, object]:
         return {
@@ -180,29 +178,42 @@ class UserSimRuntime:
 
     async def start_conversation(self) -> str:
         if self.started:
-            return self.transcript[0]["text"] if self.transcript else ""
+            opening = self.transcript[0]["text"] if self.transcript else None
+            return json.dumps(
+                self._status_payload(user_message=opening),
+                ensure_ascii=False,
+                sort_keys=True,
+            )
         self.started = True
         # The opening turn may declare initial user-side workspace changes.
         self._apply_workspace_patch(1)
         opening = await self.agent.opening()
         self._record("user", opening)
-        if self.agent.done:
-            self._terminate("user_done")
         self._write_state()
-        return opening
+        return json.dumps(
+            self._status_payload(user_message=opening),
+            ensure_ascii=False,
+            sort_keys=True,
+        )
 
     async def send_message_to_user(self, message: str) -> str:
         if not self.started:
             raise RuntimeError("Call start_conversation before messaging the user.")
         if self.termination_reason is not None:
-            return json.dumps(
-                self._status_payload(), ensure_ascii=False, sort_keys=True
-            )
+            return json.dumps(self._status_payload(), ensure_ascii=False, sort_keys=True)
         if not message or not message.strip():
             raise ValueError("message must not be empty.")
 
         self._record("agent", message)
         self.turn += 1
+
+        # A malformed/misconfigured persona can emit its done marker in the
+        # opening.  Still require one delivered assistant turn, then close
+        # cleanly without asking an already-finished persona for another reply.
+        if self.agent.done:
+            self._terminate("user_done")
+            self._write_state()
+            return json.dumps(self._status_payload(), ensure_ascii=False, sort_keys=True)
 
         # self.turn counts assistant replies.  After reply 1, the simulator is
         # about to emit authored user turn 2, whose filesystem changes must be
@@ -222,9 +233,21 @@ class UserSimRuntime:
         )
 
     def end_conversation(self) -> str:
+        if not any(turn.get("source") == "agent" for turn in self.transcript):
+            return json.dumps(
+                {
+                    **self._status_payload(),
+                    "error": (
+                        "Cannot end the conversation before delivering at least "
+                        "one send_message_to_user response."
+                    ),
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            )
         self._terminate("agent_ended")
         self._write_state()
-        return "Conversation ended."
+        return json.dumps(self._status_payload(), ensure_ascii=False, sort_keys=True)
 
     def get_conversation_status(self) -> str:
         return json.dumps(self._status_payload(), ensure_ascii=False, sort_keys=True)

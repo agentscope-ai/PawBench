@@ -212,11 +212,14 @@ def parse_args() -> argparse.Namespace:
         dest="multi_agent_mode",
         metavar="MODE",
         choices=(
-            "single", "forced", "adaptive",
+            "native", "single", "forced", "adaptive",
+            "default", "harness-default",
             "disabled", "auto", "subagents", "teams", "delegation", "proactive",
         ),
         help=(
-            "Agent execution mode: 'single', 'forced', or 'adaptive'. "
+            "Agent execution mode: 'native' (default; preserve the harness "
+            "configuration), 'single' (strictly disable delegation), 'forced', "
+            "or 'adaptive'. "
             "Legacy aliases remain accepted: disabled, auto, subagents, teams, "
             "delegation, proactive. --multi-agent without this option selects adaptive."
         ),
@@ -536,7 +539,7 @@ def _build_multi_agent_config(args: argparse.Namespace):
     A ``--multi-agent-config FILE`` takes precedence over the individual
     ``--multi-agent-*`` flags and implies ``--multi-agent``.
     """
-    from pawbench.agents.multi_agent import MultiAgentConfig
+    from pawbench.agents.multi_agent import MultiAgentConfig, normalize_run_mode
 
     config_path = getattr(args, "multi_agent_config", None)
     if config_path:
@@ -545,11 +548,11 @@ def _build_multi_agent_config(args: argparse.Namespace):
     requested_mode = getattr(args, "multi_agent_mode", None)
     if requested_mode is None:
         requested_mode = (
-            "adaptive" if getattr(args, "multi_agent", False) else "single"
+            "adaptive" if getattr(args, "multi_agent", False) else "native"
         )
 
     return MultiAgentConfig(
-        enabled=requested_mode not in ("single", "disabled"),
+        enabled=normalize_run_mode(requested_mode) in {"adaptive", "forced"},
         mode=requested_mode,
         run_mode=requested_mode,
         requested_mode=requested_mode,
@@ -717,6 +720,9 @@ async def _run_benchmark(
         agent_config["api_model_name"] = api_model_name
     if getattr(args, "save_workspace", False):
         agent_config["save_workspace"] = True
+        agent_config["workspace_save_dir"] = str(
+            Path(args.results_dir).resolve() / "workspaces"
+        )
     if getattr(args, "save_docker_image", False):
         agent_config["save_docker_image"] = True
     if backend_choice == "harbor-v2":

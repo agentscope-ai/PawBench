@@ -507,8 +507,8 @@ def _write_checkpoint(
             "multi_agent": agent_config.get(
                 "multi_agent",
                 {
-                    "requested_mode": "single",
-                    "effective_mode": "single",
+                    "requested_mode": "native",
+                    "effective_mode": "native",
                     "enabled": False,
                 },
             ),

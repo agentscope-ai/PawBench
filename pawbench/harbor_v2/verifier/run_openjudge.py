@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import os
 import shutil
@@ -17,10 +18,10 @@ try:
 except ModuleNotFoundError:  # Python 3.10
     import tomli as tomllib
 
+from input_contract import validate_atif
 from openjudge.graders.agentic_grader import AgenticGrader
 from openjudge.graders.schema import Checkpoint, GraderError, Rubric
 from openjudge.harness import ClaudeCodeHarness, CodexHarness, CursorAgentHarness
-
 
 TESTS_DIR = Path("/tests")
 QUALITY_DIR = TESTS_DIR / "quality"
@@ -38,6 +39,9 @@ JUDGE_STDERR_PATH = Path("/logs/verifier/openjudge-judge-stderr.log")
 JUDGE_SPEC_PATH = Path("/logs/verifier/openjudge-judge-spec.json")
 JUDGE_RESULT_PATH = Path("/logs/verifier/openjudge-judge-result.json")
 JUDGE_HARNESS_PATH = Path("/logs/verifier/openjudge-harness.json")
+PROVENANCE_SOURCE_PATH = QUALITY_DIR / "pawbench-provenance.json"
+PROVENANCE_PATH = Path("/logs/verifier/openjudge-provenance.json")
+INPUT_READINESS_PATH = Path("/logs/verifier/openjudge-input-readiness.json")
 
 HARNESS_TYPES = {
     "claude": ClaudeCodeHarness,
@@ -480,18 +484,54 @@ def _build_rubrics(config: dict[str, Any]) -> list[Rubric]:
     return rubrics
 
 
-def _load_trajectory() -> list[dict[str, Any]] | None:
-    if not TRAJECTORY_PATH.is_file():
+def _load_json_object(path: Path) -> dict[str, Any] | None:
+    if not path.is_file():
         return None
-    payload = json.loads(_read_text(TRAJECTORY_PATH))
-    if isinstance(payload, list):
-        return [item for item in payload if isinstance(item, dict)]
-    if not isinstance(payload, dict):
-        return [{"type": "raw_trajectory", "value": payload}]
+    try:
+        payload = json.loads(_read_text(path))
+    except (json.JSONDecodeError, OSError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _record_input_readiness(
+    *,
+    ready: bool,
+    error: str | None = None,
+    trajectory: dict[str, Any] | None = None,
+) -> None:
+    provenance = _load_json_object(PROVENANCE_SOURCE_PATH)
+    if provenance is not None:
+        _atomic_json(PROVENANCE_PATH, provenance)
+    payload = {
+        "ready": ready,
+        "error": error,
+        "trajectory_path": str(TRAJECTORY_PATH),
+        "trajectory_sha256": (
+            hashlib.sha256(TRAJECTORY_PATH.read_bytes()).hexdigest()
+            if TRAJECTORY_PATH.is_file()
+            else None
+        ),
+        "schema_version": trajectory.get("schema_version") if trajectory else None,
+        "step_count": len(trajectory.get("steps", [])) if trajectory else 0,
+        "provenance_present": provenance is not None,
+    }
+    _atomic_json(INPUT_READINESS_PATH, payload)
+
+
+def _load_trajectory() -> list[dict[str, Any]]:
+    if not TRAJECTORY_PATH.is_file():
+        message = f"ATIF trajectory is missing: {TRAJECTORY_PATH}"
+        _record_input_readiness(ready=False, error=message)
+        raise FileNotFoundError(message)
+    try:
+        payload = validate_atif(json.loads(_read_text(TRAJECTORY_PATH)))
+    except (json.JSONDecodeError, ValueError) as exc:
+        _record_input_readiness(ready=False, error=str(exc))
+        raise ValueError(f"OpenJudge input trajectory is not valid ATIF: {exc}") from exc
+    _record_input_readiness(ready=True, trajectory=payload)
 
     steps = payload.get("steps")
-    if not isinstance(steps, list):
-        return [payload]
 
     metadata = {
         "type": "atif_metadata",
@@ -815,6 +855,8 @@ def _write_success(
                 "sandbox": "physical-copy",
                 "atif_trajectory": str(TRAJECTORY_PATH),
                 "trajectory_loaded": trajectory_loaded,
+                "input_readiness": _load_json_object(INPUT_READINESS_PATH),
+                "provenance": _load_json_object(PROVENANCE_PATH),
             },
             "scoring": {
                 "aggregation": scoring_aggregation,
@@ -878,6 +920,8 @@ async def _run() -> int:
 def main() -> int:
     REWARD_PATH.unlink(missing_ok=True)
     DETAILS_PATH.unlink(missing_ok=True)
+    INPUT_READINESS_PATH.unlink(missing_ok=True)
+    PROVENANCE_PATH.unlink(missing_ok=True)
     _reset_judge_logs()
     try:
         return asyncio.run(_run())
@@ -891,6 +935,8 @@ def main() -> int:
                 "kind": "agent",
                 "framework": "openjudge-agentic-grader",
                 "error": f"{type(exc).__name__}: {exc}",
+                "input_readiness": _load_json_object(INPUT_READINESS_PATH),
+                "provenance": _load_json_object(PROVENANCE_PATH),
             }
         }
         _atomic_json(DETAILS_PATH, details)

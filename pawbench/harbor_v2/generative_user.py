@@ -23,8 +23,9 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from .scripted_user import load_authored_messages
 from pawbench.user_sim.workspace_patch import has_cowork_patches
+
+from .scripted_user import load_authored_messages
 
 # task.toml fragment appended at runtime: mark the task multi-turn, declare the
 # user-sim MCP server, and surface the dedicated USER_SIM_* creds (interpolated
@@ -142,6 +143,7 @@ their needs gradually — you must converse to clarify them, then deliver. Reach
 the user through the `user-sim` MCP server:
 1. Your FIRST task action MUST be `start_conversation()`. Do not inspect files,
    run commands, edit the workspace, or answer the task before this call.
+   It returns JSON; read `user_message` as the authoritative opening request.
 2. A normal assistant response is NOT delivered to the user. The only way to
    reply is `send_message_to_user(message)`. After doing the work for each turn,
    call it with your complete response instead of ending your run.
@@ -247,7 +249,7 @@ def _vendor_user_sim(server_dir: Path) -> None:
         shutil.rmtree(cache, ignore_errors=True)
 
 
-def _hash_tree(digest: "hashlib._Hash", root: Path) -> None:
+def _hash_tree(digest: hashlib._Hash, root: Path) -> None:
     for path in sorted(p for p in root.rglob("*") if p.is_file()):
         digest.update(str(path.relative_to(root)).encode("utf-8"))
         digest.update(path.read_bytes())
