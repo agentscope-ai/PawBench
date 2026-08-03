@@ -14,7 +14,7 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
-harbor-github/.git/
-harbor-github/.venv/
-harbor-github/.ruff_cache/
-harbor-github/.pytest_cache/
+# No longer COPYed into the image (installed via pip git+ instead), exclude
+# entirely from the build context.
+harbor-github/
+harbor/

@@ -72,13 +72,12 @@ RUN pip install --no-cache-dir \
     playwright
 
 # ── harbor-framework (Python 3.12 required) ───────────────────────────────────
-# Harbor is not on PyPI; install from the local clone (harbor-github/).
-# The COPY below includes harbor-github/pyproject.toml and harbor-github/src/harbor/.
-# All PawBench patches (DashScope, multi-agent, etc.) are already applied in-tree.
-# After install the temp copy is removed to keep the layer small.
-COPY harbor-github/ /tmp/harbor-src/
-RUN pip install --no-cache-dir /tmp/harbor-src && \
-    rm -rf /tmp/harbor-src
+# Harbor is not on PyPI, so install directly from our fork's pinned commit via
+# pip's git VCS support — no local clone of harbor needed on the build host.
+# All PawBench patches (DashScope, multi-agent, etc.) live on this branch; see
+# https://github.com/XiaoBoAI/harbor/tree/pawbench-agent-patches
+ARG HARBOR_GIT_REF=c82aa5158f2a92a0af5469588cf94aa1f1d8fd43
+RUN pip install --no-cache-dir "harbor @ git+https://github.com/XiaoBoAI/harbor.git@${HARBOR_GIT_REF}"
 
 # ── Standard workspace / log directories ─────────────────────────────────────
 # Harbor agents write logs to /logs/agent/; PawBench grader reads the workspace.

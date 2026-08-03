@@ -131,14 +131,15 @@ docker build -f docker/Dockerfile.pawbench-base -t pawbench-base:latest .
 > "image not found"，说明还没构建过这个基础镜像，先执行上面的
 > `docker build` 命令即可。
 
-> **说明 — vendored Harbor 补丁。** `harbor/` 目录是 vendored 且被 `.gitignore`
-> 忽略的，因此两处必需的 agent 修复——qwenpaw 的 provider 路由（中转端点不能走内置
-> `openai` provider）与 hermes 的会话导出（`--source cli` 失效）——以补丁形式放在
-> `patches/harbor-agent-fixes.patch`。Docker 构建会自动幂等应用。如果你还在宿主机上
-> 直接运行 agent（例如 conda 环境里 `pip install -e ./harbor`），执行一次即可：
+> **说明 — Harbor 直接从我们的 fork 安装，无需本地克隆。** Harbor 没有发布到
+> PyPI，且 PawBench 需要在上游基础上加一些 agent 侧的修复/能力（DashScope
+> provider 路由、多智能体 hooks 等）。Docker 构建直接通过 pip 的 git 支持，从
+> [`XiaoBoAI/harbor@pawbench-agent-patches`](https://github.com/XiaoBoAI/harbor/tree/pawbench-agent-patches)
+> 的一个固定 commit 安装——不需要克隆或 COPY 任何本地目录。如果你想在宿主机
+> （例如 conda 环境）里直接运行 agent，用同样的方式安装即可：
 >
 > ```bash
-> scripts/apply-harbor-patches.sh   # 幂等，可重复运行
+> pip install "harbor @ git+https://github.com/XiaoBoAI/harbor.git@c82aa5158f2a92a0af5469588cf94aa1f1d8fd43"
 > ```
 
 ```bash
