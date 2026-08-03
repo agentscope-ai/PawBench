@@ -9,7 +9,9 @@ concurrently when ``concurrency > 1``.
 from __future__ import annotations
 
 import asyncio
+import fcntl
 import json
+import shutil
 import sys
 import time
 from collections import defaultdict
@@ -86,26 +88,30 @@ class BenchmarkRunner:
             + (f", runs_per_task={n_runs}" if n_runs > 1 else "")
         )
 
-        # Generate stable paths before any task runs so checkpoints accumulate
-        # in the same file even if the process is interrupted mid-run.
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        checkpoint_path = self.results_dir / f"{ts}.json"
-        transcripts_dir = self.results_dir / "transcripts"
-        transcripts_dir.mkdir(parents=True, exist_ok=True)
+        # Directory layout: <results_dir>/<task_id>/<model_label>/<agent_label>/
+        # {summary,trials,docker_images}/ — task_id is the primary
+        # partition so a run's output can be browsed "by task" first, then by
+        # which model/harness produced it. summary/ is the self-contained
+        # bundle (trajectory + reward + workspace) pulled from trials/ — see
+        # _save_task_bundle(). See task_root() below.
+        model_label = str(agent_config.get("model_label") or agent_config.get("model") or "default")
+        agent_label = str(agent_config.get("agent_type") or self.backend.name)
+
+        # Combined report path: one file shared by every agent/model that
+        # writes under this same run root (self.results_dir *is* the
+        # <run_ts> directory — see run_bench.py), so it aggregates *every*
+        # task_id/agent from this run. Concurrent processes (one per agent)
+        # merge into it under a file lock — see _update_combined_report().
+        combined_path = self.results_dir / f"{self.results_dir.name}_combined_report.json"
 
         # all_results[task_id] = list of TaskResult (one per run)
         all_results: dict[str, list[TaskResult]] = {t.task_id: [] for t in tasks}
         flat_results: list[TaskResult] = []
 
-        workspaces_dir: Path | None = None
-        if agent_config.get("save_workspace"):
-            workspaces_dir = self.results_dir / "workspaces"
-            workspaces_dir.mkdir(parents=True, exist_ok=True)
+        save_docker_image = bool(agent_config.get("save_docker_image"))
 
-        docker_images_dir: Path | None = None
-        if agent_config.get("save_docker_image"):
-            docker_images_dir = self.results_dir / "docker_images"
-            docker_images_dir.mkdir(parents=True, exist_ok=True)
+        def task_root(task_id: str) -> Path:
+            return self.results_dir / task_id / model_label / agent_label
 
         # Build work items: (task, run_index 1-based) in order
         work_items = [
@@ -120,16 +126,25 @@ class BenchmarkRunner:
                 done_so_far += 1
                 label = f"{task.task_id}" + (f" [run {run_idx}/{n_runs}]" if n_runs > 1 else "")
                 print(f"\n  [{done_so_far}/{total_work}] {label}")
-                cfg = {**agent_config, "run_id": f"{task.task_id}_r{run_idx}"}
-                if workspaces_dir is not None:
-                    cfg["workspace_save_dir"] = str(workspaces_dir)
-                if docker_images_dir is not None:
-                    cfg["docker_images_save_dir"] = str(docker_images_dir)
+                root = task_root(task.task_id)
+                summary_dir = root / "summary"
+                summary_dir.mkdir(parents=True, exist_ok=True)
+                cfg = {
+                    **agent_config,
+                    "run_id": f"{task.task_id}_r{run_idx}",
+                    # Harmless for backends that don't read this key (only
+                    # HarborV2Backend consumes it).
+                    "trials_dir": str(root / "trials"),
+                }
+                if save_docker_image:
+                    cfg["docker_images_save_dir"] = str(root / "docker_images")
                 result = await self._run_with_retry(task, cfg)
                 all_results[task.task_id].append(result)
                 flat_results.append(result)
-                _save_transcript(result, transcripts_dir, run_idx=run_idx if n_runs > 1 else None)
-                _write_checkpoint(flat_results, agent_config, self.backend.name, checkpoint_path)
+                _save_task_bundle(result, summary_dir, run_idx=run_idx if n_runs > 1 else None)
+                _update_combined_report(
+                    combined_path, flat_results, agent_config, model_label, agent_label,
+                )
                 self._print_progress_line(done_so_far, total_work, label)
                 self._print_result(result)
         else:
@@ -140,13 +155,18 @@ class BenchmarkRunner:
             async def bounded(task: Any, run_idx: int) -> TaskResult:
                 result: TaskResult
                 label = f"{task.task_id}" + (f" [run {run_idx}/{n_runs}]" if n_runs > 1 else "")
+                root = task_root(task.task_id)
+                summary_dir = root / "summary"
                 try:
                     async with sem:
-                        cfg = {**agent_config, "run_id": f"{task.task_id}_r{run_idx}"}
-                        if workspaces_dir is not None:
-                            cfg["workspace_save_dir"] = str(workspaces_dir)
-                        if docker_images_dir is not None:
-                            cfg["docker_images_save_dir"] = str(docker_images_dir)
+                        summary_dir.mkdir(parents=True, exist_ok=True)
+                        cfg = {
+                            **agent_config,
+                            "run_id": f"{task.task_id}_r{run_idx}",
+                            "trials_dir": str(root / "trials"),
+                        }
+                        if save_docker_image:
+                            cfg["docker_images_save_dir"] = str(root / "docker_images")
                         result = await self._run_with_retry(task, cfg)
                 except BaseException as exc:
                     result = _error_result(task, str(exc), elapsed=0.0)
@@ -155,8 +175,10 @@ class BenchmarkRunner:
                     cur = done_count[0]
                     all_results[task.task_id].append(result)
                     flat_results.append(result)
-                    _save_transcript(result, transcripts_dir, run_idx=run_idx if n_runs > 1 else None)
-                    _write_checkpoint(flat_results, agent_config, self.backend.name, checkpoint_path)
+                    _save_task_bundle(result, summary_dir, run_idx=run_idx if n_runs > 1 else None)
+                    _update_combined_report(
+                        combined_path, flat_results, agent_config, model_label, agent_label,
+                    )
                 self._print_progress_line(cur, total_work, label)
                 self._print_result(result)
                 return result
@@ -197,7 +219,8 @@ class BenchmarkRunner:
 
         self._print_summary(flat_results, task_stats=task_stats, pass_k=pk)
         self._save_results(
-            flat_results, agent_config, checkpoint_path, transcripts_dir,
+            flat_results, agent_config, combined_path,
+            model_label=model_label, agent_label=agent_label,
             task_stats=task_stats, pass_k=pk,
         )
         return flat_results
@@ -360,41 +383,40 @@ class BenchmarkRunner:
         results: list[TaskResult],
         agent_config: dict[str, Any],
         out_path: Path | None = None,
-        transcripts_dir: Path | None = None,
+        model_label: str | None = None,
+        agent_label: str | None = None,
         task_stats: dict[str, Any] | None = None,
         pass_k: dict[str, Any] | None = None,
     ) -> None:
         bench = self.backend.name
         model = agent_config.get("model", "unknown")
+        model_label = model_label or str(agent_config.get("model_label") or model or "default")
+        agent_label = agent_label or str(agent_config.get("agent_type") or bench)
         if out_path is None:
-            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-            out_path = self.results_dir / f"{ts}.json"
-        if transcripts_dir is None:
-            transcripts_dir = self.results_dir / "transcripts"
-            transcripts_dir.mkdir(parents=True, exist_ok=True)
+            out_path = self.results_dir / f"{self.results_dir.name}_combined_report.json"
 
-        _write_checkpoint(
-            results, agent_config, bench, out_path,
+        _update_combined_report(
+            out_path, results, agent_config, model_label, agent_label,
             task_stats=task_stats, pass_k=pass_k,
         )
         print(f"\n  Results → {out_path}")
 
-        # Save any transcripts not yet persisted by the per-task checkpoint path.
+        # Save any task bundles not yet persisted by the per-task loop above
+        # (each task_id gets its own <results_dir>/<task_id>/<model>/<agent>/summary/ dir).
         newly_written = 0
+        touched_dirs: set[Path] = set()
         for r in results:
-            if r.transcript:
-                traj_path = transcripts_dir / f"{r.task_id}.jsonl"
-                if not traj_path.exists():
-                    _save_transcript(r, transcripts_dir)
-                    newly_written += 1
+            if not (r.transcript or r.trial_dir):
+                continue
+            summary_dir = self.results_dir / r.task_id / model_label / agent_label / "summary"
+            already_saved = any(summary_dir.glob("trajectory*"))
+            touched_dirs.add(summary_dir)
+            if not already_saved:
+                summary_dir.mkdir(parents=True, exist_ok=True)
+                _save_task_bundle(r, summary_dir)
+                newly_written += 1
         if newly_written:
-            print(f"  Transcripts → {transcripts_dir}/ ({newly_written} new file(s))")
-        existing = sum(
-            1 for r in results
-            if r.transcript and (transcripts_dir / f"{r.task_id}.jsonl").exists()
-        )
-        if existing:
-            print(f"  Transcripts → {transcripts_dir}/ ({existing} file(s) total)")
+            print(f"  Task bundles → {newly_written} new (trajectory+reward+workspace) across {len(touched_dirs)} task dir(s)")
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
@@ -426,37 +448,82 @@ def _error_result(task: Any, error: str, elapsed: float = 0.0) -> TaskResult:
     )
 
 
-def _save_transcript(
+# Candidate raw trajectory files under a trial's ``agent/`` dir, most
+# authoritative first. ATIF ``trajectory.json`` covers most harnesses;
+# QwenPaw (agentscope) instead persists its own native session file (see
+# HarborV2Backend._load_qwenpaw_session).
+_RAW_TRAJECTORY_CANDIDATES = ("trajectory.json", "qwenpaw.session.json")
+
+
+def _save_task_bundle(
     result: TaskResult,
-    transcripts_dir: Path,
+    summary_dir: Path,
     run_idx: int | None = None,
 ) -> None:
-    """Write a single task's transcript to ``transcripts_dir/{task_id}[_runN].jsonl``.
+    """Persist trajectory + reward + workspace straight out of the trial dir.
 
-    When *run_idx* is provided (multi-run mode), the file is named
-    ``{task_id}_run{run_idx}.jsonl`` so successive runs don't overwrite each
-    other.  Called immediately after each task finishes.
+    No post-processing/reformatting: this pulls three things verbatim out of
+    ``result.trial_dir`` (Harbor's ``trials/<trial>/`` dir for the *same*
+    attempt that was actually scored, so retried attempts never get mixed
+    up), into ``summary_dir``:
+
+      * ``trajectory[_runN].json``  — the harness's own raw trajectory file
+        (ATIF ``agent/trajectory.json``, already carrying any user-sim
+        fusion for multi-turn tasks; QwenPaw instead has a native
+        ``qwenpaw.session.json``).
+      * ``reward[_runN]/``          — the verifier's raw output
+        (``agent/verifier/``: reward.json, reward-details.json, ...).
+      * ``workspace[_runN]/``       — the agent's final workspace file
+        snapshot (``agent/artifacts/workspace/``; only present when
+        ``save_workspace`` was enabled for this run).
+
+    Falls back to writing the normalized ``result.transcript`` as JSONL when
+    a backend has no ``trial_dir`` (e.g. legacy backends), so no data is
+    silently lost.
     """
-    if not result.transcript:
-        return
     suffix = f"_run{run_idx}" if run_idx is not None else ""
-    traj_path = transcripts_dir / f"{result.task_id}{suffix}.jsonl"
-    with open(traj_path, "w", encoding="utf-8") as fh:
-        for entry in result.transcript:
-            fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    if not result.trial_dir:
+        if not result.transcript:
+            return
+        traj_path = summary_dir / f"trajectory{suffix}.jsonl"
+        with open(traj_path, "w", encoding="utf-8") as fh:
+            for entry in result.transcript:
+                fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        return
+
+    trial_dir = Path(result.trial_dir)
+    agent_dir = trial_dir / "agent"
+    for name in _RAW_TRAJECTORY_CANDIDATES:
+        raw_path = agent_dir / name
+        if raw_path.is_file():
+            shutil.copy2(raw_path, summary_dir / f"trajectory{suffix}{raw_path.suffix}")
+            break
+
+    reward_dir = trial_dir / "verifier"
+    if reward_dir.is_dir():
+        shutil.copytree(
+            reward_dir, summary_dir / f"reward{suffix}",
+            dirs_exist_ok=True, ignore_dangling_symlinks=True,
+        )
+
+    workspace_dir = trial_dir / "artifacts" / "workspace"
+    if workspace_dir.is_dir():
+        shutil.copytree(
+            workspace_dir, summary_dir / f"workspace{suffix}",
+            dirs_exist_ok=True, ignore_dangling_symlinks=True,
+        )
 
 
-def _write_checkpoint(
+def _build_agent_payload(
     results: list[TaskResult],
     agent_config: dict[str, Any],
     bench_name: str,
-    out_path: Path,
     task_stats: dict[str, Any] | None = None,
     pass_k: dict[str, Any] | None = None,
-) -> None:
-    """Overwrite *out_path* with all results accumulated so far.
+) -> dict[str, Any]:
+    """Build this agent's summary+results payload (no I/O).
 
-    When *task_stats* is provided (runs_per_task > 1), the checkpoint also
+    When *task_stats* is provided (runs_per_task > 1), the summary also
     includes per-task mean/std/min/max and pass@k statistics, matching the
     output schema of the original QwenClawBench ``summary.json``.
     """
@@ -540,12 +607,101 @@ def _write_checkpoint(
     }
     if task_stats:
         payload["task_stats"] = task_stats
+    return payload
 
-    # Write atomically via a temp file to avoid a corrupt file if interrupted
-    # mid-write.
-    tmp = out_path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2))
-    tmp.replace(out_path)
+
+def _new_combined_report_skeleton(bench_name: str) -> dict[str, Any]:
+    return {"benchmark": bench_name, "agents": [], "results": []}
+
+
+def _rebuild_combined_derived_fields(combined: dict[str, Any]) -> None:
+    """Recompute ``tasks``/``score_matrix``/``overall`` from ``agents``+``results``."""
+    results = combined["results"]
+    tasks_sorted = sorted({r["task_id"] for r in results})
+    score_matrix: dict[str, dict[str, float]] = {t: {} for t in tasks_sorted}
+    task_labels: dict[str, Any] = {}
+    for r in results:
+        score_matrix[r["task_id"]][r["agent_type"]] = r["score"]
+        task_labels[r["task_id"]] = r.get("labels", {})
+    combined["tasks"] = tasks_sorted
+    combined["task_labels"] = task_labels
+    combined["score_matrix"] = score_matrix
+    combined["overall"] = {
+        "total_agents": len(combined["agents"]),
+        "total_tasks": len(tasks_sorted),
+        "total_results": len(results),
+        "avg_score_by_agent": {
+            a["agent_type"]: round(a["summary"]["avg_score"], 4) for a in combined["agents"]
+        },
+        "avg_score_by_task": {
+            t: round(sum(v.values()) / len(v), 4) if v else 0.0
+            for t, v in score_matrix.items()
+        },
+    }
+
+
+def _update_combined_report(
+    combined_path: Path,
+    results: list[TaskResult],
+    agent_config: dict[str, Any],
+    model_label: str,
+    agent_label: str,
+    task_stats: dict[str, Any] | None = None,
+    pass_k: dict[str, Any] | None = None,
+) -> None:
+    """Merge this agent's current results into the run-wide combined report.
+
+    Multiple agent processes (one per ``--agents`` entry, typically launched
+    as separate OS processes) can share the same run root and therefore the
+    same *combined_path*; a POSIX advisory lock on a companion ``.lock`` file
+    serializes their read-modify-write so concurrent updates never clobber
+    each other. Called after every task completes (not just at the end) so a
+    crashed/killed process never loses already-finished sibling agents' data.
+    """
+    bench_name = agent_config.get("agent_type") or "pawbench"
+    agent_payload = _build_agent_payload(
+        results, agent_config, bench_name, task_stats=task_stats, pass_k=pass_k,
+    )
+    agent_entry = {
+        "agent_type": agent_label,
+        "model": agent_payload["model"],
+        "timestamp": agent_payload["timestamp"],
+        "summary": agent_payload["summary"],
+    }
+    tagged_results = [
+        {**r, "agent_type": agent_label, "model": agent_payload["model"]}
+        for r in agent_payload["results"]
+    ]
+
+    combined_path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = combined_path.with_name(combined_path.name + ".lock")
+    with open(lock_path, "w") as lock_fh:
+        fcntl.flock(lock_fh, fcntl.LOCK_EX)
+        try:
+            if combined_path.exists():
+                try:
+                    combined = json.loads(combined_path.read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError):
+                    combined = _new_combined_report_skeleton(bench_name)
+            else:
+                combined = _new_combined_report_skeleton(bench_name)
+
+            combined["run_ts"] = combined_path.parent.name
+            combined["generated_at"] = datetime.now().isoformat()
+            combined["agents"] = sorted(
+                [a for a in combined["agents"] if a["agent_type"] != agent_label] + [agent_entry],
+                key=lambda a: a["agent_type"],
+            )
+            combined["results"] = [
+                r for r in combined["results"] if r.get("agent_type") != agent_label
+            ] + tagged_results
+            _rebuild_combined_derived_fields(combined)
+
+            tmp = combined_path.with_suffix(".tmp")
+            tmp.write_text(json.dumps(combined, ensure_ascii=False, indent=2))
+            tmp.replace(combined_path)
+        finally:
+            fcntl.flock(lock_fh, fcntl.LOCK_UN)
 
 
 # ── label-dimension helpers ───────────────────────────────────────────────────

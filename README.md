@@ -120,6 +120,18 @@ Before the first run, build the base image (includes `harbor-framework` and all 
 docker build -f docker/Dockerfile.pawbench-base -t pawbench-base:latest .
 ```
 
+> **Note — harbor-v2 tasks may depend on this image too.** Some
+> `data_v2.1`/`data_v2.2` task `environment/Dockerfile`s `FROM
+> pawbench-base:latest` (instead of the internal registry image) so the task
+> container comes with every Harbor agent CLI pre-baked (including `claude`).
+> That lets Harbor's `install()` skip re-installing the agent-under-test's CLI
+> when it's already present, and keeps OpenJudge's `claude-code` judge
+> harness available even when the agent-under-test isn't Claude Code.
+> **`pawbench-base:latest` is currently only built locally and never pushed to
+> a registry** — if you see "pull access denied" or "image not found" for one
+> of these tasks on a fresh machine/CI, it just means this base image hasn't
+> been built there yet; run the `docker build` command above first.
+
 > **Note — vendored Harbor fixes.** The `harbor/` tree is vendored and
 > git-ignored, so two required agent fixes — qwenpaw provider routing (relay
 > endpoints must not use the builtin `openai` provider) and the hermes session

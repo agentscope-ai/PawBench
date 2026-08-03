@@ -51,9 +51,15 @@ def test_cowork_materialization_shares_seeded_workspace(tmp_path: Path):
 
     compose = (runtime / "environment" / "docker-compose.yaml").read_text()
     assert "source: pawbench-workspace" in compose
-    assert "target: /home/node/workspace" in compose
-    assert "target: /workspace" in compose
-    assert "USER_SIM_WORKSPACE_ROOT=/workspace" in compose
+    # main and user-sim must mount the shared volume at the *same* absolute
+    # path (the agent's own workspace path) so authored patch hints that use
+    # that absolute path don't get rejected as "escaping" the sidecar's root.
+    assert compose.count("target: /home/node/workspace") == 2
+    assert "target: /workspace" not in compose
+    assert "USER_SIM_WORKSPACE_ROOT=/home/node/workspace" in compose
+    dockerfile = (server_dir / "Dockerfile").read_text(encoding="utf-8")
+    assert "ENV USER_SIM_WORKSPACE_ROOT=/home/node/workspace" in dockerfile
+    assert "COPY workspace/ /home/node/workspace/" in dockerfile
     instruction = (runtime / "instruction.md").read_text(encoding="utf-8")
     assert "FIRST task action" in instruction
     assert "<original-instruction>" not in instruction
@@ -61,6 +67,23 @@ def test_cowork_materialization_shares_seeded_workspace(tmp_path: Path):
         server_dir / "workspace" / "workspace" / "index.html"
     ).read_text() == "<html>\n"
     assert (server_dir / "task" / ".patch" / "turn_01_hint.md").is_file()
+
+
+def test_cowork_materialization_uses_custom_workspace_path(tmp_path: Path):
+    task = _make_task(tmp_path, cowork=True)
+    runtime, server_dir = materialize_generative_task(
+        task,
+        tmp_path / "runtime-cowork-custom",
+        workspace_path="/root/workspace",
+    )
+
+    compose = (runtime / "environment" / "docker-compose.yaml").read_text()
+    assert compose.count("target: /root/workspace") == 2
+    assert "target: /home/node/workspace" not in compose
+    assert "USER_SIM_WORKSPACE_ROOT=/root/workspace" in compose
+    dockerfile = (server_dir / "Dockerfile").read_text(encoding="utf-8")
+    assert "ENV USER_SIM_WORKSPACE_ROOT=/root/workspace" in dockerfile
+    assert "COPY workspace/ /root/workspace/" in dockerfile
 
 
 def test_non_cowork_materialization_does_not_mount_workspace(tmp_path: Path):

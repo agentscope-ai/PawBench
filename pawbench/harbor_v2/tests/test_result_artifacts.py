@@ -30,18 +30,8 @@ def test_save_run_provenance_records_evaluation_contract(tmp_path: Path) -> None
     assert json.loads((trial_dir / "provenance.json").read_text()) == provenance
 
 
-def test_copy_saved_workspace_preserves_tree(tmp_path: Path) -> None:
-    trial_dir = tmp_path / "trial"
-    workspace = trial_dir / "artifacts" / "workspace"
-    (workspace / "reports").mkdir(parents=True)
-    (workspace / "reports" / "audit.md").write_text("done\n", encoding="utf-8")
-
-    HarborV2Backend._copy_saved_workspace(
-        trial_dir,
-        "task-001",
-        tmp_path / "saved-workspaces",
-    )
-
-    assert (tmp_path / "saved-workspaces" / "task-001" / "reports" / "audit.md").read_text(
-        encoding="utf-8"
-    ) == "done\n"
+# NOTE: the trajectory/reward/workspace bundling previously done here by
+# HarborV2Backend._copy_saved_workspace() now happens in
+# pawbench/runner.py::_save_task_bundle() (see
+# pawbench/runner/tests/test_runner.py), reading straight from
+# TaskResult.trial_dir instead of a backend-specific method.

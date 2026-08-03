@@ -82,7 +82,7 @@ _COWORK_COMPOSE_YAML = """services:
     volumes:
       - type: volume
         source: pawbench-workspace
-        target: /home/node/workspace
+        target: __AGENT_WORKSPACE_PATH__
 
   user-sim:
     image: __GENERATIVE_USER_IMAGE__
@@ -95,14 +95,14 @@ _COWORK_COMPOSE_YAML = """services:
       - USER_SIM_TEMPERATURE=${USER_SIM_TEMPERATURE:-0.7}
       - USER_SIM_TASK_DIR=/app/task
       - USER_SIM_STATE_PATH=/logs/agent/user_sim_state.json
-      - USER_SIM_WORKSPACE_ROOT=/workspace
+      - USER_SIM_WORKSPACE_ROOT=__AGENT_WORKSPACE_PATH__
     volumes:
       - type: bind
         source: ${HOST_AGENT_LOGS_PATH}
         target: ${ENV_AGENT_LOGS_PATH}
       - type: volume
         source: pawbench-workspace
-        target: /workspace
+        target: __AGENT_WORKSPACE_PATH__
     expose:
       - "8000"
     healthcheck:
@@ -124,14 +124,14 @@ ENV PYTHONPATH=/opt/user-sim
 ENV CUES_PLUS_ROOT=/opt/user-sim/cues
 ENV USER_SIM_TASK_DIR=/app/task
 ENV USER_SIM_STATE_PATH=/logs/agent/user_sim_state.json
-ENV USER_SIM_WORKSPACE_ROOT=/workspace
+ENV USER_SIM_WORKSPACE_ROOT=__AGENT_WORKSPACE_PATH__
 
 RUN pip install --no-cache-dir "fastmcp>=3.0" "openai>=1.40" "pyyaml>=6"
 
 COPY vendor/ /opt/user-sim/
 COPY task/ /app/task/
-COPY workspace/ /workspace/
-RUN rm -rf /workspace/.copaw /workspace/.docker
+COPY workspace/ __AGENT_WORKSPACE_PATH__/
+RUN rm -rf __AGENT_WORKSPACE_PATH__/.copaw __AGENT_WORKSPACE_PATH__/.docker
 
 EXPOSE 8000
 CMD ["python3", "-m", "pawbench.user_sim.mcp_server"]
@@ -277,8 +277,22 @@ def build_generative_user_image(server_dir: Path, image_name: str) -> None:
     )
 
 
-def materialize_generative_task(task: Any, destination: Path) -> tuple[Path, Path]:
+def materialize_generative_task(
+    task: Any,
+    destination: Path,
+    *,
+    workspace_path: str = "/home/node/workspace",
+) -> tuple[Path, Path]:
     """Create a runtime-only Harbor task wrapper with a generative user-sim.
+
+    ``workspace_path`` is the absolute path where the agent-under-test sees its
+    workspace (e.g. Harbor's ``agent_config["workspace_path"]``, defaulting to
+    ``/home/node/workspace`` like ``HarborV2Backend``'s artifact collection).
+    For cowork tasks the same path is used as the user-sim sidecar's
+    ``USER_SIM_WORKSPACE_ROOT`` and shared-volume mount point, so authored
+    patch hints that use the agent's own absolute workspace path (e.g.
+    ``/home/node/workspace/foo.json``) resolve inside the sidecar's workspace
+    root instead of being rejected as "escaping" a differently-named mount.
 
     Returns ``(runtime_task_dir, sidecar_build_context)``. The source task is
     copied, never mutated.
@@ -315,7 +329,10 @@ def materialize_generative_task(task: Any, destination: Path) -> tuple[Path, Pat
     # Sidecar build context: Dockerfile + vendored code + task/.user + messages.
     server_dir = destination / "environment" / "user-sim-server"
     server_dir.mkdir(parents=True, exist_ok=True)
-    (server_dir / "Dockerfile").write_text(_DOCKERFILE, encoding="utf-8")
+    (server_dir / "Dockerfile").write_text(
+        _DOCKERFILE.replace("__AGENT_WORKSPACE_PATH__", workspace_path),
+        encoding="utf-8",
+    )
     _vendor_user_sim(server_dir)
 
     task_ctx = server_dir / "task"
@@ -353,8 +370,8 @@ def materialize_generative_task(task: Any, destination: Path) -> tuple[Path, Pat
 
     image_name = generative_user_image_name(server_dir)
     compose_template = _COWORK_COMPOSE_YAML if cowork else _COMPOSE_YAML
-    compose_path.write_text(
-        compose_template.replace("__GENERATIVE_USER_IMAGE__", image_name),
-        encoding="utf-8",
-    )
+    compose_text = compose_template.replace("__GENERATIVE_USER_IMAGE__", image_name)
+    if cowork:
+        compose_text = compose_text.replace("__AGENT_WORKSPACE_PATH__", workspace_path)
+    compose_path.write_text(compose_text, encoding="utf-8")
     return destination, server_dir

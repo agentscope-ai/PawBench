@@ -121,6 +121,16 @@ EOF
 docker build -f docker/Dockerfile.pawbench-base -t pawbench-base:latest .
 ```
 
+> **说明 — harbor-v2 任务也可能依赖这个镜像。** 部分 `data_v2.1`/`data_v2.2`
+> 任务的 `environment/Dockerfile` 会 `FROM pawbench-base:latest`（而不是内网
+> registry 镜像），这样任务容器里天然带有全部 Harbor agent CLI（包括
+> `claude`），Harbor 的 `install()` 探测到已存在就会跳过重新安装，OpenJudge
+> 的 `claude-code` 判官 harness 也不会因为被测 agent 不是 claude-code 而缺失
+> CLI。**`pawbench-base:latest` 目前只在本机构建、没有推送到任何镜像
+> registry**：如果在新机器/CI 上看到这类任务报 "pull access denied" 或
+> "image not found"，说明还没构建过这个基础镜像，先执行上面的
+> `docker build` 命令即可。
+
 > **说明 — vendored Harbor 补丁。** `harbor/` 目录是 vendored 且被 `.gitignore`
 > 忽略的，因此两处必需的 agent 修复——qwenpaw 的 provider 路由（中转端点不能走内置
 > `openai` provider）与 hermes 的会话导出（`--source cli` 失效）——以补丁形式放在

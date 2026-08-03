@@ -5,7 +5,7 @@
 Reuses each Harbor agent's own ``install()`` logic but executes commands
 locally (we are already inside the image during ``docker build``) instead of
 via ``docker exec``.  This bakes the agent CLIs into the image so that
-``HarborBridgeAgent.install()`` detects the marker and skips re-installation.
+``HarborV2Backend`` detects the marker and skips re-installation.
 
 Usage (inside Dockerfile RUN step)::
 

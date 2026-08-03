@@ -14,3 +14,7 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
+harbor-github/.git/
+harbor-github/.venv/
+harbor-github/.ruff_cache/
+harbor-github/.pytest_cache/

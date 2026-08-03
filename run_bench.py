@@ -34,10 +34,18 @@ Quick start
   python run_bench.py --model openai/gpt-4o --verbose
 
   Results are written under
-  ``./results/<YYYYMMDD_HHMMSS>/pawbench/<model>/<agent>/``
-  so all agents/models from the same invocation share a single run folder and repeated runs do not
-  overwrite each other. Use ``--no-results-version-path`` to omit the timestamp prefix (re-runs
-  overwrite previous results).
+  ``./results/<YYYYMMDD_HHMMSS>/<task_id>/<model>/<agent>/{summary,trials}/``
+  so all agents/models from the same invocation share a single run folder, task_id is the
+  top-level partition (browse by task first, then by which model/harness produced it), and
+  repeated runs do not overwrite each other. ``summary/`` is a self-contained bundle
+  pulled straight out of ``trials/`` (no reformatting): ``trajectory[_runN].json`` (the raw
+  agent trajectory), ``reward[_runN]/`` (verifier output), and ``workspace[_runN]/`` (the
+  agent's final workspace snapshot, only when ``--save-workspace`` is on). A single
+  ``<YYYYMMDD_HHMMSS>_combined_report.json`` at the run root aggregates every agent/model's
+  summary + per-task scores (score matrix) from this invocation — every agent process
+  merges into it under a file lock, so it's safe to launch several ``--agents`` in parallel
+  processes against the same run. Use ``--no-results-version-path`` to omit the
+  timestamp prefix (re-runs overwrite previous results).
 
 Environment variables
 ---------------------
@@ -68,7 +76,7 @@ try:
 except ImportError:
     pass
 
-from pawbench import BenchmarkRunner, PawBenchBackend
+from pawbench import BenchmarkRunner
 
 _SCRIPT_DIR = Path(__file__).parent
 _DEFAULT_BENCHMARK_PATH = _SCRIPT_DIR
@@ -319,7 +327,7 @@ def parse_args() -> argparse.Namespace:
         dest="results_dir",
         help=(
             "Base directory for results (default: ./results). "
-            "Actual output: <dir>/<timestamp>/pawbench/<model>/<agent>/ "
+            "Actual output: <dir>/<timestamp>/<task_id>/<model>/<agent>/ "
             "unless --no-results-version-path is set."
         ),
     )
@@ -328,18 +336,31 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         dest="no_results_version_path",
         help=(
-            "Write under <results-dir>/pawbench/<model>/<agent>/ only (no timestamp subfolder; "
-            "re-runs overwrite previous results)."
+            "Write under <results-dir>/<task_id>/<model>/<agent>/ only (no timestamp "
+            "subfolder; re-runs overwrite previous results)."
         ),
     )
     out_grp.add_argument(
         "--save-workspace",
-        action="store_true",
-        default=False,
+        action=argparse.BooleanOptionalAction,
+        default=True,
         dest="save_workspace",
         help=(
-            "Save the agent workspace (AGENT_WORKSPACE container contents) to "
-            "<results-dir>/workspaces/<task_id>/ after each task completes."
+            "Collect the agent workspace (AGENT_WORKSPACE container contents) "
+            "into <results-dir>/<task_id>/<model>/<agent>/summary/workspace/ "
+            "after each task completes. Enabled by default; pass "
+            "--no-save-workspace to skip it."
+        ),
+    )
+    out_grp.add_argument(
+        "--keep-docker",
+        action="store_true",
+        default=False,
+        dest="keep_docker",
+        help=(
+            "Keep Docker containers after each task completes (stop but do not "
+            "remove). Useful for debugging — you can 'docker start <name>' to "
+            "re-enter the environment."
         ),
     )
     out_grp.add_argument(
@@ -389,25 +410,6 @@ def _run_timestamp() -> str:
     return datetime.now().strftime("%Y%m%d_%H%M%S")
 
 
-def _looks_like_harbor_v2(dataset_root: Path) -> bool:
-    """True when *dataset_root* contains Harbor-native task packages.
-
-    Detects a ``task.toml`` marker up to two levels deep (handles both
-    ``<dataset>/<task>/`` and ``<dataset>/data_v2/<task>/`` layouts).
-    """
-    if not dataset_root.is_dir():
-        return False
-    for child in dataset_root.iterdir():
-        if not child.is_dir():
-            continue
-        if (child / "task.toml").is_file():
-            return True
-        for grandchild in child.iterdir():
-            if grandchild.is_dir() and (grandchild / "task.toml").is_file():
-                return True
-    return False
-
-
 def _select_backend(backend_choice: str, benchmark_path: Path, dataset: str | None):
     """Instantiate the requested (or auto-detected) benchmark backend.
 
@@ -416,26 +418,11 @@ def _select_backend(backend_choice: str, benchmark_path: Path, dataset: str | No
     """
     from pawbench import get_harbor_v2_backend
 
-    choice = backend_choice
-    if choice == "auto":
-        # Probe the explicit dataset first; fall back to the harbor-v2 default.
-        HarborV2 = get_harbor_v2_backend()
-        probe_ds = dataset or HarborV2.DEFAULT_DATASET
-        if _looks_like_harbor_v2(benchmark_path / "data" / probe_ds):
-            choice = "harbor-v2"
-        else:
-            choice = "pawbench"
-
+    HarborV2 = get_harbor_v2_backend()
+    backend = HarborV2(benchmark_path)
     load_kwargs: dict = {}
-    if choice == "harbor-v2":
-        HarborV2 = get_harbor_v2_backend()
-        backend = HarborV2(benchmark_path)
-        load_kwargs["dataset"] = dataset or HarborV2.DEFAULT_DATASET
-    else:
-        backend = PawBenchBackend(benchmark_path)
-        if dataset:
-            load_kwargs["dataset"] = dataset
-    return backend, load_kwargs, choice
+    load_kwargs["dataset"] = dataset or HarborV2.DEFAULT_DATASET
+    return backend, load_kwargs, "harbor-v2"
 
 
 def _default_base_url_for_model(model: str | None) -> str:
@@ -539,7 +526,7 @@ def _build_multi_agent_config(args: argparse.Namespace):
     A ``--multi-agent-config FILE`` takes precedence over the individual
     ``--multi-agent-*`` flags and implies ``--multi-agent``.
     """
-    from pawbench.agents.multi_agent import MultiAgentConfig, normalize_run_mode
+    from pawbench.harbor_v2.multi_agent import MultiAgentConfig, normalize_run_mode
 
     config_path = getattr(args, "multi_agent_config", None)
     if config_path:
@@ -609,12 +596,14 @@ async def main() -> int:
 
     for idx, (model, api_key, base_url, agent_label) in enumerate(run_matrix, start=1):
         model_label = _filesystem_model_label(model or "default")
+        # <task_id>/<model_label>/<agent_label>/ is filled in per-task by
+        # BenchmarkRunner once tasks are loaded (task_id isn't known yet
+        # here), so this is just the shared run root every model/agent
+        # combo in this invocation writes under.
         if args.no_results_version_path:
-            run_results_dir = base_results_dir / _BENCHMARK_NAME / model_label / agent_label
+            run_results_dir = base_results_dir
         else:
-            run_results_dir = (
-                base_results_dir / run_ts / _BENCHMARK_NAME / model_label / agent_label
-            )
+            run_results_dir = base_results_dir / run_ts
         run_results_dir.mkdir(parents=True, exist_ok=True)
 
         print("\n" + "─" * 80)
@@ -685,7 +674,7 @@ async def _run_benchmark(
     if args.thinking:
         agent_config["thinking_level"] = args.thinking
 
-    from pawbench.agents.multi_agent import (
+    from pawbench.harbor_v2.multi_agent import (
         normalize_harness_name,
         resolve_for_harness,
     )
@@ -718,18 +707,24 @@ async def _run_benchmark(
     api_model_name = os.environ.get("BENCH_API_MODEL_NAME")
     if api_model_name:
         agent_config["api_model_name"] = api_model_name
+    # BenchmarkRunner.run() builds per-task_id/model/agent directories once
+    # tasks are loaded (task_id isn't known here yet), so this only flags
+    # *whether* to save; the actual "trials_dir" path (and, from there,
+    # summary/workspace/) is filled in there. Do NOT hardcode a
+    # "workspace_path" here: only
+    # HarborV2Backend consumes it (defaulting to the agent-under-test's real
+    # workspace, /home/node/workspace, and reusing that same path for the
+    # cowork user-sim sidecar mount — see generative_user.py). The legacy
+    # pawbench.runner backend never reads this key, so leaving it unset lets
+    # each backend apply its own correct default instead of forcing a
+    # container path ("/app") that doesn't exist in harbor-v2 agents.
+    agent_config["model_label"] = _filesystem_model_label(model or "default")
     if getattr(args, "save_workspace", False):
         agent_config["save_workspace"] = True
-        agent_config["workspace_save_dir"] = str(
-            Path(args.results_dir).resolve() / "workspaces"
-        )
+    if getattr(args, "keep_docker", False):
+        agent_config["keep_docker"] = True
     if getattr(args, "save_docker_image", False):
         agent_config["save_docker_image"] = True
-    if backend_choice == "harbor-v2":
-        # Harbor bind-mounts the trial's agent-logs dir into the task container.
-        # Under docker-socket sharing the path must exist on the host, so anchor
-        # trials under the (host-visible) results dir rather than a container tmp.
-        agent_config["trials_dir"] = str(Path(args.results_dir) / "trials")
 
     runner = BenchmarkRunner(
         backend=backend,

@@ -19,8 +19,7 @@ mode — the orchestrator + sub-agent / delegation feature each CLI ships:
   ``spawn_subagent`` tool (QwenPaw 2.0.0.post3+).
 
 The rest of PawBench does not need to know any of these details: it hands a
-single normalized :class:`MultiAgentConfig` to
-:class:`~pawbench.agents.impl.harbor_bridge_agent.HarborBridgeAgent`, which calls
+single normalized :class:`MultiAgentConfig` to the Harbor backend, which calls
 :func:`build_harbor_kwargs` to translate the normalized spec into the
 harness-specific constructor kwargs / env vars.
 

@@ -3,27 +3,23 @@
 
 Public API
 ----------
-* :class:`PawBenchBackend`  — load + run + grade pawbench tasks
-* :class:`BenchmarkBackend` — abstract contract (one implementation today)
+* :class:`HarborV2Backend`  — load + run + grade tasks via Harbor Trial
+* :class:`BenchmarkBackend` — abstract contract
 * :class:`TaskResult`       — per-task result dataclass
 * :class:`BenchmarkRunner`  — orchestrates concurrent execution + checkpointing
 * :class:`Task`, :class:`TaskLoader` — task data model and Markdown parser
 * :class:`GradeResult`, :func:`grade_task` — grading entry points
 """
 
-from .backend import BenchmarkBackend, PawBenchBackend, TaskResult
+from .backend import BenchmarkBackend, TaskResult
 from .grader import GradeResult, grade_task
 from .runner import BenchmarkRunner
 from .task_loader import Task, TaskLoader
-
-# HarborV2Backend is imported lazily via ``get_harbor_v2_backend`` to avoid
-# importing its (deferred) harbor dependencies at package import time.
 
 __all__ = [
     "BenchmarkBackend",
     "BenchmarkRunner",
     "GradeResult",
-    "PawBenchBackend",
     "Task",
     "TaskLoader",
     "TaskResult",

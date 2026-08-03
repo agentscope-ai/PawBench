@@ -46,3 +46,31 @@ data/pawbenchv2_data_v1_0717
 
 # Local PawBench datasets and trajectory exports
 /pawbenchv2_0706*_trajectories*
+/pawbenchv2_data*_trajectories*.zip
+/harbor.zip
+
+# Local data dumps / extracted archives (not source-of-truth)
+data/data_v2*/
+data/__MACOSX/
+data/*.zip
+
+# Nested external repo checked out locally for reference
+/harbor-github/
+
+# Local run artifacts
+/logs/
+
+# Personal editor config
+/.vscode/
+
+# One-off local regrade/analysis/batch-run scripts (not part of the eval
+# pipeline itself — kept locally for now, not committed)
+/scripts/fix_ua_contracts.py
+/scripts/regrade_ma_bugfix.py
+/scripts/regrade_openjudge_reward_bug.py
+/scripts/regrade_ws_result_dimension.py
+/scripts/survey_ws_result_dimension.py
+/scripts/sync_regrade_to_summary.py
+/scripts/run_data22_batch_eval_0801.sh
+/scripts/run_data22_batch_eval_0801_cont.sh
+/scripts/run_data23_batch_eval_0802.sh

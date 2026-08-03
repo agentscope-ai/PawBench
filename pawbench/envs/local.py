@@ -180,7 +180,7 @@ class LocalEnvironment(BaseEnvironment):
             # bash-only constructs work, most importantly sourcing nvm
             # (``. ~/.nvm/nvm.sh``) which Harbor agents like codex use to put
             # their nvm-installed CLI on PATH.  This mirrors the DockerEnvironment
-            # path in harbor_shim.py, which already execs ``bash -c <command>``.
+            # path which execs ``bash -c <command>``.
             bash_bin = shutil.which("bash") or "/bin/bash"
             proc = await asyncio.create_subprocess_exec(
                 bash_bin,

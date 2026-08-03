@@ -34,17 +34,14 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from pawbench.agents.claude_code_guidance import (
-    merge_claude_code_guidance,
-    quoted_claude_code_guidance,
-)
-from pawbench.agents.delegation import evaluate_multi_agent_run
-from pawbench.agents.multi_agent import (
+from pawbench.harbor_v2.delegation import evaluate_multi_agent_run
+from pawbench.harbor_v2.multi_agent import (
     FORCED_DELEGATION_INSTRUCTION,
     MultiAgentConfig,
     resolve_for_harness,
 )
 from pawbench.backend import BenchmarkBackend, TaskResult
+from pawbench.tools.enrich_trajectories import enrich_file
 from pawbench.utils.anomalies import detect_anomalies
 
 from .generative_user import (
@@ -76,9 +73,9 @@ _AGENT_NAME_ALIASES: dict[str, str] = {
 # rejects them by name).  Passing a ``module:Class`` import path bypasses the
 # enum check — see harbor.agents.factory.create_agent_from_config.
 _AGENT_IMPORT_PATHS: dict[str, str] = {
-    "claude-code": ("pawbench.agents.impl.pawbench_claude_code:PawBenchClaudeCode"),
-    "hermes": "pawbench.agents.impl.harbor_reliability_agents:PawBenchHermes",
-    "qwenpaw": "pawbench.agents.impl.harbor_reliability_agents:PawBenchQwenPaw",
+    "claude-code": "harbor.agents.installed.claude_code:ClaudeCode",
+    "hermes": "harbor.agents.installed.hermes:Hermes",
+    "qwenpaw": "harbor.agents.installed.qwenpaw:QwenPaw",
 }
 
 _QWENPAW_SETUP_TIMEOUT_SECONDS = 1500.0
@@ -217,23 +214,13 @@ class HarborV2Backend(BenchmarkBackend):
         # which non-reasoning models (e.g. DashScope qwen3.6-plus) reject
         # outright ("Thinking level 'high' is not supported ... Use one of:
         # off."), crashing the CLI with an empty transcript. Mirror
-        # HarborBridgeAgent: force "off" unless the caller explicitly passed
+        # force "off" unless the caller explicitly passed
         # --thinking (agent_config["thinking_level"]).
         agent_kwargs: dict[str, Any] = {}
-        effective_system_prompt: str | None = None
         if agent_config.get("version"):
             agent_kwargs["version"] = str(agent_config["version"])
         if short_agent_name == "openclaw":
             agent_kwargs["thinking"] = agent_config.get("thinking_level") or "off"
-        elif short_agent_name == "claude-code":
-            effective_system_prompt = merge_claude_code_guidance(
-                agent_config.get("append_system_prompt"),
-                multi_turn=requires_user_sim,
-            )
-            agent_kwargs["append_system_prompt"] = quoted_claude_code_guidance(
-                agent_config.get("append_system_prompt"),
-                multi_turn=requires_user_sim,
-            )
         multi_agent_kwargs, multi_agent_env = self._build_multi_agent_inputs(
             short_agent_name, agent_config
         )
@@ -254,12 +241,20 @@ class HarborV2Backend(BenchmarkBackend):
         # suffix keeps every harness/mode/retry from sharing and tearing down
         # another trial's containers.
         trial_name = f"{task.task_id}__{run_id}__{uuid.uuid4().hex[:8]}"
+        # Single source of truth for the agent-under-test's workspace path:
+        # reused below for artifact collection and here so the cowork user-sim
+        # sidecar mounts the shared workspace volume at the *same* absolute
+        # path the agent sees, instead of a hardcoded "/workspace" that can
+        # diverge from it and make authored patch hints look like they
+        # "escape" the sidecar's workspace root.
+        agent_workspace_path = str(agent_config.get("workspace_path") or "/home/node/workspace")
         runtime_task_dir = task.task_dir
         if self._uses_generative_user(task):
             trials_dir.mkdir(parents=True, exist_ok=True)
             runtime_task_dir, server_dir = materialize_generative_task(
                 task,
                 trials_dir / ".pawbench-runtime-tasks" / trial_name,
+                workspace_path=agent_workspace_path,
             )
             image_name = generative_user_image_name(server_dir)
             await asyncio.to_thread(
@@ -361,11 +356,15 @@ class HarborV2Backend(BenchmarkBackend):
 
             artifacts.append(
                 ArtifactConfig(
-                    source=str(agent_config.get("workspace_path") or "/home/node/workspace"),
+                    source=agent_workspace_path,
                     destination="workspace",
                 )
             )
 
+        keep_docker = agent_config.get("keep_docker", False)
+        env_kwargs: dict[str, Any] = {}
+        if keep_docker:
+            env_kwargs["keep_containers"] = True
         config = TrialConfig(
             task=TaskConfig(path=runtime_task_dir),
             trial_name=trial_name,
@@ -383,9 +382,9 @@ class HarborV2Backend(BenchmarkBackend):
                 override_setup_timeout_sec=self._agent_setup_timeout_seconds(short_agent_name),
             ),
             environment=(
-                EnvironmentConfig(env=environment_env)
+                EnvironmentConfig(env=environment_env, delete=not keep_docker, kwargs=env_kwargs)
                 if environment_env
-                else EnvironmentConfig()  # provider defaults to docker
+                else EnvironmentConfig(delete=not keep_docker, kwargs=env_kwargs)
             ),
             verifier=VerifierConfig(env=verifier_env) if verifier_env else VerifierConfig(),
             artifacts=artifacts,
@@ -393,21 +392,11 @@ class HarborV2Backend(BenchmarkBackend):
 
         t0 = time.time()
         trial = await Trial.create(config)
-        if effective_system_prompt is not None:
-            self._save_system_prompt(
-                trials_dir / trial_name,
-                effective_system_prompt,
-            )
         result = await trial.run()
         elapsed = time.time() - t0
         self._save_run_provenance(trials_dir / trial_name, run_provenance)
-        self._copy_saved_workspace(
-            trials_dir / trial_name,
-            task.task_id,
-            agent_config.get("workspace_save_dir"),
-        )
 
-        return self._map_trial_result(
+        task_result = self._map_trial_result(
             task=task,
             result=result,
             trials_dir=trials_dir,
@@ -416,17 +405,14 @@ class HarborV2Backend(BenchmarkBackend):
             elapsed=elapsed,
             verbose=verbose,
         )
-
-    @staticmethod
-    def _save_system_prompt(trial_dir: Path, prompt: str) -> None:
-        """Persist the effective PawBench append-system-prompt for reproducibility.
-
-        Claude Code's built-in vendor prompt is not exposed by its CLI. This file
-        records the complete prompt supplied through ``--append-system-prompt``.
-        """
-        agent_dir = trial_dir / "agent"
-        agent_dir.mkdir(parents=True, exist_ok=True)
-        (agent_dir / "system_prompt.txt").write_text(prompt + "\n", encoding="utf-8")
+        # Bundling trajectory/reward/workspace into the public results tree
+        # (summary/) is BenchmarkRunner's job (pawbench/runner.py,
+        # _save_task_bundle) — it runs after this method returns, which
+        # matters for multi-turn (user-sim) tasks: _map_trial_result() above
+        # just called _enrich_trajectory_file(), rewriting agent/trajectory.json
+        # on disk to fuse in the user-sim dialogue, so the bundle picks up the
+        # post-enrichment version instead of freezing in a pre-enrichment one.
+        return task_result
 
     @staticmethod
     def _save_run_provenance(trial_dir: Path, provenance: dict[str, Any]) -> None:
@@ -436,35 +422,6 @@ class HarborV2Backend(BenchmarkBackend):
             json.dumps(provenance, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
-
-    @staticmethod
-    def _copy_saved_workspace(
-        trial_dir: Path,
-        task_id: str,
-        workspace_save_dir: str | Path | None,
-    ) -> None:
-        """Copy Harbor's collected final workspace to the public results tree."""
-        if not workspace_save_dir:
-            return
-        source = trial_dir / "artifacts" / "workspace"
-        if not source.is_dir():
-            logger.warning("Requested workspace archive was not collected: %s", source)
-            return
-        destination = Path(workspace_save_dir) / task_id
-        try:
-            shutil.copytree(
-                source,
-                destination,
-                dirs_exist_ok=True,
-                ignore_dangling_symlinks=True,
-            )
-            logger.info("Workspace saved to %s", destination)
-        except (OSError, shutil.Error):
-            logger.warning(
-                "Failed to copy collected workspace to %s",
-                destination,
-                exc_info=True,
-            )
 
     @staticmethod
     def _materialize_forced_task(
@@ -503,15 +460,14 @@ class HarborV2Backend(BenchmarkBackend):
     ) -> tuple[dict[str, Any], dict[str, str]]:
         """Translate normalized multi-agent config for native Harbor trials.
 
-        The legacy ``HarborBridgeAgent`` already performs this translation, but
-        Harbor-v2 constructs ``TrialConfig`` directly and therefore must forward
+        Harbor constructs ``TrialConfig`` directly and therefore must forward
         the harness-specific constructor kwargs and environment itself.
         """
         raw_config = agent_config.get("multi_agent")
         if not raw_config:
             return {}, {}
 
-        from pawbench.agents.multi_agent import (
+        from pawbench.harbor_v2.multi_agent import (
             SUPPORTED_MULTI_AGENT_HARNESSES,
             MultiAgentConfig,
             build_harbor_kwargs,
@@ -559,10 +515,10 @@ class HarborV2Backend(BenchmarkBackend):
     ) -> dict[str, str]:
         """Build the env dict handed to the Harbor agent (scoped to its container).
 
-        Mirrors HarborBridgeAgent._build_extra_env: pick the provider-appropriate
-        API-key/base-url vars from the model prefix so the installed agent can
-        reach its LLM without extra configuration, plus a claude-code-specific
-        adaptation for proxied Anthropic endpoints.
+        Pick the provider-appropriate API-key/base-url vars from the model
+        prefix so the installed agent can reach its LLM without extra
+        configuration, plus a claude-code-specific adaptation for proxied
+        Anthropic endpoints.
         """
         env: dict[str, str] = {}
         api_key = agent_config.get("api_key") or ""
@@ -610,8 +566,7 @@ class HarborV2Backend(BenchmarkBackend):
 
         Harbor's native ClaudeCode agent, when a custom ``ANTHROPIC_BASE_URL`` is
         set, keeps the *full* ``provider/model`` string as ``ANTHROPIC_MODEL``.
-        Most relay/proxy platforms (the ones the PawBench HarborBridgeAgent path
-        targets) only recognise the *bare* model id, so we override
+        Most relay/proxy platforms only recognise the *bare* model id, so we override
         ``ANTHROPIC_MODEL`` and every claude-code model alias with the bare name
         via extra_env (which wins over the agent's own computed env).
 
@@ -974,6 +929,7 @@ class HarborV2Backend(BenchmarkBackend):
             protocol_complete, protocol_violation = self._multi_turn_protocol_complete(trial_dir)
             if protocol_complete:
                 protocol_violation = ""
+            self._enrich_trajectory_file(trial_dir)
         multi_agent_result = evaluate_multi_agent_run(
             agent_config.get("multi_agent"),
             agent_config.get("agent_type", "qwenpaw"),
@@ -1011,6 +967,13 @@ class HarborV2Backend(BenchmarkBackend):
             logger.info("Trial rewards for %s: %s → score=%.3f", task.task_id, rewards, score)
 
         breakdown = dict(rewards)
+        if "reward" in breakdown and "pass_rate" not in breakdown:
+            # Display-only alias: "reward" is Harbor's hardcoded 1-D reward key
+            # (leaderboard/uploader/pass@k/viewer all read rewards["reward"]
+            # directly, so reward.toml must keep that name). pawbench reports
+            # surface the same binary value under the more descriptive
+            # "pass_rate" label without touching the underlying reward.json.
+            breakdown["pass_rate"] = breakdown["reward"]
         if multi_agent_result["effective_mode"] == "forced":
             breakdown["multi_agent_forced_compliance"] = 0.0 if forced_violation else 1.0
         if requires_user_sim:
@@ -1024,7 +987,15 @@ class HarborV2Backend(BenchmarkBackend):
             task_name=task.name,
             score=0.0 if forced_violation or protocol_violation else score,
             max_score=1.0,
-            passed=(False if forced_violation or protocol_violation else score >= 1.0 - 1e-9),
+            passed=(
+                False
+                if forced_violation or protocol_violation
+                else (
+                    float(rewards["reward"]) >= 1.0 - 1e-9
+                    if "reward" in rewards
+                    else score >= 1.0 - 1e-9
+                )
+            ),
             grading_type="harbor_rewardkit",
             breakdown=breakdown,
             notes=(
@@ -1050,18 +1021,23 @@ class HarborV2Backend(BenchmarkBackend):
             anomaly=anomaly,
             labels=labels,
             multi_agent=multi_agent_result,
+            trial_dir=str(trials_dir / trial_name),
         )
 
     @staticmethod
     def _score_from_rewards(rewards: dict[str, float]) -> float:
         """Collapse the RewardKit reward dict into a single 0..1 score.
 
-        Preference order: an explicit ``reward`` key (Harbor's 1-D convention),
-        then a common aggregation key, then the mean of all values.
+        Preference order: an explicit continuous ``score`` key (tasks that
+        define a second ``[[reward]]`` entry in ``reward.toml``, e.g.
+        ``aggregation = "weighted_mean"``, so the continuous score survives
+        alongside a separately-named binary pass/fail key such as
+        ``pass_rate``), then Harbor's 1-D ``reward`` convention, then a
+        common aggregation key, then the mean of all values.
         """
         if not rewards:
             return 0.0
-        for key in ("reward", "overall", "total", "all_pass"):
+        for key in ("score", "reward", "overall", "total", "all_pass"):
             if key in rewards:
                 return float(rewards[key])
         vals = [float(v) for v in rewards.values()]
@@ -1321,6 +1297,34 @@ class HarborV2Backend(BenchmarkBackend):
         if not state.get("done") or not state.get("termination_reason"):
             return False, "conversation ended before conversation_over=true"
         return True, ""
+
+    @staticmethod
+    def _enrich_trajectory_file(trial_dir: Path) -> None:
+        """Best-effort: fuse the user-sim dialogue directly into ``agent/trajectory.json``.
+
+        Decodes the user-sim dialogue that is already embedded (re-escaped) in
+        the raw ATIF ``trajectory.json`` tool-call observations and inserts it
+        in place (chronologically, right after the tool call that produced it),
+        so the trial directory carries a single self-contained file with the
+        full agent+user conversation instead of requiring readers to
+        cross-reference ``agent/user_sim_state.json``.
+
+        The pristine pre-enrichment ATIF is preserved once as
+        ``agent/trajectory.raw.json`` (only written if absent, so retries never
+        clobber the original). Any failure (missing file, unexpected shape,
+        harness without one — e.g. QwenPaw's native session log) is swallowed
+        so grading is never affected.
+        """
+        traj_path = trial_dir / "agent" / "trajectory.json"
+        if not traj_path.is_file():
+            return
+        raw_backup = trial_dir / "agent" / "trajectory.raw.json"
+        try:
+            if not raw_backup.is_file():
+                shutil.copyfile(traj_path, raw_backup)
+            enrich_file(traj_path, traj_path)
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            logger.debug("trajectory enrichment skipped for %s: %s", trial_dir, exc)
 
     @staticmethod
     def _load_user_sim_turns(trial_dir: Path) -> list[dict[str, Any]]:

@@ -200,6 +200,19 @@ def test_explicit_rewardkit_aggregate_is_not_overwritten(tmp_path: Path) -> None
     assert rewards["reward"] == 0.25
 
 
+def test_dual_metric_reward_keeps_continuous_score_and_threshold_pass() -> None:
+    # A task-defined reward.toml with two [[reward]] entries — a continuous
+    # weighted_mean "score" plus a binary threshold "reward" — should surface
+    # both: _score_from_rewards() picks the continuous "score" key, while
+    # "passed" (computed inline in _map_trial_result) is driven by the
+    # binary "reward" key rather than requiring score == 1.0.
+    rewards = {"quality": 0.85, "score": 0.85, "reward": 1.0}
+    assert HarborV2Backend._score_from_rewards(rewards) == 0.85
+
+    rewards_fail = {"quality": 0.5, "score": 0.5, "reward": 0.0}
+    assert HarborV2Backend._score_from_rewards(rewards_fail) == 0.5
+
+
 def test_multi_turn_protocol_completion_requires_send_and_done(tmp_path: Path) -> None:
     trial = tmp_path / "trial"
     state_path = trial / "agent" / "user_sim_state.json"

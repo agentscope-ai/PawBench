@@ -5,11 +5,12 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import importlib.util
 import json
 import os
 import shutil
-import subprocess
 import sys
+import types
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +26,8 @@ from openjudge.harness import ClaudeCodeHarness, CodexHarness, CursorAgentHarnes
 
 TESTS_DIR = Path("/tests")
 QUALITY_DIR = TESTS_DIR / "quality"
+RESULT_DIR = TESTS_DIR / "result"
+WS_RESULT_DIMENSION_PATH = Path("/logs/verifier/ws_result_dimension.json")
 WORKSPACE_PATH = Path(os.environ.get("OPENJUDGE_WORKSPACE", "/home/node/workspace"))
 TRAJECTORY_PATH = Path(
     os.environ.get("OPENJUDGE_TRAJECTORY", "/logs/agent/trajectory.json")
@@ -42,6 +45,8 @@ JUDGE_HARNESS_PATH = Path("/logs/verifier/openjudge-harness.json")
 PROVENANCE_SOURCE_PATH = QUALITY_DIR / "pawbench-provenance.json"
 PROVENANCE_PATH = Path("/logs/verifier/openjudge-provenance.json")
 INPUT_READINESS_PATH = Path("/logs/verifier/openjudge-input-readiness.json")
+
+MAX_ATTEMPTS = 3
 
 HARNESS_TYPES = {
     "claude": ClaudeCodeHarness,
@@ -67,10 +72,11 @@ _KNOWN_MODEL_PREFIXES = {
 class RecordingHarness:
     """Keep harness diagnostics that AgenticGrader v1 otherwise discards."""
 
-    def __init__(self, delegate: Any):
+    def __init__(self, delegate: Any, attempt: int = 1):
         self.delegate = delegate
         self.last_result: Any = None
         self.invocation_count = 0
+        self.attempt = attempt
 
     def run(
         self,
@@ -81,26 +87,16 @@ class RecordingHarness:
     ) -> Any:
         self.invocation_count += 1
         self.last_result = self.delegate.run(sandbox_dir, prompt, schema, model)
-        if not getattr(self.last_result, "available", False):
-            recovered = _recover_harness_result(sandbox_dir, self.last_result, schema)
-            if recovered is not None:
-                self.last_result = recovered
-        try:
-            _persist_harness_logs(
-                sandbox_dir=sandbox_dir,
-                harness_result=self.last_result,
-                invocation=self.invocation_count,
-                model=model,
-                binary=str(getattr(self.delegate, "binary", "")),
-                prompt=prompt,
-                schema=schema,
-            )
-        except Exception as exc:
-            # Log persistence must never change the judge verdict.
-            print(
-                f"Warning: failed to persist OpenJudge harness logs: {exc}",
-                file=sys.stderr,
-            )
+        _persist_harness_logs(
+            sandbox_dir=sandbox_dir,
+            harness_result=self.last_result,
+            invocation=self.invocation_count,
+            model=model,
+            binary=str(getattr(self.delegate, "binary", "")),
+            prompt=prompt,
+            schema=schema,
+            attempt=self.attempt,
+        )
         return self.last_result
 
 
@@ -112,141 +108,6 @@ def _try_load_judge_result(path: Path) -> dict[str, Any] | None:
     except (json.JSONDecodeError, OSError):
         return None
     return payload if isinstance(payload, dict) and payload else None
-
-
-def _extract_result_from_stream_json(raw: str, schema: dict[str, Any]) -> dict[str, Any] | None:
-    """Best-effort recovery when Claude prints stream-json but skips the result file.
-
-    Claude Code occasionally finishes the judging turn in chat / tool payloads
-    without leaving ``_judge_result.json`` at the sandbox root. Reconstruct a
-    flat checkpoint map from stream-json events when possible.
-    """
-    if not raw.strip():
-        return None
-    checkpoint_ids = set(schema.keys()) if schema else set()
-    candidates: list[dict[str, Any]] = []
-
-    for line in raw.splitlines():
-        line = line.strip()
-        if not line.startswith("{"):
-            continue
-        try:
-            event = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if not isinstance(event, dict):
-            continue
-
-        # Tool writes of the result file.
-        content = event.get("message", {}).get("content") if isinstance(event.get("message"), dict) else None
-        if isinstance(content, list):
-            for block in content:
-                if not isinstance(block, dict):
-                    continue
-                if block.get("type") == "tool_use" and str(block.get("name", "")).lower() in {
-                    "write",
-                    "create_file",
-                    "writefile",
-                }:
-                    tool_input = block.get("input") or {}
-                    path = str(tool_input.get("path") or tool_input.get("file_path") or "")
-                    if path.endswith("_judge_result.json"):
-                        body = tool_input.get("contents") or tool_input.get("content") or tool_input.get("file_text")
-                        if isinstance(body, str):
-                            try:
-                                parsed = json.loads(body)
-                            except json.JSONDecodeError:
-                                parsed = None
-                            if isinstance(parsed, dict) and parsed:
-                                candidates.append(parsed)
-                if block.get("type") == "tool_use" and str(block.get("name", "")).lower() in {
-                    "bash",
-                    "shell",
-                }:
-                    tool_input = block.get("input") or {}
-                    cmd = str(tool_input.get("command") or "")
-                    if "_judge_result.json" in cmd and "{" in cmd:
-                        # naive: find last JSON object in the command
-                        start = cmd.rfind("{")
-                        end = cmd.rfind("}")
-                        if start != -1 and end > start:
-                            try:
-                                parsed = json.loads(cmd[start : end + 1])
-                            except json.JSONDecodeError:
-                                parsed = None
-                            if isinstance(parsed, dict) and parsed:
-                                candidates.append(parsed)
-
-        # Some models echo the full verdict JSON in assistant text.
-        if isinstance(content, list):
-            for block in content:
-                if isinstance(block, dict) and block.get("type") == "text":
-                    text = str(block.get("text") or "")
-                    start = text.find("{")
-                    end = text.rfind("}")
-                    if start != -1 and end > start:
-                        try:
-                            parsed = json.loads(text[start : end + 1])
-                        except json.JSONDecodeError:
-                            parsed = None
-                        if isinstance(parsed, dict) and parsed:
-                            candidates.append(parsed)
-
-    for payload in reversed(candidates):
-        if checkpoint_ids and checkpoint_ids.issubset(payload.keys()):
-            return payload
-        # Accept payloads that look like checkpoint maps even if ids differ slightly.
-        values = list(payload.values())
-        if values and all(isinstance(v, dict) and "passed" in v for v in values):
-            return payload
-    return None
-
-
-def _recover_harness_result(
-    sandbox_dir: Path,
-    harness_result: Any,
-    schema: dict[str, Any],
-) -> Any | None:
-    """Recover a usable HarnessResult when the CLI finished but the file protocol missed."""
-    from openjudge.harness.base import HarnessResult
-
-    # 1) Search the sandbox for a misplaced result file.
-    for path in [
-        sandbox_dir / "_judge_result.json",
-        sandbox_dir / "workspace" / "_judge_result.json",
-        *sandbox_dir.rglob("_judge_result.json"),
-    ]:
-        payload = _try_load_judge_result(path)
-        if payload is not None:
-            return HarnessResult(
-                available=True,
-                result=payload,
-                raw_stdout=getattr(harness_result, "raw_stdout", "") or "",
-                raw_stderr=getattr(harness_result, "raw_stderr", "") or "",
-                exit_code=getattr(harness_result, "exit_code", 0) or 0,
-                timed_out=bool(getattr(harness_result, "timed_out", False)),
-                duration=float(getattr(harness_result, "duration", 0.0) or 0.0),
-            )
-
-    # 2) Reconstruct from Claude stream-json stdout/stderr.
-    raw = "\n".join(
-        [
-            getattr(harness_result, "raw_stdout", "") or "",
-            getattr(harness_result, "raw_stderr", "") or "",
-        ]
-    )
-    payload = _extract_result_from_stream_json(raw, schema)
-    if payload is None:
-        return None
-    return HarnessResult(
-        available=True,
-        result=payload,
-        raw_stdout=getattr(harness_result, "raw_stdout", "") or "",
-        raw_stderr=getattr(harness_result, "raw_stderr", "") or "",
-        exit_code=getattr(harness_result, "exit_code", 0) or 0,
-        timed_out=bool(getattr(harness_result, "timed_out", False)),
-        duration=float(getattr(harness_result, "duration", 0.0) or 0.0),
-    )
 
 
 def _read_toml(path: Path) -> dict[str, Any]:
@@ -284,15 +145,18 @@ def _persist_harness_logs(
     binary: str,
     prompt: str,
     schema: dict[str, Any],
+    attempt: int = 1,
 ) -> None:
     """Persist the judge CLI's full file protocol and native process streams.
 
     ``ProcessSandbox`` deletes its temporary directory after the grader call.
     Copying these files while ``RecordingHarness.run`` is still executing is
     therefore the only reliable way to retain the exact judge inputs, output,
-    tool-call stream, stderr, and process status.
+    tool-call stream, stderr, and process status. Naming includes the retry
+    ``attempt`` number so that logs from earlier failed attempts are never
+    overwritten by later retries.
     """
-    run_name = f"run-{invocation:03d}"
+    run_name = f"attempt-{attempt:02d}-run-{invocation:03d}"
     run_dir = JUDGE_LOG_DIR / run_name
     run_dir.mkdir(parents=True, exist_ok=True)
 
@@ -343,6 +207,7 @@ def _persist_harness_logs(
 
     metadata = {
         "schema_version": "1.0",
+        "attempt": attempt,
         "invocation": invocation,
         "available": bool(getattr(harness_result, "available", False)),
         "exit_code": int(getattr(harness_result, "exit_code", -1)),
@@ -390,25 +255,6 @@ def _reset_judge_logs() -> None:
         JUDGE_HARNESS_PATH,
     ):
         path.unlink(missing_ok=True)
-
-
-def _persist_runner_error(exc: Exception) -> None:
-    metadata: dict[str, Any] = {
-        "schema_version": "1.0",
-        "available": False,
-        "runner_error": f"{type(exc).__name__}: {exc}",
-    }
-    if JUDGE_HARNESS_PATH.is_file():
-        try:
-            existing = json.loads(
-                JUDGE_HARNESS_PATH.read_text(encoding="utf-8", errors="replace")
-            )
-            if isinstance(existing, dict):
-                metadata = existing
-                metadata["runner_error"] = f"{type(exc).__name__}: {exc}"
-        except (json.JSONDecodeError, OSError):
-            pass
-    _atomic_json(JUDGE_HARNESS_PATH, metadata)
 
 
 def _load_context(config: dict[str, Any]) -> str:
@@ -585,24 +431,13 @@ def _ensure_path_contains(directory: Path) -> None:
         os.environ["PATH"] = f"{text}:{path}" if path else text
 
 
-def _run_shell(command: str, *, timeout: float = 300.0) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ["bash", "-lc", command],
-        check=False,
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-    )
-
-
 def _ensure_harness_cli(harness_name: str) -> str:
     """Make sure the judge CLI exists in the shared task environment.
 
     OpenJudge agent-judge tasks run the verifier *inside* the task container
-    (``environment_mode=shared``). That image often has Codex but not Claude
-    Code. When the agent-under-test is not ``harbor:claude-code``, Harbor never
-    installs ``claude``, so ClaudeCodeHarness fails with exit_code=-1 / empty
-    output ("harness CLI is unavailable"). Install the missing CLI here.
+    (``environment_mode=shared``). If the required CLI is missing, this fails
+    immediately with a precise error rather than attempting to install it;
+    the task image must pre-install the judge CLI it declares.
     """
     if harness_name in {"claude", "claude-code"}:
         binary = "claude"
@@ -611,36 +446,12 @@ def _ensure_harness_cli(harness_name: str) -> str:
         existing = _which_cli(binary)
         if existing:
             return existing
-
-        install_cmds = [
-            # Official Claude Code bootstrap (same path Harbor uses).
-            "curl -fsSL https://downloads.claude.ai/claude-code-releases/bootstrap.sh | bash",
-            # Fallback via npm when bootstrap is blocked.
-            "npm install -g @anthropic-ai/claude-code",
-        ]
-        errors: list[str] = []
-        for cmd in install_cmds:
-            try:
-                result = _run_shell(cmd, timeout=300.0)
-            except subprocess.TimeoutExpired as exc:
-                errors.append(f"{cmd!r} timed out: {exc}")
-                continue
-            if result.returncode == 0 and _which_cli(binary):
-                break
-            errors.append(
-                f"{cmd!r} -> rc={result.returncode}; "
-                f"stdout={(result.stdout or '')[-500]!r}; "
-                f"stderr={(result.stderr or '')[-500]!r}"
-            )
-        existing = _which_cli(binary)
-        if not existing:
-            raise RuntimeError(
-                "OpenJudge judge requires the `claude` CLI, but it is missing "
-                "from this task environment and auto-install failed. "
-                "Install Claude Code in the task image, or evaluate with "
-                f"`harbor:claude-code` so Harbor installs it. details={errors}"
-            )
-        return existing
+        raise RuntimeError(
+            "OpenJudge judge requires the `claude` CLI, but it is missing "
+            "from this task environment. Pre-install Claude Code in the "
+            "task image, or evaluate with `harbor:claude-code` so Harbor "
+            "installs it."
+        )
 
     if harness_name == "codex":
         binary = "codex"
@@ -719,7 +530,9 @@ def _configure_cli_environment(harness_name: str, model: str | None) -> None:
             os.environ["CURSOR_API_KEY"] = api_key
 
 
-def _resolve_harness(config: dict[str, Any]) -> tuple[Any, str, str | None, float]:
+def _resolve_harness(
+    config: dict[str, Any], attempt: int = 1
+) -> tuple[Any, str, str | None, float]:
     judge = config.get("judge", {})
     harness_name = (
         os.environ.get("OPENJUDGE_HARNESS")
@@ -746,7 +559,9 @@ def _resolve_harness(config: dict[str, Any]) -> tuple[Any, str, str | None, floa
     )
     _configure_cli_environment(harness_name, model)
     cli_path = _ensure_harness_cli(harness_name)
-    harness = RecordingHarness(harness_type(binary=cli_path, timeout_s=timeout))
+    harness = RecordingHarness(
+        harness_type(binary=cli_path, timeout_s=timeout), attempt=attempt
+    )
     return harness, harness_name, model, timeout
 
 
@@ -763,6 +578,62 @@ def _aggregate(
     if aggregation == "any_pass":
         return 1.0 if any(passed_values) else 0.0
     return raw_score
+
+
+def _stub_rewardkit() -> None:
+    """``tests/result/*.py`` imports ``from rewardkit import criterion``.
+
+    The openjudge branch of ``test.sh`` runs under ``uv run --with py-openjudge
+    --with tomli`` (no ``harbor-rewardkit`` install), so provide a no-op
+    ``@criterion`` decorator instead of pulling in the real package.
+    """
+    if "rewardkit" in sys.modules:
+        return
+    fake = types.ModuleType("rewardkit")
+    fake.criterion = lambda f: f
+    sys.modules["rewardkit"] = fake
+
+
+def _compute_result_dimension() -> tuple[float, dict[str, Any]] | None:
+    """Score ``tests/result/`` (programmatic fact_tokens/source/shortcut check).
+
+    ``test.sh`` dispatches openjudge tasks to this script, which historically
+    only ever scored ``tests/quality/`` — ``tests/result/`` (present on ws-*
+    tasks alongside agent_judge.toml) was silently skipped, a bug fixed here
+    so the "result" dimension is folded back into "score"/"reward" the same
+    way ``reward.toml``'s weighted_mean/threshold semantics declare it.
+    Returns ``None`` (falling back to quality-only scoring) if there is no
+    ``tests/result/score.py``, or if the programmatic grader itself errors.
+    """
+    score_py = RESULT_DIR / "score.py"
+    if not score_py.is_file():
+        return None
+    try:
+        _stub_rewardkit()
+        sys.modules.pop("ua_task_score", None)
+        spec = importlib.util.spec_from_file_location(
+            "_pawbench_ws_result_score", score_py
+        )
+        assert spec is not None and spec.loader is not None
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        result_score = float(module.ua_contract_score(WORKSPACE_PATH))
+    except Exception as exc:  # noqa: BLE001
+        print(
+            f"OpenJudge verifier: tests/result/score.py failed, "
+            f"falling back to quality-only score: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return None
+
+    debug_path = Path("/logs/verifier/ua_task_score.json")
+    detail = _load_json_object(debug_path) or {}
+    if debug_path.is_file():
+        try:
+            shutil.move(str(debug_path), str(WS_RESULT_DIMENSION_PATH))
+        except OSError:
+            pass
+    return round(result_score, 4), detail
 
 
 def _checkpoint_results(metadata: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -829,22 +700,52 @@ def _write_success(
         scoring_threshold,
     )
 
+    # ws-* tasks additionally ship a programmatic tests/result/ grader
+    # (fact_tokens / required_source / no_shortcut) alongside the agentic
+    # tests/quality/ judge. Fold it in as score = mean(quality, result) —
+    # see _compute_result_dimension for why this was previously skipped.
+    result_dimension = _compute_result_dimension()
+    if result_dimension is not None:
+        result_score, result_detail = result_dimension
+        combined_score = round((quality_score + result_score) / 2.0, 4)
+    else:
+        result_score = None
+        result_detail = None
+        combined_score = quality_score
+
     reward_config = _read_toml(TESTS_DIR / "reward.toml")
     reward_entries = reward_config.get("reward", [])
-    reward_rule = reward_entries[0] if reward_entries else {}
-    reward_aggregation = str(reward_rule.get("aggregation", "weighted_mean"))
-    reward_threshold = float(reward_rule.get("threshold", 0.8))
-    reward_score = _aggregate(
-        quality_score,
-        [quality_score > 0.0],
-        reward_aggregation,
-        reward_threshold,
-    )
+    # reward.toml declares multiple [[reward]] tables collapsing the single
+    # "quality" dimension in different ways (e.g. a continuous "score" via
+    # weighted_mean, and a binary pass/fail "reward" via threshold). Each
+    # entry must be matched by its own `name`, not by position: a previous
+    # version took reward_entries[0] as *the* pass/fail rule, which happened
+    # to be the "score" (weighted_mean, no threshold) table and silently let
+    # the raw continuous quality score stand in for "reward", unthresholded.
+    extra_scores: dict[str, float] = {}
+    reward_score = combined_score
+    for entry in reward_entries:
+        entry_name = str(entry.get("name") or "").strip()
+        if not entry_name:
+            continue
+        aggregation = str(entry.get("aggregation", "weighted_mean"))
+        threshold = float(entry.get("threshold", 0.8))
+        value = _aggregate(
+            combined_score,
+            [combined_score > 0.0],
+            aggregation,
+            threshold,
+        )
+        if entry_name == "reward":
+            reward_score = value
+        else:
+            extra_scores[entry_name] = value
 
     details = {
         "quality": {
             "score": quality_score,
             "raw_score": raw_score,
+            "valid": True,
             "criteria": criteria_details,
             "kind": "agent",
             "framework": "openjudge-agentic-grader",
@@ -866,19 +767,57 @@ def _write_success(
             "openjudge_metadata": metadata,
         }
     }
+    if result_dimension is not None:
+        details["result"] = {
+            "score": result_score,
+            "raw_score": result_score,
+            "valid": True,
+            "kind": "programmatic",
+            "framework": "ua_task_score.py (tests/result/)",
+            "detail": result_detail,
+        }
     _atomic_json(DETAILS_PATH, details)
     _atomic_json(
         REWARD_PATH,
-        {"quality": quality_score, "reward": reward_score},
+        {
+            "quality": quality_score,
+            **({"result": result_score} if result_dimension is not None else {}),
+            **extra_scores,
+            "reward": reward_score,
+            "valid": True,
+        },
     )
 
 
-async def _run() -> int:
+def _write_invalid_result(attempt_errors: list[str]) -> None:
+    """Persist the terminal failure state once every retry has been exhausted.
+
+    This is the only place a failed run still produces a score: Harbor
+    requires ``reward.json`` to exist, so we mark the task ``valid: false``
+    instead of hiding the failure behind a silently-recovered score.
+    """
+    details = {
+        "quality": {
+            "score": 0.0,
+            "kind": "agent",
+            "framework": "openjudge-agentic-grader",
+            "valid": False,
+            "attempts": attempt_errors,
+            "error": attempt_errors[-1] if attempt_errors else "unknown error",
+            "input_readiness": _load_json_object(INPUT_READINESS_PATH),
+            "provenance": _load_json_object(PROVENANCE_PATH),
+        }
+    }
+    _atomic_json(DETAILS_PATH, details)
+    _atomic_json(REWARD_PATH, {"quality": 0.0, "reward": 0.0, "valid": False})
+
+
+async def _run(attempt: int = 1) -> int:
     config = _read_toml(QUALITY_DIR / "agent_judge.toml")
     rubrics = _build_rubrics(config)
     context = _load_context(config)
     trajectory = _load_trajectory()
-    harness, harness_name, model, timeout = _resolve_harness(config)
+    harness, harness_name, model, timeout = _resolve_harness(config, attempt)
 
     grader = AgenticGrader(
         harness=harness,
@@ -923,26 +862,19 @@ def main() -> int:
     INPUT_READINESS_PATH.unlink(missing_ok=True)
     PROVENANCE_PATH.unlink(missing_ok=True)
     _reset_judge_logs()
-    try:
-        return asyncio.run(_run())
-    except Exception as exc:
-        # Always emit reward.json so Harbor does not escalate a grader failure
-        # into RewardFileNotFoundError (which hides the real diagnostic).
-        _persist_runner_error(exc)
-        details = {
-            "quality": {
-                "score": 0.0,
-                "kind": "agent",
-                "framework": "openjudge-agentic-grader",
-                "error": f"{type(exc).__name__}: {exc}",
-                "input_readiness": _load_json_object(INPUT_READINESS_PATH),
-                "provenance": _load_json_object(PROVENANCE_PATH),
-            }
-        }
-        _atomic_json(DETAILS_PATH, details)
-        _atomic_json(REWARD_PATH, {"quality": 0.0, "reward": 0.0})
-        print(f"OpenJudge verifier failed: {type(exc).__name__}: {exc}", file=sys.stderr)
-        return 1
+
+    attempt_errors: list[str] = []
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        try:
+            return asyncio.run(_run(attempt))
+        except Exception as exc:
+            message = f"attempt {attempt}/{MAX_ATTEMPTS}: {type(exc).__name__}: {exc}"
+            print(f"OpenJudge verifier {message}", file=sys.stderr)
+            attempt_errors.append(message)
+
+    # Every retry failed: mark the task invalid instead of silently scoring 0.
+    _write_invalid_result(attempt_errors)
+    return 1
 
 
 if __name__ == "__main__":
