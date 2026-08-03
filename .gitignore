@@ -40,7 +40,8 @@ run_batch.sh
 
 # Local development directories (not part of PawBench repo)
 harbor/
-docs/
+docs/*
+!docs/pawbench-eval-pipeline.md
 .agents/
 data/Pawbenchv2_task_0706
 data/pawbenchv2_data_v1_0717
