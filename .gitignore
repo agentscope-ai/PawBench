@@ -24,7 +24,8 @@ site/pawbench-site.zip
 result/
 results/
 examples/
-.cursor/
+.cursor/*
+!.cursor/skills
 data/agent-judge-eval
 data/agent-judge-task样例
 #harness
