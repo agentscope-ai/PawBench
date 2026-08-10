@@ -48,6 +48,7 @@ HARNESS_META: dict[str, dict[str, str]] = {
     "qwenpaw": {"display": "QwenPaw", "version": "1.1.3"},
     "openclaw": {"display": "OpenClaw", "version": "2026.4.24"},
     "hermes": {"display": "Hermes", "version": "2026.4.23"},
+    "workharness": {"display": "WorkHarness", "version": "2026.8.4"},
 }
 
 _BASE_ROWS: list[dict[str, Any]] = [
