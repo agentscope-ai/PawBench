@@ -172,11 +172,18 @@ class PawBenchBackend(BenchmarkBackend):
                 for f in filters:
                     if t.task_id == f:
                         return True
-                    if t.task_id.startswith(f):
+                    if file_stem == f:
                         return True
-                    # Also match by filename stem (e.g. "--tasks T053" matches
-                    # T053_pinchbench_blog.md regardless of the `id:` front-matter value)
-                    if file_stem == f or file_stem.startswith(f):
+                    # Bare benchmark indices select by filename, not by a legacy
+                    # task ID that happens to share the same prefix. For example,
+                    # T150 must select T150_wildclawbench_..., not also the task
+                    # whose front-matter ID is T150_project_progress_report.
+                    if re.fullmatch(r"T\d+", f):
+                        if file_stem.startswith(f"{f}_"):
+                            return True
+                        continue
+                    # Preserve prefix matching for descriptive selectors.
+                    if t.task_id.startswith(f) or file_stem.startswith(f):
                         return True
                 return False
             tasks = [t for t in tasks if _matches(t, task_filter)]
