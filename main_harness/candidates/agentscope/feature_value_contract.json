@@ -1,0 +1,35 @@
+{
+  "schema_version": "agentscope-feature-value-contract/v2",
+  "taxonomy_version": "harness_core_v2_20260710",
+  "candidate": "AgentScope",
+  "ordered_feature_ids": ["F1.1", "F1.2", "F1.3", "F2.1", "F2.2", "F2.3", "F3.1", "F3.2", "F3.3", "F4.1", "F4.2", "F4.3", "F5.1", "F5.2", "F5.3"],
+  "protocol": {
+    "matched_control": "all_enabled_with_only_the_target_feature_toggled_off",
+    "treatment": "all_enabled",
+    "confirmation_variants_are_hidden_until_development_is_frozen": true,
+    "retain_failed_attempts": true
+  },
+  "common_gates": {
+    "required_trace_evidence": true,
+    "exact_feature_switch_proof": true,
+    "identical_public_suite_within_comparison": true,
+    "blocked_cells_are_not_passes": true
+  },
+  "features": {
+    "F1.1": {"name": "Workspace Binding", "required_event": "workspace_binding"},
+    "F1.2": {"name": "Readiness and Reset", "required_event": "preflight_result"},
+    "F1.3": {"name": "Isolation and Permissions", "required_event": "isolation_policy"},
+    "F2.1": {"name": "Action Contract", "required_event": "action_contract"},
+    "F2.2": {"name": "Tool Availability", "required_event": "tool_availability"},
+    "F2.3": {"name": "Result and Error Feedback", "required_event": "normalized_tool_error"},
+    "F3.1": {"name": "Completion and Termination", "required_event": "completion_decision"},
+    "F3.2": {"name": "Budget and Guards", "required_event": "budget_policy"},
+    "F3.3": {"name": "Recovery and Resume", "required_event": "retry_start"},
+    "F4.1": {"name": "Diagnostic Trace", "required_event": "diagnostic_trace_policy"},
+    "F4.2": {"name": "State and Artifact Deltas", "required_event": "state_artifact_delta"},
+    "F4.3": {"name": "Verification", "required_event": "verifier_result"},
+    "F5.1": {"name": "Context Assembly", "required_event": "context_assembly"},
+    "F5.2": {"name": "Persistent Memory", "required_event": "memory_query"},
+    "F5.3": {"name": "Compaction", "required_event": "context_compaction"}
+  }
+}
