@@ -8,8 +8,10 @@ PawBench 的 Harness attribution 与 Feature ablation 模块。此目录只包�
 PawBench result + trajectory
   -> Reasoning backend 输出 H/M/Ex code 与 evidence
   -> bridge 校验 H-code 并映射 F-code
-  -> AgentScope backend 开关对应 Feature
-  -> ablation result 回传 PawBench
+  -> 生成一个 accepted H-to-F Feature development request
+  -> Qwen3.8-Max through Claude Code 按 skill 实现并写 admission receipt
+  -> 独立校验 receipt 后才允许打开一个 Feature
+  -> paired ablation 与 holdout result 回传 PawBench
 ```
 
 - `M-code`：模型可观察行为，不映射 Feature。
@@ -23,7 +25,7 @@ PawBench result + trajectory
 | `scripts/feature_taxonomy.py` | H/M/Ex 定义、15 个 Feature 与 H-to-F mapping。 |
 | `scripts/pawbench_output_adapter.py` | 将 PawBench output 转成 attribution input。 |
 | `scripts/bridge_attribution_to_harness_core.py` | 校验 H-code，生成 Feature switch 建议。 |
-| `candidates/agentscope/` | 默认的极简 AgentScope Harness backend。 |
+| `candidates/agentscope/` | 默认 AgentScope Harness 及受治理的 Qwen3.8-Max Feature 开发桥接。 |
 | `tests/` | taxonomy、adapter、bridge、report 与 security 测试。 |
 
 ## PawBench 接入
@@ -38,7 +40,11 @@ Reasoning backend 需为每个 task 提供：
 }
 ```
 
-Bridge 输出 `recommended_feature_ids` 与 `recommended_switch_keys`，供 AgentScope backend 逐项关闭并复跑。所有归因必须基于 trajectory evidence，不能由 score 直接推断。
+Bridge 输出 `recommended_feature_ids` 与 `recommended_switch_keys`。在 Feature
+未启用时，先用 `agentscope-develop-feature prepare` 固化一个 accepted H-to-F
+request，再由 Qwen3.8-Max through Claude Code 在本地 skill 约束下实现。只有
+`FEATURE_ADMISSION_RECEIPT.json` 独立通过全部 gate，调用方才可以打开一个
+Feature 并复跑。所有归因必须基于 trajectory evidence，不能由 score 直接推断。
 
 ## 安全边界
 
@@ -54,10 +60,11 @@ Bridge 输出 `recommended_feature_ids` 与 `recommended_switch_keys`，供 Agen
 ```bash
 python -m pytest -q
 python scripts/run_feature_contracts.py --candidate agentscope --pretty
+python -m pytest candidates/agentscope/tests/test_feature_development.py -q
 python candidates/agentscope/scripts/v2_ablation_matrix.py
 ```
 
-API-backed run 由 `DASHSCOPE_API_KEY`、`OPENAI_API_KEY`，或成对的 `LLM_API_KEY` + `LLM_BASE_URL` 配置。不要把 key 写入参数、URL 或文件。
+API-backed run 由 `DASHSCOPE_API_KEY`、`OPENAI_API_KEY`，或成对的 `LLM_API_KEY` + `LLM_BASE_URL` 配置。Qwen3.8-Max 的 Claude Code route 使用 `DASHSCOPE_API_KEY` 加 `DASHSCOPE_ANTHROPIC_BASE_URL`，或从 `DASHSCOPE_BASE_URL` 推导；不要把 key 写入参数、URL、receipt 或文件。
 
 ## TODO
 

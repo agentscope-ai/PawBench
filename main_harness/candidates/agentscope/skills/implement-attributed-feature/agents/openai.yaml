@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implement Attributed Feature"
+  short_description: "Turn accepted H-F evidence into a governed Feature"
+  default_prompt: "Use $implement-attributed-feature to implement an accepted AgentScope H-to-F proposal and prepare its admission receipt."

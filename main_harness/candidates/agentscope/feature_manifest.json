@@ -35,8 +35,8 @@
       "trace_evidence": "workspace root, cwd, mount and path map"
     },
     "F1.2": {
-      "name": "Readiness / Reset",
-      "name_zh": "就绪检查 / 重置",
+      "name": "Readiness and Reset",
+      "name_zh": "就绪检查与重置",
       "h_codes": ["H1"],
       "switch_type": "FeatureConfig",
       "implementation_point": "preflight_workspace",
@@ -49,8 +49,8 @@
       "trace_evidence": "preflight, reset events and state hash"
     },
     "F1.3": {
-      "name": "Isolation / Permissions",
-      "name_zh": "隔离 / 权限",
+      "name": "Isolation and Permissions",
+      "name_zh": "隔离与权限",
       "h_codes": ["H1"],
       "switch_type": "FeatureConfig",
       "implementation_point": "WorkspaceGuardMiddleware + AgentScope PermissionContext",
@@ -91,8 +91,8 @@
       "trace_evidence": "registry, hidden target and activation decision"
     },
     "F2.3": {
-      "name": "Result / Error Feedback",
-      "name_zh": "结果 / 错误反馈",
+      "name": "Result and Error Feedback",
+      "name_zh": "结果与错误反馈",
       "h_codes": ["H2"],
       "switch_type": "FeatureConfig",
       "implementation_point": "WorkspaceGuardMiddleware + normalize_tool_feedback",
@@ -105,8 +105,8 @@
       "trace_evidence": "tool result, exit status and structured error"
     },
     "F3.1": {
-      "name": "Completion / Termination",
-      "name_zh": "完成 / 终止",
+      "name": "Completion and Termination",
+      "name_zh": "完成与终止",
       "h_codes": ["H3"],
       "switch_type": "FeatureConfig",
       "implementation_point": "completion_decision",
@@ -119,8 +119,8 @@
       "trace_evidence": "finish request, stop reason and termination decision"
     },
     "F3.2": {
-      "name": "Budget / Guards",
-      "name_zh": "预算 / 守卫",
+      "name": "Budget and Guards",
+      "name_zh": "预算与守卫",
       "h_codes": ["H3"],
       "switch_type": "FeatureConfig",
       "implementation_point": "budget_policy + asyncio.timeout + ReActConfig",
@@ -133,8 +133,8 @@
       "trace_evidence": "limits, counters, timeout and cutoff reason"
     },
     "F3.3": {
-      "name": "Recovery / Resume",
-      "name_zh": "恢复 / 续跑",
+      "name": "Recovery and Resume",
+      "name_zh": "恢复与续跑",
       "h_codes": ["H3"],
       "switch_type": "FeatureConfig",
       "implementation_point": "run_task bounded retry path",
@@ -161,8 +161,8 @@
       "trace_evidence": "event and parent IDs, timestamps, status and audit class"
     },
     "F4.2": {
-      "name": "State / Artifact Deltas",
-      "name_zh": "状态 / 产物差异",
+      "name": "State and Artifact Deltas",
+      "name_zh": "状态与产物差异",
       "h_codes": ["H4"],
       "switch_type": "FeatureConfig",
       "implementation_point": "snapshot_workspace + diff_workspace_snapshots",

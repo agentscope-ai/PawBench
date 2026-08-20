@@ -12,6 +12,9 @@ dependencies = [
   "pydantic>=2.13",
 ]
 
+[project.scripts]
+agentscope-develop-feature = "pawbench_agentscope.feature_development:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

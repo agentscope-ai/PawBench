@@ -49,5 +49,6 @@ def test_evidence_selector_returns_zero_one_or_two_not_whole_family() -> None:
 
 
 def test_feature_labels_use_v2_contract_names() -> None:
-    assert feature_label("F2.3") == "F2.3 Result / Error Feedback"
+    assert feature_label("F2.3") == "F2.3 Result and Error Feedback"
     assert feature_label("F4.3", zh=True) == "F4.3 验证"
+    assert all("/" not in entry.name_en for entry in FEATURES.values())
