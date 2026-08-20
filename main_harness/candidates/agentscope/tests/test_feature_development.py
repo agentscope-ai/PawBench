@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+import subprocess
+import sys
 
 import pytest
 
@@ -101,6 +104,22 @@ def test_request_binds_one_accepted_h_to_feature_mapping(tmp_path: Path) -> None
     assert request.coding_agent.harness == DEFAULT_CODING_HARNESS
     assert request.skill_id == DEFAULT_SKILL_ID
     validate_development_request(request, workspace_root=tmp_path)
+
+
+def test_cli_help_does_not_require_the_checkout_taxonomy(tmp_path: Path) -> None:
+    environment = os.environ.copy()
+    environment["PYTHONPATH"] = str(CANDIDATE_ROOT / "src")
+    completed = subprocess.run(
+        [sys.executable, "-m", "pawbench_agentscope.feature_development", "--help"],
+        cwd=tmp_path,
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert "prepare" in completed.stdout
 
 
 def test_request_rejects_feature_owned_by_another_h_code(tmp_path: Path) -> None:

@@ -44,8 +44,10 @@ export DASHSCOPE_ANTHROPIC_BASE_URL='https://.../apps/anthropic'
 # 或使用 DASHSCOPE_BASE_URL=https://.../compatible-mode/v1 自动推导
 ```
 
-从 `main_harness/` 运行。evidence 必须来自 optimization arm；任何含
-`holdout` 的路径都会被拒绝。
+从 `main_harness/` 运行。`prepare`、`run` 与 `verify` 总是通过
+`--workspace-root` 读取 PawBench checkout 内的 canonical manifest 和 local
+skill；evidence 必须来自 optimization arm，任何含 `holdout` 的路径都会被拒绝。
+已安装的 command 可以在 checkout 外显示 `--help`，但不能脱离 checkout 执行开发。
 
 ```bash
 python -m pip install -e candidates/agentscope

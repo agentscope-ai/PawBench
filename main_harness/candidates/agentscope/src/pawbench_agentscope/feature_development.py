@@ -31,9 +31,6 @@ from pawbench_agentscope._skill_injection import (
     SkillInjectionError,
     compile_skill_payload,
 )
-from pawbench_agentscope.features import FEATURE_IDS, H_TO_FEATURES
-
-
 REQUEST_SCHEMA = "agentscope-opt-feature-development/v1"
 ADMISSION_SCHEMA = "agentscope-opt-feature-admission/v1"
 CODING_RUN_SCHEMA = "agentscope-opt-coding-agent-run/v1"
@@ -204,15 +201,39 @@ def _relative(path: Path, *, workspace_root: Path) -> str:
     return path.resolve().relative_to(workspace_root).as_posix()
 
 
-def _load_feature_contract(workspace_root: Path) -> Mapping[str, Mapping[str, Any]]:
+def _load_feature_manifest(workspace_root: Path) -> Mapping[str, Any]:
     path = workspace_root / "main_harness/candidates/agentscope/feature_manifest.json"
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise FeatureDevelopmentError("cannot load the AgentScope Feature manifest") from exc
-    features = value.get("features") if isinstance(value, Mapping) else None
+    if not isinstance(value, Mapping):
+        raise FeatureDevelopmentError("the AgentScope Feature manifest is malformed")
+    return value
+
+
+def _load_feature_catalog(
+    workspace_root: Path,
+) -> tuple[Mapping[str, Mapping[str, Any]], Mapping[str, tuple[str, ...]]]:
+    manifest = _load_feature_manifest(workspace_root)
+    features = manifest.get("features")
+    h_code_mapping = manifest.get("h_code_mapping")
     if not isinstance(features, Mapping):
         raise FeatureDevelopmentError("the AgentScope Feature manifest is malformed")
+    if not isinstance(h_code_mapping, Mapping):
+        raise FeatureDevelopmentError("the AgentScope H-to-Feature mapping is malformed")
+    normalized_mapping: dict[str, tuple[str, ...]] = {}
+    for raw_h_code, raw_feature_ids in h_code_mapping.items():
+        if not isinstance(raw_h_code, str) or not isinstance(raw_feature_ids, list):
+            raise FeatureDevelopmentError("the AgentScope H-to-Feature mapping is malformed")
+        if not all(isinstance(feature_id, str) for feature_id in raw_feature_ids):
+            raise FeatureDevelopmentError("the AgentScope H-to-Feature mapping is malformed")
+        normalized_mapping[raw_h_code] = tuple(raw_feature_ids)
+    return features, normalized_mapping
+
+
+def _load_feature_contract(workspace_root: Path) -> Mapping[str, Mapping[str, Any]]:
+    features, _ = _load_feature_catalog(workspace_root)
     return features
 
 
@@ -232,20 +253,22 @@ def validate_development_request(
     """Cross-check a request against PawBench's canonical Feature contract."""
 
     root = Path(workspace_root).expanduser().resolve()
-    if request.h_code not in H_TO_FEATURES:
+    feature_contracts, h_to_features = _load_feature_catalog(root)
+    feature_ids = set(feature_contracts)
+    if request.h_code not in h_to_features:
         raise FeatureDevelopmentError("development requires one H1-H5 code")
-    if request.feature_id not in FEATURE_IDS:
+    if request.feature_id not in feature_ids:
         raise FeatureDevelopmentError("the selected Feature ID is unknown")
-    if request.feature_id not in H_TO_FEATURES[request.h_code]:
+    if request.feature_id not in h_to_features[request.h_code]:
         raise FeatureDevelopmentError("the H code does not own the selected Feature")
     if request.feature_id in request.enabled_before:
         raise FeatureDevelopmentError("the selected Feature is already enabled")
     if len(set(request.enabled_before)) != len(request.enabled_before):
         raise FeatureDevelopmentError("enabled_before contains duplicate Feature IDs")
-    if set(request.enabled_before) - set(FEATURE_IDS):
+    if set(request.enabled_before) - feature_ids:
         raise FeatureDevelopmentError("enabled_before contains an unknown Feature ID")
 
-    manifest_contract = _load_feature_contract(root).get(request.feature_id)
+    manifest_contract = feature_contracts.get(request.feature_id)
     if not isinstance(manifest_contract, Mapping):
         raise FeatureDevelopmentError("the selected Feature has no manifest contract")
     if request.feature_contract != dict(manifest_contract):
